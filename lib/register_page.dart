@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,11 +19,39 @@ class _RegisterPageState extends State<RegisterPage> {
   String? selectedCountry;
   String? selectedRole;
 
-  void _register() {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration Successful!')),
+      var url = Uri.parse("http://10.15.216.180/carGOAdmin/register.php"); // For emulator
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "fullname": _fullNameController.text,
+          "email": _emailController.text,
+          "password": _passwordController.text,
+          "country": selectedCountry,
+          "role": selectedRole,
+        }),
       );
+
+      try {
+        var data = jsonDecode(response.body);
+
+        if (data["status"] == "success") {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Registration Successful")),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data["message"] ?? "Registration failed")),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Server error. Check your PHP API.")),
+        );
+      }
     }
   }
 
@@ -37,7 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo and title
+                // Logo
                 Row(
                   children: [
                     Image.asset('assets/cargo.png', width: 50, height: 50),
@@ -69,7 +98,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // Registration Form
                 Form(
                   key: _formKey,
                   child: Column(
@@ -156,7 +184,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       // Role Dropdown
                       DropdownButtonFormField<String>(
                         value: selectedRole,
-                        hint: const Text('Select Role'),
+                        hint: const Text('Select UserType'),
                         items: const [
                           DropdownMenuItem(value: 'Renter', child: Text('Renter')),
                           DropdownMenuItem(value: 'Owner', child: Text('Owner')),
@@ -165,7 +193,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           setState(() => selectedRole = value!);
                         },
                         decoration: InputDecoration(
-                          labelText: 'Role',
+                          labelText: 'UserType',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -175,7 +203,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 25),
 
-                      // Register button
+                      // Register Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -188,36 +216,19 @@ class _RegisterPageState extends State<RegisterPage> {
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                          child: const Text(
-                            'Sign Up',
-                            style: TextStyle(fontSize: 18),
-                          ),
+                          child: const Text('Sign Up', style: TextStyle(fontSize: 18)),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
-
-                      // OR divider
-                       Row( children: const [ Expanded(child: Divider(thickness: 1, color: Colors.grey)), Padding( padding: EdgeInsets.symmetric(horizontal: 10), child: Text('or'), ), Expanded(child: Divider(thickness: 1, color: Colors.grey)), ], ), const SizedBox(height: 20), 
-
-                       // Google Pay button 
-                       SizedBox( width: double.infinity, height: 50, child: OutlinedButton.icon( onPressed: () {}, icon: const Icon(Icons.g_mobiledata, color: Colors.black, size: 28), label: const Text( 'Google Pay', style: TextStyle(color: Colors.black, fontSize: 16), ), style: OutlinedButton.styleFrom( side: const BorderSide(color: Colors.black), shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30), ), ), ), ), const SizedBox(height: 10),
-
-                       // Apple Pay button 
-                       SizedBox( width: double.infinity, height: 50, child: OutlinedButton.icon( onPressed: () {}, icon: const Icon(Icons.apple, color: Colors.black, size: 28), label: const Text( 'Apple Pay', style: TextStyle(color: Colors.black, fontSize: 16), ), style: OutlinedButton.styleFrom( side: const BorderSide(color: Colors.black), shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30), ), ), ), ), const SizedBox(height: 25),
-
-
-                      
-                      // Already have account
+                      // Already have account?
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text('Already have an account? ',
                               style: TextStyle(color: Colors.black54)),
                           GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
+                            onTap: () => Navigator.pop(context),
                             child: const Text(
                               'Login',
                               style: TextStyle(
