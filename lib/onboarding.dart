@@ -81,7 +81,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       padding: const EdgeInsets.all(8),
                       child: ClipOval(
                         child: Image.asset(
-                          "assets/logo.png",
+                          "assets/cargo.png",
                           fit: BoxFit.contain,
                         ),
                       ),

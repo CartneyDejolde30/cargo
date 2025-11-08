@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'register_page.dart';
-
+import 'package:flutter_application_1/USERS-UI/renters.dart';
+import 'package:flutter_application_1/USERS-UI/owner.dart'; 
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
@@ -33,12 +37,156 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
-  void _login() {
-    print('Email: ${_emailController.text}, Password: ${_passwordController.text}, Remember: $_rememberMe');
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  // Load saved email and password (if "Remember Me" was checked)
+  void _loadSavedCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? email = prefs.getString('email');
+    String? password = prefs.getString('password');
+    bool remember = prefs.getBool('remember') ?? false;
+
+    if (remember && email != null && password != null) {
+      setState(() {
+        _emailController.text = email;
+        _passwordController.text = password;
+        _rememberMe = true;
+      });
+    }
+  }
+
+  // Save or clear credentials based on "Remember Me"
+  void _saveCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('email', _emailController.text);
+      await prefs.setString('password', _passwordController.text);
+      await prefs.setBool('remember', true);
+    } else {
+      await prefs.remove('email');
+      await prefs.remove('password');
+      await prefs.setBool('remember', false);
+    }
+  }
+
+  // Login function (checks user role and redirects)
+  void _login() async {
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill in all fields.')),
+    );
+    return;
+  }
+
+  _saveCredentials();
+
+  final url = Uri.parse("http://10.122.38.180/carGOAdmin/login.php");
+
+  // Debug: print what we're sending
+  print("Sending JSON -> email: $email, password: $password");
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json; charset=UTF-8"},
+      body: jsonEncode({
+        "email": email,
+        "password": password,
+      }),
+    );
+
+    // Debug: check response
+    print("Response status: ${response.statusCode}");
+    print("Response body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data["status"] == "success") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data["message"])),
+        );
+
+        String role = data["role"];
+        if (role == "Renter") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        } else if (role == "Owner") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const OwnerHomeScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unknown user role.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data["message"] ?? "Login failed.")),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Server error: ${response.statusCode}")),
+      );
+    }
+  } catch (e) {
+    print("Error: $e"); // Print the exception
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Error connecting to server.')),
+    );
+  }
+}
+
+
+  // Forgot password dialog
+  void _showForgotPasswordDialog() {
+    TextEditingController emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Forgot Password"),
+        content: TextField(
+          controller: emailController,
+          decoration: const InputDecoration(
+            labelText: "Enter your email",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(
+                        'Password reset link sent to ${emailController.text}')),
+              );
+            },
+            child: const Text("Send"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -46,28 +194,25 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo and title
               Row(
-                  children: [
-                    Image.asset(
-                      'assets/cargo.png',
-                      width: 50,
-                      height: 50,
+                children: [
+                  Image.asset(
+                    'assets/cargo.png',
+                    width: 50,
+                    height: 50,
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'CarGo',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'CarGo',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-              // Description
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Welcome Back, ',
                 style: TextStyle(
@@ -86,7 +231,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
 
-              // Email Field
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.black),
@@ -104,7 +248,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 16),
 
-              // Password Field
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -121,7 +264,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: Colors.black54,
                     ),
                     onPressed: () {
@@ -133,8 +278,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 10),
-
-              // Remember me and Forgot password
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -143,9 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                       Checkbox(
                         value: _rememberMe,
                         onChanged: (value) {
-                          setState(() {
-                            _rememberMe = value!;
-                          });
+                          setState(() => _rememberMe = value!);
                         },
                         activeColor: Colors.black,
                         checkColor: Colors.white,
@@ -157,7 +298,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: _showForgotPasswordDialog,
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(color: Colors.black87),
@@ -187,8 +328,8 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 10),
 
-              // Sign in with other button (optional)
-              SizedBox(
+              // Sign Up Button
+             SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: OutlinedButton(
@@ -210,6 +351,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 20),
+
 
               // Horizontal OR line
                   Row(
@@ -236,7 +378,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
 
-                                // Apple Pay & Google Pay buttons
+
+                  // Apple Pay & Google Pay buttons
                                 // Apple Pay Button
                   SizedBox(
                     width: double.infinity,
@@ -282,31 +425,26 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
 
-
-              // Sign up link
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                         Navigator.push(
-                    context,
-                      MaterialPageRoute(builder: (context) => const RegisterPage()),
-                    );
-                      },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(color: Colors.black),
+                    // Already have account?
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Already have an account? ',
+                              style: TextStyle(color: Colors.black54)),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
+
+
             ],
           ),
         ),
