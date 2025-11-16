@@ -3,8 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'register_page.dart';
+
 import 'package:flutter_application_1/USERS-UI/renters.dart';
-import 'package:flutter_application_1/USERS-UI/owner.dart'; 
+import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
@@ -114,6 +117,16 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text(data["message"])),
         );
 
+        // Save user info locally
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt("user_id", data["id"]); 
+          await prefs.setString("fullname", data["fullname"]);
+          await prefs.setString("email", data["email"]);
+          await prefs.setString("role", data["role"]);
+          await prefs.setString("phone", data["phone"] ?? "");
+          await prefs.setString("address", data["address"] ?? "");
+          await prefs.setString("profile_image", data["profile_image"] ?? "");
+
         String role = data["role"];
         if (role == "Renter") {
           Navigator.pushReplacement(
@@ -123,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
         } else if (role == "Owner") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const OwnerHomeScreen()),
+            MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -425,24 +438,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
 
-                    // Already have account?
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Already have an account? ',
-                              style: TextStyle(color: Colors.black54)),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: const Text(
-                              'Login',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    
 
 
             ],
