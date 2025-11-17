@@ -66,7 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
       } else {
         imageFile = File(picked.path);
       }
-      if (onUpdate != null) onUpdate(); // update dialog
+      if (onUpdate != null) onUpdate();
       setState(() {}); // update main page
     }
   }
@@ -75,7 +75,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
     if (profileImage.isNotEmpty) {
-      return NetworkImage("http://10.122.38.180/carGOAdmin/uploads/$profileImage");
+      // Ensure only filename is used in case database stores full path
+      final filename = profileImage.split('/').last;
+      return NetworkImage("http://172.31.51.180/carGOAdmin/uploads/$filename");
     }
     return null;
   }
@@ -91,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 GestureDetector(
                   onTap: () => pickImage(onUpdate: () {
-                    setStateDialog(() {}); // update dialog avatar immediately
+                    setStateDialog(() {});
                   }),
                   child: CircleAvatar(
                     radius: 50,
@@ -147,7 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   var request = http.MultipartRequest(
                     'POST',
-                    Uri.parse("http://10.122.38.180/carGOAdmin/update.php"),
+                    Uri.parse("http://172.31.51.180/carGOAdmin/update.php"),
                   );
 
                   request.fields['user_id'] = userId.toString();
@@ -189,6 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       if (jsonResp['profile_image'] != null && jsonResp['profile_image'] != "") {
                         profileImage = jsonResp['profile_image'];
                       }
+                      // Clear temp images after successful upload
                       imageFile = null;
                       webImage = null;
                     });

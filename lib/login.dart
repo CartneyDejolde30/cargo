@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
 
   _saveCredentials();
 
-  final url = Uri.parse("http://10.122.38.180/carGOAdmin/login.php");
+  final url = Uri.parse("http://172.31.51.180/carGOAdmin/login.php");
 
   // Debug: print what we're sending
   print("Sending JSON -> email: $email, password: $password");
