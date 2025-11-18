@@ -14,7 +14,7 @@ class MyCarPage extends StatefulWidget {
 }
 
 class _MyCarPageState extends State<MyCarPage> {
-  final String apiUrl = "http://172.31.51.180/carGOAdmin/cars_api.php";
+  final String apiUrl = "http://10.72.15.180/carGOAdmin/cars_api.php";
   List<Map<String, dynamic>> cars = [];
   bool isLoading = true;
 
@@ -84,7 +84,7 @@ class _MyCarPageState extends State<MyCarPage> {
 
   String? resolveImage(String? path) {
     if (path == null || path.isEmpty) return null;
-    return "http://172.31.51.180/carGOAdmin/$path";
+    return "http://10.72.15.180/carGOAdmin/$path";
   }
 
   @override

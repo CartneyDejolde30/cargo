@@ -77,7 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (profileImage.isNotEmpty) {
       // Ensure only filename is used in case database stores full path
       final filename = profileImage.split('/').last;
-      return NetworkImage("http://172.31.51.180/carGOAdmin/uploads/$filename");
+      return NetworkImage("http://10.72.15.180/carGOAdmin/uploads/$filename");
     }
     return null;
   }
@@ -149,7 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   var request = http.MultipartRequest(
                     'POST',
-                    Uri.parse("http://172.31.51.180/carGOAdmin/update.php"),
+                    Uri.parse("http://10.72.15.180/carGOAdmin/update.php"),
                   );
 
                   request.fields['user_id'] = userId.toString();
