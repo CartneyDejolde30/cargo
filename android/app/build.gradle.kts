@@ -7,8 +7,9 @@ plugins {
 android {
     namespace = "com.example.flutter_application_1"
 
-    compileSdk = 35                        // use your installed SDK version
-    buildToolsVersion = "35.0.0"           // use your installed build tools
+    // 🔥 Update these to match Flutter plugin requirements
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,8 +22,11 @@ android {
 
     defaultConfig {
         applicationId = "com.example.flutter_application_1"
-        minSdk = flutter.minSdkVersion                          // or your existing minSdk
-        targetSdk = 35                       // match compileSdk
+        minSdk = flutter.minSdkVersion
+
+        // 🔥 Must match compileSdk for plugin compatibility
+        targetSdk = 36
+
         versionCode = 1
         versionName = "1.0"
     }
@@ -30,6 +34,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+            // Enable shrink/opt if needed later
+            // isMinifyEnabled = true 
         }
     }
 }

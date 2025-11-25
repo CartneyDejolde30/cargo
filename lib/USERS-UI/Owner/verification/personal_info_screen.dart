@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
@@ -15,14 +17,30 @@ class PersonalInfoScreen extends StatefulWidget {
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   late UserVerification verification;
-  
+
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
 
-  final List<String> regions = ['NCR', 'Region I', 'Region II', 'Region III', 'Region IV-A'];
-  final List<String> genders = ['Male', 'Female', 'Prefer not to say'];
+  final List<String> regions = [
+    'NCR',
+    'Region I',
+    'Region II',
+    'Region III',
+    'Region IV-A',
+    'Region V',
+    'Region VI',
+    'Region VII',
+    'Region VIII (Caraga)'
+  ];
+
+  final List<String> genders = ['Male', 'Female'];
+
+  Map<String, dynamic> caragaData = {};
+  List<String> provinces = [];
+  List<String> municipalities = [];
+  List<String> barangays = [];
 
   @override
   void initState() {
@@ -32,6 +50,18 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _lastNameController.text = verification.lastName ?? '';
     _emailController.text = verification.email ?? '';
     _mobileController.text = verification.mobileNumber ?? '';
+
+    _loadCaragaData();
+  }
+
+  Future<void> _loadCaragaData() async {
+    final String response = await rootBundle.loadString('assets/data/caraga.json');
+    final data = json.decode(response);
+
+    setState(() {
+      caragaData = data['Region VIII (Caraga)'] ?? {};
+      provinces = caragaData.keys.toList();
+    });
   }
 
   @override
@@ -79,101 +109,139 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Personal Information',
+                    Text('Personal Information',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Refrain from using names or any information than your real one to avoid any potential issues.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.orange[700],
-                      ),
-                    ),
+
                     const SizedBox(height: 24),
-                    
+
                     _buildTextField('First Name', _firstNameController,
-                      onChanged: (v) => verification.firstName = v),
+                        onChanged: (v) => verification.firstName = v),
                     const SizedBox(height: 16),
-                    
+
                     _buildTextField('Last Name', _lastNameController,
-                      onChanged: (v) => verification.lastName = v),
+                        onChanged: (v) => verification.lastName = v),
                     const SizedBox(height: 24),
-                    
+
                     Text(
                       'PERMANENT ADDRESS',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[600],
-                        letterSpacing: 0.5,
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    
+
+                    // Region
                     _buildDropdown('Region', regions, verification.permRegion,
-                      (v) => setState(() => verification.permRegion = v)),
+                          (v) {
+                        setState(() {
+                          verification.permRegion = v;
+                          if (v == 'Region VIII (Caraga)') {
+                            provinces = caragaData.keys.toList();
+                          }
+                        });
+                      }),
+
                     const SizedBox(height: 16),
-                    
+
+                    // Province
+                    if (verification.permRegion == 'Region VIII (Caraga)')
+                      _buildDropdown('Province', provinces, verification.permProvince,
+                              (v) {
+                            setState(() {
+                              verification.permProvince = v;
+                              municipalities = caragaData[v]!.keys.toList();
+                              verification.permCity = null;
+                              barangays.clear();
+                            });
+                          }),
+
+                    const SizedBox(height: 16),
+
+                    // Municipality
+                    if (municipalities.isNotEmpty)
+                      _buildDropdown('Municipality', municipalities, verification.permCity,
+                              (v) {
+                            setState(() {
+                              verification.permCity = v;
+                              barangays = List<String>.from(caragaData[verification.permProvince][v]);
+                              verification.permBarangay = null;
+                            });
+                          }),
+
+                    const SizedBox(height: 16),
+
+                    // Barangay
+                    if (barangays.isNotEmpty)
+                      _buildDropdown('Barangay', barangays, verification.permBarangay,
+                              (v) => setState(() => verification.permBarangay = v)),
+
+                    const SizedBox(height: 24),
+
                     _buildTextField('Email Address', _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: (v) => verification.email = v),
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: (v) => verification.email = v),
+
                     const SizedBox(height: 16),
-                    
+
                     _buildTextField('Mobile Number', _mobileController,
-                      keyboardType: TextInputType.phone,
-                      hint: 'Enter mobile number',
-                      onChanged: (v) => verification.mobileNumber = v),
+                        keyboardType: TextInputType.phone,
+                        onChanged: (v) => verification.mobileNumber = v),
+
                     const SizedBox(height: 16),
-                    
+
                     _buildDropdown('Gender', genders, verification.gender,
-                      (v) => setState(() => verification.gender = v)),
+                        (v) => setState(() => verification.gender = v)),
+
                     const SizedBox(height: 16),
-                    
+
                     _buildDatePicker(),
                   ],
                 ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _canContinue() ? () {
+                  onPressed: _canContinue()
+                      ? () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => IDUploadScreen(verification: verification),
                       ),
                     );
-                  } : null,
+                  }
+                      : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[300],
+                    backgroundColor: _canContinue()
+                        ? const Color(0xFFCDFE3D)
+                        : Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue() ? Colors.black : Colors.grey[500],
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: _canContinue() ? Colors.black : Colors.grey[500],
                     ),
                   ),
                 ),
@@ -187,119 +255,45 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   bool _canContinue() {
     return (verification.firstName?.isNotEmpty ?? false) &&
-           (verification.lastName?.isNotEmpty ?? false) &&
-           verification.permRegion != null &&
-           (verification.email?.isNotEmpty ?? false) &&
-           (verification.mobileNumber?.isNotEmpty ?? false) &&
-           verification.gender != null &&
-           verification.dateOfBirth != null;
+        (verification.lastName?.isNotEmpty ?? false) &&
+        verification.permRegion != null &&
+        verification.email != null &&
+        verification.mobileNumber != null &&
+        verification.gender != null &&
+        verification.dateOfBirth != null;
   }
 
-  Widget _buildProgressDot(bool isActive) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFCDFE3D) : Colors.grey[300],
-        shape: BoxShape.circle,
-      ),
-    );
-  }
+  Widget _buildProgressDot(bool active) => Container(
+    width: 10,
+    height: 10,
+    decoration: BoxDecoration(
+      color: active ? const Color(0xFFCDFE3D) : Colors.grey[300],
+      shape: BoxShape.circle,
+    ),
+  );
 
-  Widget _buildProgressLine(bool isActive) {
-    return Container(
-      height: 2,
-      color: isActive ? const Color(0xFFCDFE3D) : Colors.grey[300],
-    );
-  }
+  Widget _buildProgressLine(bool active) => Container(
+    height: 2,
+    color: active ? const Color(0xFFCDFE3D) : Colors.grey[300],
+  );
 
-  Widget _buildTextField(String label, TextEditingController controller, {
-    String? hint,
-    TextInputType? keyboardType,
-    Function(String)? onChanged,
-  }) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {TextInputType? keyboardType, Function(String)? onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[700],
-          ),
-        ),
+        Text(label, style: GoogleFonts.poppins(fontSize: 12)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           onChanged: onChanged,
-          style: GoogleFonts.poppins(fontSize: 13),
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey[400],
-            ),
             filled: true,
             fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDatePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Date of Birth',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: verification.dateOfBirth ?? DateTime(2000),
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-            );
-            if (date != null) {
-              setState(() => verification.dateOfBirth = date);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  verification.dateOfBirth != null
-                    ? DateFormat('yyyy-MM-dd').format(verification.dateOfBirth!)
-                    : 'Select Date',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: verification.dateOfBirth != null ? Colors.black : Colors.grey[400],
-                  ),
-                ),
-                Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey[600]),
-              ],
-            ),
-          ),
-        ),
+        )
       ],
     );
   }
@@ -308,46 +302,53 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[700],
-          ),
-        ),
+        Text(label, style: GoogleFonts.poppins(fontSize: 12)),
         const SizedBox(height: 8),
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(8),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
-              hint: Text(
-                'Select',
-                style: GoogleFonts.poppins(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
-              ),
-              icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
-              items: items.map((item) {
-                return DropdownMenuItem(
-                  value: item,
-                  child: Text(
-                    item,
-                    style: GoogleFonts.poppins(fontSize: 13),
-                  ),
-                );
-              }).toList(),
+              items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
               onChanged: onChanged,
             ),
           ),
-        ),
+        )
       ],
+    );
+  }
+
+  Widget _buildDatePicker() {
+    return GestureDetector(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: verification.dateOfBirth ?? DateTime(2000),
+          firstDate: DateTime(1900),
+          lastDate: DateTime.now(),
+        );
+        if (date != null) {
+          setState(() => verification.dateOfBirth = date);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          verification.dateOfBirth != null
+              ? DateFormat('yyyy-MM-dd').format(verification.dateOfBirth!)
+              : 'Select Date',
+          style: GoogleFonts.poppins(fontSize: 13),
+        ),
+      ),
     );
   }
 }

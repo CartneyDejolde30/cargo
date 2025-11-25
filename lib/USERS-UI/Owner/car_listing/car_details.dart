@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
 import 'car_preferences_screen.dart';
-import 'package:http/http.dart' as http;
 
 class CarDetailsScreen extends StatefulWidget {
   final CarListing? existingListing;

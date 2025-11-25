@@ -159,7 +159,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       // Country Dropdown
                       DropdownButtonFormField<String>(
-                        value: selectedCountry,
+                        initialValue: selectedCountry,
                         hint: const Text('Select Country'),
                         items: const [
                           DropdownMenuItem(value: 'Philippines', child: Text('Philippines')),
@@ -183,7 +183,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       // Role Dropdown
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        initialValue: selectedRole,
                         hint: const Text('Select UserType'),
                         items: const [
                           DropdownMenuItem(value: 'Renter', child: Text('Renter')),
