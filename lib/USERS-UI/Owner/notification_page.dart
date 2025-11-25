@@ -24,10 +24,8 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Future<void> fetchNotifications() async {
-
     print("🔥 USER ID IS: ${widget.userId}");
     print("🌍 REQUEST URL: http://10.72.15.180/carGOAdmin/get_notification.php?user_id=${widget.userId}");
-
 
     final url = Uri.parse(
       "http://10.72.15.180/carGOAdmin/get_notification.php?user_id=${widget.userId}"
@@ -50,7 +48,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Future<void> markAsRead(int id) async {
     await http.post(
-      Uri.parse("http://10.72.15.180/update_notification.php"),
+      Uri.parse("http://10.72.15.180/carGOAdmin/update_notification.php"),
       body: {"id": id.toString()},
     );
     fetchNotifications();
@@ -58,7 +56,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Future<void> deleteNotification(int id) async {
     await http.post(
-      Uri.parse("http://10.72.15.180/delete_notification.php"),
+      Uri.parse("http://10.72.15.180/carGOAdmin/delete_notification.php"),
       body: {"id": id.toString()},
     );
     fetchNotifications();
@@ -112,9 +110,9 @@ class _NotificationPageState extends State<NotificationPage> {
                       key: Key(n["id"].toString()),
                       background: Container(
                         color: Colors.red.shade700,
-                        child: const Icon(Icons.delete, color: Colors.white),
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
                       ),
                       direction: DismissDirection.endToStart,
                       onDismissed: (_) {
@@ -123,7 +121,8 @@ class _NotificationPageState extends State<NotificationPage> {
 
                       child: GestureDetector(
                         onTap: () async {
-                          if (await Vibration.hasVibrator() ?? false){
+                          // Fixed: removed ?? false since hasVibrator() never returns null
+                          if (await Vibration.hasVibrator()) {
                             Vibration.vibrate(duration: 50);
                           }
                           markAsRead(n["id"]);

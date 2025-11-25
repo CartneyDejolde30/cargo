@@ -41,7 +41,8 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
   @override
   void initState() {
     super.initState();
-    selectedDeliveryTypes = List<String>.from(widget.listing.deliveryTypes ?? []);
+    // Fixed: removed ?? [] since deliveryTypes is already non-nullable
+    selectedDeliveryTypes = List<String>.from(widget.listing.deliveryTypes);
   }
 
   bool _canContinue() {
@@ -66,7 +67,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Please complete all required fields."),
           backgroundColor: Colors.red,
         ),
@@ -202,7 +203,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
     );
   }
 
-  //* UI elements below (unchanged)
+  //* UI elements below
   Widget _buildDropdown(List<String> items, String? value, Function(String?) onChanged) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),

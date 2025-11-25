@@ -6,7 +6,6 @@ import 'register_page.dart';
 
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart'; 
-import 'package:shared_preferences/shared_preferences.dart';
 
 
 class CarGoApp extends StatelessWidget {

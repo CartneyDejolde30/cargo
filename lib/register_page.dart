@@ -16,7 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
 
-  String? selectedCountry;
+  String? selectedMunicipality;
   String? selectedRole;
 
   Future<void> _register() async {
@@ -29,7 +29,7 @@ class _RegisterPageState extends State<RegisterPage> {
           "fullname": _fullNameController.text,
           "email": _emailController.text,
           "password": _passwordController.text,
-          "country": selectedCountry,
+          "municipality": selectedMunicipality,
           "role": selectedRole,
         }),
       );
@@ -157,33 +157,43 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 15),
 
-                      // Country Dropdown
+                      // Municipality Dropdown (Agusan del Sur)
                       DropdownButtonFormField<String>(
-                        value: selectedCountry,
-                        hint: const Text('Select Country'),
+                        initialValue: selectedMunicipality,
+                        hint: const Text('Select Municipality'),
                         items: const [
-                          DropdownMenuItem(value: 'Philippines', child: Text('Philippines')),
-                          DropdownMenuItem(value: 'USA', child: Text('USA')),
-                          DropdownMenuItem(value: 'Canada', child: Text('Canada')),
-                          DropdownMenuItem(value: 'Australia', child: Text('Australia')),
+                          DropdownMenuItem(value: 'Bayugan', child: Text('Bayugan')),
+                          DropdownMenuItem(value: 'Bunawan', child: Text('Bunawan')),
+                          DropdownMenuItem(value: 'Esperanza', child: Text('Esperanza')),
+                          DropdownMenuItem(value: 'La Paz', child: Text('La Paz')),
+                          DropdownMenuItem(value: 'Loreto', child: Text('Loreto')),
+                          DropdownMenuItem(value: 'Prosperidad', child: Text('Prosperidad')),
+                          DropdownMenuItem(value: 'Rosario', child: Text('Rosario')),
+                          DropdownMenuItem(value: 'San Francisco', child: Text('San Francisco')),
+                          DropdownMenuItem(value: 'San Luis', child: Text('San Luis')),
+                          DropdownMenuItem(value: 'Santa Josefa', child: Text('Santa Josefa')),
+                          DropdownMenuItem(value: 'Sibagat', child: Text('Sibagat')),
+                          DropdownMenuItem(value: 'Talacogon', child: Text('Talacogon')),
+                          DropdownMenuItem(value: 'Trento', child: Text('Trento')),
+                          DropdownMenuItem(value: 'Veruela', child: Text('Veruela')),
                         ],
                         onChanged: (value) {
-                          setState(() => selectedCountry = value!);
+                          setState(() => selectedMunicipality = value!);
                         },
                         decoration: InputDecoration(
-                          labelText: 'Country',
+                          labelText: 'Municipality',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         validator: (value) =>
-                            value == null ? 'Please select your country' : null,
+                            value == null ? 'Please select your municipality' : null,
                       ),
                       const SizedBox(height: 15),
 
                       // Role Dropdown
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        initialValue: selectedRole,
                         hint: const Text('Select UserType'),
                         items: const [
                           DropdownMenuItem(value: 'Renter', child: Text('Renter')),

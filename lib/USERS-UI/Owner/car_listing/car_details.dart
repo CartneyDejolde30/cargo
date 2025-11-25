@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
 import 'car_preferences_screen.dart';
-import 'package:http/http.dart' as http;
 
 class CarDetailsScreen extends StatefulWidget {
   final CarListing? existingListing;
@@ -33,12 +30,64 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   Uint8List? webImage;
 
   final List<String> years = List.generate(10, (i) => (2025 - i).toString());
-  final List<String> brands = ['Audi', 'BAIC', 'BMW', 'BYD', 'Changan', 'Changhe', 'Chery'];
+  final List<String> brands = [
+    'Toyota',
+    'Honda',
+    'Mitsubishi',
+    'Nissan',
+    'Mazda',
+    'Suzuki',
+    'Hyundai',
+    'Kia',
+    'Ford',
+    'Chevrolet',
+    'Isuzu',
+    'Subaru',
+    'BMW',
+    'Mercedes-Benz',
+    'Audi',
+    'Lexus',
+    'Volkswagen',
+    'Geely',
+    'Chery',
+    'MG',
+    'BYD',
+  ];
+
   final Map<String, List<String>> modelsByBrand = {
-    'Audi': ['A1', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'],
-    'BMW': ['1 Series', '2 Series', '3 Series', '4 Series', '5 Series'],
+    'Toyota': ['Vios', 'Corolla Altis', 'Camry', 'Fortuner', 'Innova', 'Wigo', 'Rush', 'Raize', 'Hilux', 'Land Cruiser', 'Prado', 'RAV4', 'Avanza', 'Veloz'],
+    'Honda': ['City', 'Civic', 'Accord', 'CR-V', 'HR-V', 'BR-V', 'Brio', 'Jazz', 'Mobilio', 'Odyssey'],
+    'Mitsubishi': ['Mirage', 'Mirage G4', 'Montero Sport', 'Xpander', 'Strada', 'L300', 'Pajero', 'ASX', 'Outlander PHEV'],
+    'Nissan': ['Almera', 'Sylphy', 'Patrol', 'Terra', 'Navara', 'Urvan', 'Juke', 'Kicks', 'X-Trail', 'Leaf'],
+    'Mazda': ['Mazda2', 'Mazda3', 'Mazda6', 'CX-3', 'CX-5', 'CX-9', 'CX-30', 'CX-60', 'BT-50', 'MX-5'],
+    'Suzuki': ['Swift', 'Dzire', 'Celerio', 'Ertiga', 'S-Presso', 'Vitara', 'XL7', 'Jimny', 'APV', 'Ciaz'],
+    'Hyundai': ['Accent', 'Elantra', 'Reina', 'Tucson', 'Santa Fe', 'Creta', 'Kona', 'Stargazer', 'Staria', 'Palisade'],
+    'Kia': ['Picanto', 'Soluto', 'Stonic', 'Seltos', 'Sportage', 'Sorento', 'Carnival', 'EV6', 'Forte', 'K2500/K3000'],
+    'Ford': ['EcoSport', 'Territory', 'Everest', 'Ranger', 'Expedition', 'Explorer', 'Mustang', 'F-150'],
+    'Chevrolet': ['Spark', 'Sail', 'Malibu', 'Trailblazer', 'Tracker', 'Colorado', 'Suburban', 'Corvette'],
+    'Isuzu': ['D-Max', 'mu-X', 'Traviz', 'N-Series (Trucks)'],
+    'Subaru': ['Impreza', 'XV', 'Forester', 'Outback', 'Levorg', 'WRX', 'BRZ'],
+    'BMW': ['2 Series', '3 Series', '5 Series', '7 Series', 'X1', 'X3', 'X5', 'X7', 'iX', 'i4'],
+    'Mercedes-Benz': ['A-Class', 'C-Class', 'E-Class', 'S-Class', 'GLA', 'GLB', 'GLC', 'GLE', 'GLS', 'EQB', 'EQE'],
+    'Audi': ['A3', 'A4', 'A6', 'Q2', 'Q3', 'Q5', 'Q7', 'Q8', 'e-tron'],
+    'Lexus': ['IS', 'ES', 'LS', 'UX', 'NX', 'RX', 'LX', 'LM'],
+    'Volkswagen': ['Santana', 'Lamando', 'Tiguan', 'T-Cross'],
+    'Geely': ['Coolray', 'Azkarra', 'Okavango', 'Emgrand'],
+    'Chery': ['Tiggo 7 Pro', 'Tiggo 8 Pro', 'Tiggo 5X'],
+    'MG': ['MG5', 'MG6', 'ZS', 'RX5', 'HS'],
+    'BYD': ['Atto 3', 'Dolphin', 'Seal', 'Han'],
   };
-  final List<String> bodyStyles = ['3-Door Hatchback', '5-Door Hatchback', 'Sedan', 'SUV'];
+
+  final List<String> bodyStyles = [
+    'Sedan',
+    'Hatchback',
+    'SUV',
+    'Crossover',
+    'MPV/Van',
+    'Pickup Truck',
+    'Coupe',
+    'Wagon',
+  ];
 
   @override
   void initState() {
@@ -137,7 +186,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                     _buildDropdown(
                       'Model',
                       listing.brand != null
-                          ? (modelsByBrand[listing.brand!] ?? ['A1', 'A3', 'A4'])
+                          ? (modelsByBrand[listing.brand!] ?? ['Select brand first'])
                           : ['Select brand first'],
                       listing.model,
                       (value) => setState(() => listing.model = value),
