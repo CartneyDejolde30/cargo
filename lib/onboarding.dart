@@ -20,9 +20,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       "button": "Next"
     },
     {
-      "title": "Let’s Start\nA New Experience\nWith Car Rental.",
+      "title": "Let's Start\nA New Experience\nWith Car Rental.",
       "subtitle":
-          "Discover affordable transportation with CarGo. Enjoy a seamless peer-to-peer vehicle rental experience. Let’s get started on your journey.",
+          "Discover affordable transportation with CarGo. Enjoy a seamless peer-to-peer vehicle rental experience. Let's get started on your journey.",
       "image": "assets/car3.jpg",
       "button": "Get Started"
     },
@@ -135,7 +135,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black.withOpacity(0.5),
+                          // Fixed: Use withValues instead of deprecated withOpacity
+                          backgroundColor: Colors.black.withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),

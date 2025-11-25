@@ -46,7 +46,9 @@ dependencies:
   
 
 
-
+  #google acc
+  google_sign_in: ^6.2.1
+ 
 
 
 
