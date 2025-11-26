@@ -42,7 +42,7 @@ Future<bool> submitCarListing({
     "mileage_limit": listing.mileageLimit.toString(),
 
     "price_per_day": listing.dailyRate.toString(), // FIXED NAME!
-    "address": listing.address ?? "",
+    "location": listing.location ?? "",
     "latitude": listing.latitude.toString(),
     "longitude": listing.longitude.toString(),
   });

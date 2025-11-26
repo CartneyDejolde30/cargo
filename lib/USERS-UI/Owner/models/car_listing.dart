@@ -31,7 +31,7 @@ class CarListing {
   double? dailyRate;
 
   // ------------------ LOCATION ------------------
-  String? address;
+  String? location;
   double? latitude;
   double? longitude;
 
@@ -65,7 +65,7 @@ class CarListing {
     this.hasUnlimitedMileage = true,
     this.mileageLimit,
     this.dailyRate,
-    this.address,
+    this.location,
     this.latitude,
     this.longitude,
     this.officialReceipt,
@@ -117,7 +117,7 @@ class CarListing {
       mileageLimit: int.tryParse(json["mileage_limit"]?.toString() ?? ""),
 
       dailyRate: double.tryParse(json["price_per_day"]?.toString() ?? ""),
-      address: json["address"],
+      location: json["location"],
       latitude: double.tryParse(json["latitude"]?.toString() ?? ""),
       longitude: double.tryParse(json["longitude"]?.toString() ?? ""),
 
@@ -157,7 +157,7 @@ class CarListing {
       if (mileageLimit != null) "mileage_limit": mileageLimit.toString(),
       if (dailyRate != null) "price_per_day": dailyRate.toString(),
 
-      if (address != null) "address": address!,
+      if (location != null) "location": location!,
       if (latitude != null) "latitude": latitude.toString(),
       if (longitude != null) "longitude": longitude.toString(),
 

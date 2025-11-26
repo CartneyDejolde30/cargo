@@ -18,7 +18,7 @@ class CarLocationScreen extends StatefulWidget {
 }
 
 class _CarLocationScreenState extends State<CarLocationScreen> {
-  final _addressController = TextEditingController();
+  final _locationController = TextEditingController();
   final MapController _mapController = MapController();
 
   bool _showMap = false;
@@ -34,8 +34,8 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
   void initState() {
     super.initState();
 
-    if (widget.listing.address != null) {
-      _addressController.text = widget.listing.address!;
+    if (widget.listing.location != null) {
+      _locationController.text = widget.listing.location!;
     }
 
     if (widget.listing.latitude != null && widget.listing.longitude != null) {
@@ -103,7 +103,7 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
         setState(() {
           widget.listing.latitude = loc.latitude;
           widget.listing.longitude = loc.longitude;
-          widget.listing.address = address;
+          widget.listing.location = address;
           _currentPosition = newPos;
           _addMarker(newPos);
           _showMap = true;
@@ -128,8 +128,8 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
             "${p.street ?? ""}, ${p.locality ?? ""}, ${p.administrativeArea ?? ""}".trim();
 
         setState(() {
-          _addressController.text = formatted;
-          widget.listing.address = formatted;
+          _locationController.text = formatted;
+          widget.listing.location = formatted;
         });
       }
     } catch (_) {}
@@ -147,8 +147,8 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
   }
 
   bool get _canContinue {
-    return widget.listing.address != null &&
-        widget.listing.address!.trim().isNotEmpty &&
+    return widget.listing.location != null &&
+        widget.listing.location!.trim().isNotEmpty &&
         widget.listing.latitude != null &&
         widget.listing.longitude != null;
   }
@@ -203,16 +203,16 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                     const SizedBox(height: 20),
 
                     TextField(
-                      controller: _addressController,
+                      controller: _locationController,
                       onChanged: (v) {
-                        widget.listing.address = v;
+                        widget.listing.location = v;
                         setState(() {});
                       },
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.location_on, color: Colors.green),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.search, color: Colors.green),
-                          onPressed: () => _searchAddress(_addressController.text),
+                          onPressed: () => _searchAddress(_locationController.text),
                         ),
                         filled: true,
                         fillColor: Colors.grey[100],

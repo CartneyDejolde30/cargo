@@ -73,14 +73,22 @@ class _CarListScreenState extends State<CarListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: _loading ? _buildLoading() : _buildContent(),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _selectedNavIndex,
-        onTap: _handleNavigation,
-      ),
-    );
+  backgroundColor: Colors.white,
+  resizeToAvoidBottomInset: false, // 👈 this prevents overflow from keyboard
+  appBar: _buildAppBar(),
+  body: SafeArea(
+    child: _loading
+        ? _buildLoading()
+        : SingleChildScrollView(
+            child: _buildContent(),
+          ),
+  ),
+  bottomNavigationBar: BottomNavBar(
+    currentIndex: _selectedNavIndex,
+    onTap: _handleNavigation,
+  ),
+);
+
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -109,49 +117,45 @@ class _CarListScreenState extends State<CarListScreen> {
   Widget _buildLoading() => const Center(child: CircularProgressIndicator());
 
   Widget _buildContent() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSearchBar(),
-            const SizedBox(height: 20),
-            _buildCategoryFilter(),
-            const SizedBox(height: 24),
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSearchBar(),
+          const SizedBox(height: 20),
+          _buildCategoryFilter(),
+          const SizedBox(height: 24),
 
-            Text(
-              "Available Cars",
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
+          Text(
+            "Available Cars",
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
 
-            Expanded(
-              child: _cars.isEmpty
-                  ? const Center(child: Text("No cars available"))
-                  : GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: _cars.length,
-                      itemBuilder: (context, index) {
-                        final car = _cars[index];
-                        return _buildCarCard(
-                          carId: int.tryParse(car['id'].toString()) ?? 0,
-                          name: "${car['brand']} ${car['model']}",
-                          rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-                          location: car['location'].isEmpty ? "Unknown" : car['location'],
-                          price: "₱${car['price']}/day",
-                          image: getImageUrl(car['image']),
-                        );
-                      },
-                    ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.75,
             ),
-          ],
-        ),
+            itemCount: _cars.length,
+            itemBuilder: (context, index) {
+              final car = _cars[index];
+              return _buildCarCard(
+                carId: int.tryParse(car['id'].toString()) ?? 0,
+                name: "${car['brand']} ${car['model']}",
+                rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+                location: car['location'].isEmpty ? "Unknown" : car['location'],
+                price: "₱${car['price']}/day",
+                image: getImageUrl(car['image']),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
