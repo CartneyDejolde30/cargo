@@ -4,6 +4,7 @@ import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
+import 'search_filter_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +15,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
   String _selectedVehicleType = 'car';
 
   @override
@@ -27,23 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged(String query) {
-    // Search logic can be implemented here
-    print('Search query: $query');
-  }
-
   void _handleNavigation(int index) {
     setState(() {
       _selectedNavIndex = index;
     });
 
-    // Handle navigation based on index
     switch (index) {
       case 0:
         // Already on home screen
@@ -75,6 +63,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openSearchFilter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SearchFilterScreen(),
+      ),
+    ).then((searchParams) {
+      if (searchParams != null) {
+        // Handle search parameters here
+        print('Search params: $searchParams');
+        // You can navigate to CarListScreen with filters
+        // or implement your search logic here
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,58 +102,40 @@ class _HomeScreenState extends State<HomeScreen> {
                         letterSpacing: 1,
                       ),
                     ),
-                    
                   ],
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search,
-                          color: Colors.grey, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: _onSearchChanged,
-                          decoration: InputDecoration(
-                            hintText: "Search your dream vehicle...",
-                            hintStyle: GoogleFonts.poppins(
+                
+                // Search box - now clickable to open filter
+                GestureDetector(
+                  onTap: _openSearchFilter,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search,
+                            color: Colors.grey, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "Search vechicle near you...",
+                            style: GoogleFonts.poppins(
                               color: Colors.grey,
                               fontSize: 14,
                             ),
-                            border: InputBorder.none,
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          // Filter functionality can be added here
-                          print('Filter tapped');
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.tune,
-                            color: Colors.black,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
+                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

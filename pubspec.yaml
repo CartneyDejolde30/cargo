@@ -44,7 +44,6 @@ dependencies:
 
   #google acc
   google_sign_in: ^6.2.1
-  http: ^1.2.0
 
 
 
@@ -128,6 +127,7 @@ flutter:
     - assets/car3.jpg
     - assets/images.jpg
     - assets/2.jpg
+    - assets/search.png
 
   
     
