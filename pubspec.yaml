@@ -48,7 +48,6 @@ dependencies:
 
   #google acc
   google_sign_in: ^6.2.1
- 
 
 
 
@@ -134,6 +133,7 @@ flutter:
     - assets/images.jpg
     - assets/2.jpg
     - assets/data/caraga.json
+    - assets/search.png
 
   
     

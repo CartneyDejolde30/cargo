@@ -39,11 +39,7 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-
-    // Remove duplicate folder reference if exists
-    path = path.replaceFirst("uploads/", "");
-
-    return "http://10.72.15.180/carGOAdmin/uploads/$path";
+    return "http://10.72.15.180/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
   }
 
   Future<void> fetchCars() async {
@@ -54,20 +50,15 @@ class _CarListScreenState extends State<CarListScreen> {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-
         if (data['status'] == 'success') {
-          setState(() {
-            _cars = List<Map<String, dynamic>>.from(data['cars']);
-          });
+          setState(() => _cars = List<Map<String, dynamic>>.from(data['cars']));
         }
       }
     } catch (e) {
       print("❌ ERROR LOADING CARS: $e");
     }
 
-    setState(() {
-      _loading = false;
-    });
+    setState(() => _loading = false);
   }
 
   void _handleNavigation(int index) {
@@ -102,7 +93,11 @@ class _CarListScreenState extends State<CarListScreen> {
       ),
       title: Text(
         widget.title,
-        style: GoogleFonts.poppins(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
+        style: GoogleFonts.poppins(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       centerTitle: true,
       actions: [
@@ -115,80 +110,88 @@ class _CarListScreenState extends State<CarListScreen> {
 
   Widget _buildContent() {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 100),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             _buildSearchBar(),
             const SizedBox(height: 20),
             _buildCategoryFilter(),
             const SizedBox(height: 24),
-            Text("Available Cars", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+
+            Text(
+              "Available Cars",
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
 
-            _cars.isEmpty
-                ? const Center(child: Text("No cars available"))
-                : GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
+            Expanded(
+              child: _cars.isEmpty
+                  ? const Center(child: Text("No cars available"))
+                  : GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.75,
+                      ),
+                      itemCount: _cars.length,
+                      itemBuilder: (context, index) {
+                        final car = _cars[index];
+                        return _buildCarCard(
+                          carId: int.tryParse(car['id'].toString()) ?? 0,
+                          name: "${car['brand']} ${car['model']}",
+                          rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+                          location: car['location'].isEmpty ? "Unknown" : car['location'],
+                          price: "₱${car['price']}/day",
+                          image: getImageUrl(car['image']),
+                        );
+                      },
                     ),
-                    itemCount: _cars.length,
-                    itemBuilder: (context, index) {
-                      final car = _cars[index];
-
-                      return _buildCarCard(
-                        carId: int.tryParse(car['id'].toString()) ?? 0,
-                        name: "${car['brand']} ${car['model']}",
-                        rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-                        location: car['location'] == "" ? "Unknown" : car['location'],
-                        price: "₱${car['price']}/day",
-                        image: getImageUrl(car['image']),
-                      );
-                    },
-                  ),
-          ]),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildSearchBar() {
-    return Row(children: [
-      Expanded(
-        child: Container(
-          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.search, color: Colors.grey, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: "Search your dream car...",
-                    hintStyle: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
-                    border: InputBorder.none,
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.grey, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: "Search your dream car...",
+                      hintStyle: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      const SizedBox(width: 12),
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-        child: const Icon(Icons.tune, size: 24),
-      ),
-    ]);
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.tune, size: 24),
+        ),
+      ],
+    );
   }
 
   Widget _buildCategoryFilter() {
@@ -210,8 +213,13 @@ class _CarListScreenState extends State<CarListScreen> {
                 color: isSelected ? Colors.black : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(category,
-                  style: GoogleFonts.poppins(color: isSelected ? Colors.white : Colors.black, fontSize: 13)),
+              child: Text(
+                category,
+                style: GoogleFonts.poppins(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontSize: 13,
+                ),
+              ),
             ),
           );
         },
@@ -247,7 +255,9 @@ class _CarListScreenState extends State<CarListScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,11 +278,13 @@ class _CarListScreenState extends State<CarListScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1),
-                  Row(children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 12),
-                    const SizedBox(width: 4),
-                    Text(rating.toString(), style: GoogleFonts.poppins(fontSize: 11)),
-                  ]),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.orange, size: 12),
+                      const SizedBox(width: 4),
+                      Text(rating.toString(), style: GoogleFonts.poppins(fontSize: 11)),
+                    ],
+                  ),
                   const SizedBox(height: 4),
                   Text(location, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey)),
                   const SizedBox(height: 8),

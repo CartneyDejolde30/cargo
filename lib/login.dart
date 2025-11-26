@@ -5,8 +5,7 @@ import 'package:http/http.dart' as http;
 import 'register_page.dart';
 
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart'; 
-
+import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
@@ -45,7 +44,6 @@ class _LoginPageState extends State<LoginPage> {
     _loadSavedCredentials();
   }
 
-  // Load saved email and password (if "Remember Me" was checked)
   void _loadSavedCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? email = prefs.getString('email');
@@ -61,7 +59,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Save or clear credentials based on "Remember Me"
   void _saveCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
@@ -75,50 +72,46 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Login function (checks user role and redirects)
   void _login() async {
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please fill in all fields.')),
-    );
-    return;
-  }
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
 
-  _saveCredentials();
+    _saveCredentials();
 
-  final url = Uri.parse("http://10.72.15.180/carGOAdmin/login.php");
+    final url = Uri.parse("http://10.72.15.180/carGOAdmin/login.php");
 
-  // Debug: print what we're sending
-  print("Sending JSON -> email: $email, password: $password");
+    print("Sending JSON -> email: $email, password: $password");
 
-  try {
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json; charset=UTF-8"},
-      body: jsonEncode({
-        "email": email,
-        "password": password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json; charset=UTF-8"},
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+        }),
+      );
 
-    // Debug: check response
-    print("Response status: ${response.statusCode}");
-    print("Response body: ${response.body}");
+      print("Response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      if (data["status"] == "success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"])),
-        );
+        if (data["status"] == "success") {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data["message"])),
+          );
 
-        // Save user info locally
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setInt("user_id", data["id"]); 
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt("user_id", data["id"]);
           await prefs.setString("fullname", data["fullname"]);
           await prefs.setString("email", data["email"]);
           await prefs.setString("role", data["role"]);
@@ -126,42 +119,40 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString("address", data["address"] ?? "");
           await prefs.setString("profile_image", data["profile_image"] ?? "");
 
-        String role = data["role"];
-        if (role == "Renter") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        } else if (role == "Owner") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
-          );
+          String role = data["role"];
+          if (role == "Renter") {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          } else if (role == "Owner") {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Unknown user role.')),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unknown user role.')),
+            SnackBar(content: Text(data["message"] ?? "Login failed.")),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"] ?? "Login failed.")),
+          SnackBar(content: Text("Server error: ${response.statusCode}")),
         );
       }
-    } else {
+    } catch (e) {
+      print("Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Server error: ${response.statusCode}")),
+        const SnackBar(content: Text('Error connecting to server.')),
       );
     }
-  } catch (e) {
-    print("Error: $e"); // Print the exception
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Error connecting to server.')),
-    );
   }
-}
 
-
-  // Forgot password dialog
   void _showForgotPasswordDialog() {
     TextEditingController emailController = TextEditingController();
 
@@ -198,88 +189,92 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Logo and Brand Name
               Row(
                 children: [
                   Image.asset(
                     'assets/cargo.png',
-                    width: 50,
-                    height: 50,
+                    width: 40,
+                    height: 40,
                   ),
                   const SizedBox(width: 10),
                   const Text(
                     'CarGo',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 40),
+
+              // Welcome Text
               const Text(
-                'Welcome Back, ',
+                'Welcome Back',
                 style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.black87,
+                  fontSize: 28,
+                  color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 4),
               const Text(
-                'Ready to hit the road, ',
+                'Ready to hit the road.',
                 style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black54,
                 ),
               ),
               const SizedBox(height: 30),
 
+              // Email/Phone Input
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  labelText: 'Email or Username',
-                  labelStyle: const TextStyle(color: Colors.black54),
-                  prefixIcon: const Icon(Icons.person, color: Colors.black54),
+                  hintText: 'Email/Phone Number',
+                  hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
                   filled: true,
-                  fillColor: Colors.grey[200],
+                  fillColor: Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
+              // Password Input
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: const TextStyle(color: Colors.black54),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.black54),
+                  hintText: 'Password',
+                  hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
                   filled: true,
-                  fillColor: Colors.grey[200],
+                  fillColor: Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: Colors.black54,
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.black38,
+                      size: 20,
                     ),
                     onPressed: () {
                       setState(() {
@@ -289,157 +284,229 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+
+              // Remember Me and Forgot Password
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: (value) {
-                          setState(() => _rememberMe = value!);
-                        },
-                        activeColor: Colors.black,
-                        checkColor: Colors.white,
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Checkbox(
+                          value: _rememberMe,
+                          onChanged: (value) {
+                            setState(() => _rememberMe = value!);
+                          },
+                          activeColor: Colors.black,
+                          checkColor: Colors.white,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       const Text(
                         'Remember Me',
-                        style: TextStyle(color: Colors.black87),
+                        style: TextStyle(color: Colors.black87, fontSize: 13),
                       ),
                     ],
                   ),
                   TextButton(
                     onPressed: _showForgotPasswordDialog,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(color: Colors.black87),
+                      'Forgot Password',
+                      style: TextStyle(color: Colors.black87, fontSize: 13),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Login Button
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
                     'Login',
-                    style: TextStyle(fontSize: 18),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               // Sign Up Button
-             SizedBox(
+              SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.push(
-                    context,
+                      context,
                       MaterialPageRoute(builder: (context) => const RegisterPage()),
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.black),
+                    side: const BorderSide(color: Colors.black, width: 1.5),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
-                    'Sign Up',
-                    style: TextStyle(fontSize: 18, color: Colors.black),
+                    'Sign up',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
+              // OR Divider
+              Row(
+                children: const [
+                  Expanded(child: Divider(color: Colors.black26, thickness: 1)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Or',
+                      style: TextStyle(color: Colors.black38, fontSize: 13),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.black26, thickness: 1)),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-              // Horizontal OR line
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey,
-                          thickness: 1,
-                          endIndent: 10, // space to the "OR"
-                        ),
-                      ),
-                      const Text(
-                        'OR',
-                        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey,
-                          thickness: 1,
-                          indent: 10, // space from the "OR"
+              // Facebook Login Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Facebook login logic
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Facebook login coming soon')),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.black26, width: 1),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                      SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          'Continue with Facebook',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                ),
+              ),
+              const SizedBox(height: 12),
 
-
-                  // Apple Pay & Google Pay buttons
-                                // Apple Pay Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Apple Pay logic
-                      },
-                      icon: Icon(Icons.apple, color: const Color.fromARGB(255, 0, 0, 0)),
-                      label: const Text(
-                        'Apple Pay',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      
-                      style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: Colors.black),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30)),
-                                    ),
+              // Google Login Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Google login logic
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Google login coming soon')),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.black26, width: 1),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const SizedBox(height: 10),
-
-                  // Google Pay Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Google Pay logic
-                      },
-                      icon: Icon(Icons.payment, color: const Color.fromARGB(255, 26, 25, 25)),
-                      label: const Text(
-                        'Google Pay',
-                        style: TextStyle(fontSize: 18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/search.png',
+                        width: 20,
+                        height: 20,
                       ),
-                      style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: Colors.black),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30)),
-                                    ),
-                    ),
+                      const SizedBox(width: 12),
+                      const Flexible(
+                        child: Text(
+                          'Continue with Google',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                    
-
-
+              // Sign Up Link at bottom
+              Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text(
+                      "Don't have an account? ",
+                      style: TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const RegisterPage()),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

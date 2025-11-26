@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 import 'review_screen.dart';
 
 class CarDetailScreen extends StatefulWidget {
@@ -31,19 +31,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   Map<String, dynamic>? carData;
   List<dynamic> reviews = [];
 
-  /// 🔧 Fixes actual image path format
-  String formatImage(String rawPath) {
-    if (rawPath.isEmpty) {
-      return "https://via.placeholder.com/400x300";
-    }
+  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
 
-    rawPath = rawPath.replaceFirst("uploads/", "");
-
-    return "http://10.72.15.180/carGOAdmin/uploads/$rawPath";
+  /// Fix file path properly
+  String formatImage(String path) {
+    if (path.isEmpty) return "https://via.placeholder.com/400x300";
+    if (path.startsWith("http")) return path;
+    return "$baseUrl$path";
   }
 
   Future<void> fetchCarDetails() async {
-    final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/get_car_details.php?id=${widget.carId}");
+    final url = Uri.parse("${baseUrl}api/get_car_details.php?id=${widget.carId}");
 
     try {
       final response = await http.get(url);
@@ -78,10 +76,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
       );
     }
 
-    /// 🧠 Ensure values do not crash app if missing
     final imageUrl = formatImage(carData?["image"] ?? "");
     final ownerImage = formatImage(carData?["owner_image"] ?? "");
     final ownerName = carData?["owner_name"] ?? "Unknown Owner";
+    final price = carData?["price_per_day"] ?? widget.price;
+    final location = carData?["location"] ?? "Unknown";
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -92,61 +91,108 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-                  /// 🔥 Main DB Image (Replaces static image)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                    child: Image.network(
-                      imageUrl,
-                      height: 300,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.broken_image, size: 120),
+
+                  /// 🔥 CLICKABLE MAIN IMAGE (fullscreen preview)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FullscreenImageViewer(imageUrl: imageUrl),
+                        ),
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                      child: Image.network(
+                        imageUrl,
+                        height: 300,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image, size: 120),
+                      ),
                     ),
                   ),
 
-                  // 🔥 Owner Details
+                  /// TITLE + PRICE + RATING + LOCATION
                   Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundImage: NetworkImage(ownerImage),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          ownerName,
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                        Text(widget.carName,
+                            style: GoogleFonts.poppins(
+                                fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        Text("₱$price/day",
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            )),
+                        const SizedBox(height: 10),
+
+                        Row(
+                          children: [
+                            const Icon(Icons.star, color: Colors.orange),
+                            Text("${widget.rating}  |  ",
+                                style: GoogleFonts.poppins(fontSize: 14)),
+                            const Icon(Icons.location_on, color: Colors.red),
+                            Text(location,
+                                style: GoogleFonts.poppins(fontSize: 14)),
+                          ],
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 15),
+                  /// OWNER INFO
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundImage: NetworkImage(ownerImage),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(ownerName,
+                            style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                      ],
+                    ),
+                  ),
 
-                  // Reviews Section Header
+                  const SizedBox(height: 20),
+
+                  /// REVIEWS
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Reviews", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text("Reviews",
+                            style: GoogleFonts.poppins(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => ReviewsScreen(
-                                carName: widget.carName,
-                                totalReviews: reviews.length,
-                                averageRating: widget.rating,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ReviewsScreen(
+                                  carName: widget.carName,
+                                  totalReviews: reviews.length,
+                                  averageRating: widget.rating,
+                                ),
                               ),
-                            ));
+                            );
                           },
-                          child: Text("See All", style: GoogleFonts.poppins(color: Colors.grey)),
+                          child: Text("See All",
+                              style: GoogleFonts.poppins(color: Colors.grey)),
                         ),
                       ],
                     ),
@@ -154,11 +200,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
                   const SizedBox(height: 10),
 
-                  /// 🔥 Dynamic Review Cards
                   reviews.isEmpty
                       ? Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text("No reviews yet", style: GoogleFonts.poppins(color: Colors.grey)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text("No reviews yet",
+                              style: GoogleFonts.poppins(color: Colors.grey)),
                         )
                       : Column(
                           children: reviews.map((review) {
@@ -176,21 +222,22 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               ),
             ),
 
-            /// BOOK NOW (UI unchanged)
+            /// BOOK BUTTON
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(color: Colors.white),
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text("Book Now", style: GoogleFonts.poppins(color: Colors.white)),
+                  child: Text("Book Now",
+                      style: GoogleFonts.poppins(color: Colors.white)),
                 ),
               ),
             ),
@@ -200,7 +247,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     );
   }
 
-  /// 🔥 Same UI Style Review Card (unchanged)
+  /// REVIEW ITEM UI
   Widget _buildReviewCard({
     required String name,
     required double rating,
@@ -221,6 +268,28 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           const SizedBox(height: 5),
           Text(review, style: GoogleFonts.poppins(fontSize: 13)),
         ],
+      ),
+    );
+  }
+}
+
+/// 🔥 FULLSCREEN IMAGE VIEWER
+class FullscreenImageViewer extends StatelessWidget {
+  final String imageUrl;
+
+  const FullscreenImageViewer({super.key, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Center(
+          child: InteractiveViewer(
+            child: Image.network(imageUrl),
+          ),
+        ),
       ),
     );
   }

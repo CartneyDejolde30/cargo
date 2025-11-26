@@ -10,6 +10,30 @@ class BottomNavBar extends StatelessWidget {
     required this.onTap,
   });
 
+  void _handleNavigation(BuildContext context, int index) {
+    // Call the onTap callback first
+    onTap(index);
+    
+    // Navigate to specific screens
+    switch (index) {
+      case 0: // Home
+        Navigator.pushReplacementNamed(context, '/renters');
+        break;
+      case 1: // Search
+        Navigator.pushReplacementNamed(context, '/car_list');
+        break;
+      case 2: // Orders/Bookings
+        // Keep current screen or navigate to bookings if needed
+        break;
+      case 3: // Chats
+        Navigator.pushReplacementNamed(context, '/chat_list');
+        break;
+      case 4: // Profile
+        // Keep current screen or navigate to profile if needed
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -34,26 +58,31 @@ class BottomNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(
+                context: context,
                 icon: Icons.home_rounded,
                 index: 0,
                 isActive: currentIndex == 0,
               ),
               _buildNavItem(
+                context: context,
                 icon: Icons.search_rounded,
                 index: 1,
                 isActive: currentIndex == 1,
               ),
               _buildNavItem(
+                context: context,
                 icon: Icons.shopping_bag_outlined,
                 index: 2,
                 isActive: currentIndex == 2,
               ),
               _buildNavItem(
-                icon: Icons.notifications_outlined,
+                context: context,
+                icon: Icons.chat_bubble_outline_rounded, // Changed to chat icon
                 index: 3,
                 isActive: currentIndex == 3,
               ),
               _buildNavItem(
+                context: context,
                 icon: Icons.person_outline_rounded,
                 index: 4,
                 isActive: currentIndex == 4,
@@ -66,12 +95,13 @@ class BottomNavBar extends StatelessWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required IconData icon,
     required int index,
     required bool isActive,
   }) {
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => _handleNavigation(context, index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

@@ -7,6 +7,7 @@ import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
+import 'search_filter_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,11 +18,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
   String _selectedVehicleType = 'car';
 
   bool _isLoading = true;
   List<Map<String, dynamic>> _cars = [];
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -69,11 +71,39 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleNavigation(int index) {
     setState(() => _selectedNavIndex = index);
 
-    if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const CarListScreen()));
-    } else if (index == 3) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
+    switch (index) {
+      case 0:
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CarListScreen()),
+        );
+        break;
+      case 2:
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatListScreen()),
+        );
+        break;
+      case 4:
+        break;
     }
+  }
+
+  void _openSearchFilter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SearchFilterScreen(),
+      ),
+    ).then((searchParams) {
+      if (searchParams != null) {
+        print('Search params: $searchParams');
+      }
+    });
   }
 
   @override
@@ -89,19 +119,74 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("CARGO", style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "CARGO",
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
 
-                _buildSearch(),
+                GestureDetector(
+                  onTap: _openSearchFilter,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "Search vehicle near you...",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
 
-                _buildToggleOptions(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildToggleButton(
+                      "Car",
+                      _selectedVehicleType == 'car',
+                      () => setState(() => _selectedVehicleType = 'car'),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildToggleButton(
+                      "Motorcycle",
+                      _selectedVehicleType == 'motorcycle',
+                      () => setState(() => _selectedVehicleType = 'motorcycle'),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 20),
 
                 _buildSectionHeader("Best Cars", "View All"),
                 const SizedBox(height: 8),
 
-                Text("Available", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+                Text(
+                  "Available",
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                ),
                 const SizedBox(height: 12),
 
                 _isLoading
@@ -125,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 name: "${car['brand']} ${car['model']}",
                                 rating: double.tryParse(car['rating'].toString()) ?? 5.0,
                                 location: car['location'].toString().isEmpty ? "Unknown" : car['location'],
-                                seats: (int.tryParse(car['seats'].toString()) ?? 0) > 0 ? int.parse(car['seats'].toString()) : 4,
+                                seats: (int.tryParse(car['seats'].toString()) ?? 4),
                                 price: "₱${car['price']}/day",
                               );
                             },
@@ -143,40 +228,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  ///------------- UI Widgets (no layout change) ----------------
-
-  Widget _buildSearch() => Container(
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Row(
-          children: [
-            const Icon(Icons.search, color: Colors.grey),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(hintText: "Search your dream vehicle...", border: InputBorder.none),
-              ),
-            ),
-          ],
-        ),
-      );
-
-  Widget _buildToggleOptions() => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildToggleButton("Car", _selectedVehicleType == "car", () => setState(() => _selectedVehicleType = "car")),
-          const SizedBox(width: 12),
-          _buildToggleButton("Motorcycle", _selectedVehicleType == "motorcycle", () => setState(() => _selectedVehicleType = "motorcycle")),
-        ],
-      );
-
   Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) => GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-          decoration: BoxDecoration(color: selected ? Colors.black : Colors.grey.shade200, borderRadius: BorderRadius.circular(20)),
-          child: Text(label, style: GoogleFonts.poppins(color: selected ? Colors.white : Colors.black)),
+          decoration: BoxDecoration(
+            color: selected ? Colors.black : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(color: selected ? Colors.white : Colors.black),
+          ),
         ),
       );
 
