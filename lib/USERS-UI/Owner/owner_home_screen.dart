@@ -7,7 +7,7 @@ import 'notification_page.dart';
 import 'message_page.dart';
 import 'profile_page.dart';
 
-import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart'; // <-- add this import
+import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 
 class OwnerHomeScreen extends StatefulWidget {
   const OwnerHomeScreen({super.key});
@@ -18,7 +18,7 @@ class OwnerHomeScreen extends StatefulWidget {
 
 class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   int _selectedIndex = 0;
-  int ownerId = 0;
+  String ownerId = "";   // <-- FIX: Changed to String
   bool loading = true;
 
   @override
@@ -26,7 +26,6 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     super.initState();
     loadOwnerId();
 
-    // Show popup after page builds
     WidgetsBinding.instance.addPostFrameCallback((_) {
       VerifyPopup.showIfNotVerified(context);
     });
@@ -34,7 +33,10 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
   Future<void> loadOwnerId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    ownerId = prefs.getInt("user_id") ?? 0;
+
+    ownerId = prefs.getString("user_id") ?? "";  // <-- FIXED
+
+    print("OWNER ID LOADED → $ownerId");
 
     setState(() {
       loading = false;
@@ -51,8 +53,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
     final List<Widget> pages = [
       DashboardPage(),
-      MyCarPage(ownerId: ownerId),
-      NotificationPage(userId: ownerId),
+      MyCarPage(ownerId: int.tryParse(ownerId) ?? 0),
+      NotificationPage(userId: int.tryParse(ownerId) ?? 0),
+            // <-- FIX: Consistent type
       MessagePage(),
       ProfilePage(),
     ];

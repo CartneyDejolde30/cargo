@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
 
 class CarDetailScreen extends StatefulWidget {
@@ -33,7 +36,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
   final String baseUrl = "http://10.72.15.180/carGOAdmin/";
 
-  /// Fix file path properly
   String formatImage(String path) {
     if (path.isEmpty) return "https://via.placeholder.com/400x300";
     if (path.startsWith("http")) return path;
@@ -62,6 +64,63 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     }
   }
 
+  // 📞 CALL OWNER
+  Future<void> _callOwner(String number) async {
+    if (number.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("No phone number available.")));
+      return;
+    }
+
+    var permission = await Permission.phone.request();
+    if (!permission.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Phone permission required.")));
+      return;
+    }
+
+    String formatted = number.replaceAll(RegExp(r'[^0-9+]'), "");
+
+    if (formatted.startsWith("0")) {
+      formatted = "+63${formatted.substring(1)}";
+    }
+
+    final Uri callUri = Uri.parse("tel:$formatted");
+
+    if (await canLaunchUrl(callUri)) {
+      await launchUrl(callUri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Cannot open dialer.")));
+    }
+  }
+
+  // 💬 MESSAGE OWNER (NOW FUNCTIONAL)
+  void _messageOwner() {
+  if (carData == null) return;
+
+  final String currentUserId = "USER123"; // TODO: Replace with real logged-in user
+  final String ownerId = carData?["owner_id"].toString() ?? "";
+
+  // Generate a unique chat ID based on both user IDs
+  final chatId = (currentUserId.compareTo(ownerId) < 0)
+      ? "${currentUserId}_$ownerId"
+      : "${ownerId}_$currentUserId";
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ChatDetailScreen(
+        chatId: chatId,
+        peerId: ownerId,
+        peerName: carData?["owner_name"] ?? "Unknown",
+        peerAvatar: carData?["owner_image"] ?? "",
+      ),
+    ),
+  );
+}
+
+
   @override
   void initState() {
     super.initState();
@@ -71,14 +130,13 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final imageUrl = formatImage(carData?["image"] ?? "");
     final ownerImage = formatImage(carData?["owner_image"] ?? "");
     final ownerName = carData?["owner_name"] ?? "Unknown Owner";
+    final phone = carData?["phone"] ?? "";
     final price = carData?["price_per_day"] ?? widget.price;
     final location = carData?["location"] ?? "Unknown";
 
@@ -92,7 +150,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  /// 🔥 CLICKABLE MAIN IMAGE (fullscreen preview)
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -103,7 +160,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                       );
                     },
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
+                      borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(30),
                         bottomRight: Radius.circular(30),
                       ),
@@ -112,36 +169,32 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         height: 300,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image, size: 120),
                       ),
                     ),
                   ),
 
-                  /// TITLE + PRICE + RATING + LOCATION
                   Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(widget.carName,
                             style: GoogleFonts.poppins(
                                 fontSize: 22, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text("₱$price/day",
                             style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green,
-                            )),
-                        const SizedBox(height: 10),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green)),
+                        SizedBox(height: 10),
 
                         Row(
                           children: [
-                            const Icon(Icons.star, color: Colors.orange),
+                            Icon(Icons.star, color: Colors.orange),
                             Text("${widget.rating}  |  ",
                                 style: GoogleFonts.poppins(fontSize: 14)),
-                            const Icon(Icons.location_on, color: Colors.red),
+                            Icon(Icons.location_on, color: Colors.red),
                             Text(location,
                                 style: GoogleFonts.poppins(fontSize: 14)),
                           ],
@@ -150,28 +203,49 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                     ),
                   ),
 
-                  /// OWNER INFO
+                  // 👤 OWNER + ACTION BUTTONS
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundImage: NetworkImage(ownerImage),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              CircleAvatar(radius: 26, backgroundImage: NetworkImage(ownerImage)),
+                              SizedBox(width: 10),
+                              Flexible(
+                                child: Text(
+                                  ownerName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        Text(ownerName,
-                            style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.chat_bubble_outline, color: Colors.blue),
+                              onPressed: _messageOwner,
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.call, color: Colors.green),
+                              onPressed: () => _callOwner(phone),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
-                  /// REVIEWS
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -198,37 +272,36 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
 
                   reviews.isEmpty
                       ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text("No reviews yet",
-                              style: GoogleFonts.poppins(color: Colors.grey)),
-                        )
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text("No reviews yet",
+                        style: GoogleFonts.poppins(color: Colors.grey)),
+                  )
                       : Column(
-                          children: reviews.map((review) {
-                            return _buildReviewCard(
-                              name: review["fullname"] ?? "User",
-                              rating: double.tryParse(review["rating"].toString()) ?? 5.0,
-                              date: review["created_at"] ?? "",
-                              review: review["comment"] ?? "",
-                            );
-                          }).toList(),
-                        ),
+                    children: reviews.map((review) {
+                      return _buildReviewCard(
+                        name: review["fullname"] ?? "User",
+                        rating: double.tryParse(review["rating"].toString()) ?? 5.0,
+                        date: review["created_at"] ?? "",
+                        review: review["comment"] ?? "",
+                      );
+                    }).toList(),
+                  ),
 
-                  const SizedBox(height: 100),
+                  SizedBox(height: 120),
                 ],
               ),
             ),
 
-            /// BOOK BUTTON
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
@@ -247,7 +320,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     );
   }
 
-  /// REVIEW ITEM UI
   Widget _buildReviewCard({
     required String name,
     required double rating,
@@ -255,8 +327,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     required String review,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12, left: 20, right: 20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -265,7 +337,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(name, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(review, style: GoogleFonts.poppins(fontSize: 13)),
         ],
       ),
@@ -273,7 +345,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   }
 }
 
-/// 🔥 FULLSCREEN IMAGE VIEWER
 class FullscreenImageViewer extends StatelessWidget {
   final String imageUrl;
 
