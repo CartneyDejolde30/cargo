@@ -92,7 +92,7 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
                       style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
-                    Text("📍 Location: ${widget.listing.address}", style: GoogleFonts.poppins()),
+                    Text("📍 Location: ${widget.listing.location}", style: GoogleFonts.poppins()),
                     const SizedBox(height: 10),
                     Text("💰 Rate: ₱${widget.listing.dailyRate}/day", style: GoogleFonts.poppins()),
                     const SizedBox(height: 10),
