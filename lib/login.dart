@@ -3,12 +3,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'register_page.dart';
-
+import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
+
+void setUserStatus(String userId, bool online) {
+  final ref = FirebaseDatabase.instance.ref("status/$userId");
+
+  ref.set({
+    "isOnline": online,
+    "lastSeen": ServerValue.timestamp,
+  });
+
+  ref.onDisconnect().set({
+    "isOnline": false,
+    "lastSeen": ServerValue.timestamp,
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +87,25 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+ Future<void> _createFirestoreUser(Map<String, dynamic> data) async {
+    final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+
+    if (!(await userRef.get()).exists) {
+      await userRef.set({
+        "uid": data["id"].toString(),
+        "fullname": data["fullname"],
+        "email": data["email"],
+        "profile_image": data["profile_image"] ?? "",
+        "role": data["role"],
+        "online": true,
+        "created_at": FieldValue.serverTimestamp(),
+        "vehicles": [],
+        "rating": 0,
+        "status": "active",
+      });
+    }
+  }
+
   void _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -85,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
 
     _saveCredentials();
 
-    final url = Uri.parse("http://10.72.15.180/carGOAdmin/login.php");
+    final url = Uri.parse("http://192.168.1.11/carGOAdmin/login.php");
 
     print("Sending JSON -> email: $email, password: $password");
 
@@ -111,13 +145,36 @@ class _LoginPageState extends State<LoginPage> {
           );
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setInt("user_id", data["id"]);
+          await prefs.setString("user_id", data["id"].toString());  // <-- FIXED
           await prefs.setString("fullname", data["fullname"]);
           await prefs.setString("email", data["email"]);
           await prefs.setString("role", data["role"]);
           await prefs.setString("phone", data["phone"] ?? "");
           await prefs.setString("address", data["address"] ?? "");
           await prefs.setString("profile_image", data["profile_image"] ?? "");
+
+          /// 🔥 FIX: Ensure user exists inside Firestore in correct format
+              final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+
+              if (!(await userRef.get()).exists) {
+                await userRef.set({
+                  "uid": data["id"].toString(),
+                  "name": data["fullname"],               // 👈 matches Chat UI
+                  "avatar": data["profile_image"] ?? "",  // 👈 matches Chat UI
+                  "email": data["email"],
+                  "role": data["role"],
+                  "online": true,
+                  "createdAt": FieldValue.serverTimestamp(),
+                });
+                print("🔥 Firestore user CREATED");
+              } else {
+                print("✔ Firestore user already exists → updating status");
+                await userRef.update({
+                  "online": true,
+                  "avatar": data["profile_image"] ?? "",  // keep updated
+                  "name": data["fullname"],               // keep updated
+                });
+              }
 
           String role = data["role"];
           if (role == "Renter") {

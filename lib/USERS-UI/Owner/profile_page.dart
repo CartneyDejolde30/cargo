@@ -20,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String phone = "";
   String address = "";
   String profileImage = "";
+
   File? imageFile;
   Uint8List? webImage;
 
@@ -44,8 +45,8 @@ class _ProfilePageState extends State<ProfilePage> {
       profileImage = prefs.getString("profile_image") ?? "";
 
       nameController.text = fullname;
-      phoneController.text = phone;
-      addressController.text = address;
+      phoneController.text = (phone == "No phone") ? "" : phone;
+      addressController.text = (address == "No address") ? "" : address;
     });
   }
 
@@ -59,41 +60,43 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickImage({VoidCallback? onUpdate}) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
       if (kIsWeb) {
         webImage = await picked.readAsBytes();
       } else {
         imageFile = File(picked.path);
       }
+
       if (onUpdate != null) onUpdate();
-      setState(() {}); // update main page
+      setState(() {});
     }
   }
 
   ImageProvider? _getProfileImage() {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
+
     if (profileImage.isNotEmpty) {
-      // Ensure only filename is used in case database stores full path
       final filename = profileImage.split('/').last;
       return NetworkImage("http://10.72.15.180/carGOAdmin/uploads/$filename");
     }
+
     return null;
   }
 
+  // ------------------- UPDATED LOGIC HERE --------------------
   Future<void> updateProfile() async {
     await showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
+        builder: (context, setDialog) => AlertDialog(
           title: const Text("Edit Profile"),
           content: SingleChildScrollView(
             child: Column(
               children: [
                 GestureDetector(
-                  onTap: () => pickImage(onUpdate: () {
-                    setStateDialog(() {});
-                  }),
+                  onTap: () => pickImage(onUpdate: () => setDialog(() {})),
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey.shade300,
@@ -104,6 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 15),
+
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
@@ -111,15 +115,20 @@ class _ProfilePageState extends State<ProfilePage> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 TextField(
                   controller: phoneController,
                   decoration: const InputDecoration(
                     labelText: "Phone",
                     border: OutlineInputBorder(),
                   ),
+                  keyboardType: TextInputType.phone,
                 ),
+
                 const SizedBox(height: 10),
+
                 TextField(
                   controller: addressController,
                   decoration: const InputDecoration(
@@ -132,8 +141,16 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+
             ElevatedButton(
               onPressed: () async {
+                // Validate phone format
+                if (phoneController.text.trim().length < 10) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(const SnackBar(content: Text("Enter a valid phone number.")));
+                  return;
+                }
+
                 Navigator.pop(context);
 
                 showDialog(
@@ -157,10 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   request.fields['address'] = addressController.text;
 
                   if (!kIsWeb && imageFile != null) {
-                    request.files.add(await http.MultipartFile.fromPath(
-                      'profile_image',
-                      imageFile!.path,
-                    ));
+                    request.files.add(await http.MultipartFile.fromPath('profile_image', imageFile!.path));
                   }
 
                   if (kIsWeb && webImage != null) {
@@ -172,25 +186,27 @@ class _ProfilePageState extends State<ProfilePage> {
                   }
 
                   var response = await request.send();
-                  var respStr = await response.stream.bytesToString();
-                  var jsonResp = jsonDecode(respStr);
+                  final body = await response.stream.bytesToString();
+                  final jsonResp = jsonDecode(body);
+
+                  print("📌 SERVER RESPONSE: $jsonResp");
 
                   if (response.statusCode == 200 && jsonResp['status'] == 'success') {
-                    await prefs.setString("fullname", jsonResp['fullname']);
-                    await prefs.setString("phone", jsonResp['phone']);
-                    await prefs.setString("address", jsonResp['address'] ?? "");
+
+                    await prefs.setString("fullname", jsonResp['fullname'] ?? nameController.text);
+                    await prefs.setString("phone", jsonResp['phone'] ?? phoneController.text);
+                    await prefs.setString("address", jsonResp['address'] ?? addressController.text);
+
                     if (jsonResp['profile_image'] != null && jsonResp['profile_image'] != "") {
                       await prefs.setString("profile_image", jsonResp['profile_image']);
                     }
 
                     setState(() {
-                      fullname = jsonResp['fullname'];
-                      phone = jsonResp['phone'];
-                      address = jsonResp['address'] ?? "";
-                      if (jsonResp['profile_image'] != null && jsonResp['profile_image'] != "") {
-                        profileImage = jsonResp['profile_image'];
-                      }
-                      // Clear temp images after successful upload
+                      fullname = jsonResp['fullname'] ?? nameController.text;
+                      phone = jsonResp['phone'] ?? phoneController.text;
+                      address = jsonResp['address'] ?? addressController.text;
+                      if (jsonResp['profile_image'] != null) profileImage = jsonResp['profile_image'];
+
                       imageFile = null;
                       webImage = null;
                     });
@@ -204,9 +220,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
                   }
                 } catch (e) {
-                  print("Error updating profile: $e");
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Error connecting to server")),
+                    const SnackBar(content: Text("Unable to connect to server")),
                   );
                 } finally {
                   Navigator.pop(context);
@@ -219,6 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+  // ----------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -232,92 +248,79 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "CarGo",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
-                    ),
-                  ),
-                  Image.asset(
-                    "assets/cargo.png",
-                    width: 45,
-                    height: 45,
-                  ),
+                  const Text("CarGo", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+                  Image.asset("assets/cargo.png", width: 45, height: 45),
                 ],
               ),
             ),
+
             const SizedBox(height: 10),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: pickImage,
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage: _getProfileImage(),
-                        child: _getProfileImage() == null
-                            ? const Icon(Icons.person, size: 60, color: Colors.white)
-                            : null,
-                      ),
+                child: Column(children: [
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: _getProfileImage(),
+                      child: _getProfileImage() == null
+                          ? const Icon(Icons.person, size: 60, color: Colors.white)
+                          : null,
                     ),
-                    const SizedBox(height: 20),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
-                      child: ListTile(
-                        title: Text(fullname,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        subtitle: Text(role, style: TextStyle(color: Colors.grey.shade700)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: updateProfile,
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                    child: ListTile(
+                      title: Text(fullname, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      subtitle: Text(role, style: TextStyle(color: Colors.grey.shade700)),
+                      trailing: IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: updateProfile),
                     ),
-                    const SizedBox(height: 15),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.email, color: Colors.blue),
-                            title: const Text("Email"),
-                            subtitle: Text(email),
-                          ),
-                          const Divider(),
-                          ListTile(
-                            leading: const Icon(Icons.phone, color: Colors.blue),
-                            title: const Text("Phone"),
-                            subtitle: Text(phone),
-                          ),
-                          const Divider(),
-                          ListTile(
-                            leading: const Icon(Icons.email, color: Colors.blue),
-                            title: const Text("Address"),
-                            subtitle: Text(address),
-                          ),
-                        ],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                    child: Column(children: [
+                      ListTile(
+                        leading: const Icon(Icons.email, color: Colors.blue),
+                        title: const Text("Email"),
+                        subtitle: Text(email),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: logout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text("Logout"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      const Divider(),
+                      ListTile(
+                        leading: const Icon(Icons.phone, color: Colors.blue),
+                        title: const Text("Phone"),
+                        subtitle: Text(phone),
                       ),
+                      const Divider(),
+                      ListTile(
+                        leading: const Icon(Icons.location_on, color: Colors.blue),
+                        title: const Text("Address"),
+                        subtitle: Text(address),
+                      ),
+                    ]),
+                  ),
+
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: logout,
+                    icon: const Icon(Icons.logout),
+                    label: const Text("Logout"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                  ],
-                ),
+                  ),
+                ]),
               ),
             ),
           ],

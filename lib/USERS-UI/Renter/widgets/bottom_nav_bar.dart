@@ -23,7 +23,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/car_list');
         break;
       case 2: // Orders/Bookings
-        // Keep current screen or navigate to bookings if needed
+        Navigator.pushReplacementNamed(context, '/my_bookings');
         break;
       case 3: // Chats
         Navigator.pushReplacementNamed(context, '/chat_list');
