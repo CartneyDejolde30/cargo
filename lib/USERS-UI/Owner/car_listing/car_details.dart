@@ -96,7 +96,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     listing = widget.existingListing ??
         CarListing(
           owner: widget.ownerId,
-          carStatus: 'Available',
+          carStatus: 'Pending',
         );
 
     listing.photoUrls = List<String>.from(listing.photoUrls);

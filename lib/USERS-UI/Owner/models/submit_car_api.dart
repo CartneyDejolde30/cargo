@@ -20,7 +20,7 @@ Future<bool> submitCarListing({
   // -------- TEXT FIELDS (Mapped to PHP Expected Keys) --------
   request.fields.addAll({
     "owner_id": listing.owner.toString(),
-    "status": listing.carStatus ?? "Available",
+    "status": listing.carStatus ?? "Pending",
     "year": listing.year ?? "",
     "brand": listing.brand ?? "",
     "model": listing.model ?? "",

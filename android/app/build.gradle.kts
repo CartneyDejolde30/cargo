@@ -1,35 +1,28 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin") // Flutter plugin
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.flutter_application_1"
-
-    // 🔥 Update these to match Flutter plugin requirements
     compileSdk = 36
-    buildToolsVersion = "36.0.0"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true  // ✅ Kotlin syntax
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     defaultConfig {
         applicationId = "com.example.flutter_application_1"
-        minSdk = flutter.minSdkVersion
-
-        // 🔥 Must match compileSdk for plugin compatibility
+        minSdk = flutter.minSdkVersion  // REQUIRED for Firebase + Notifications
         targetSdk = 36
-
         versionCode = 1
         versionName = "1.0"
     }
@@ -37,12 +30,15 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-            // Enable shrink/opt if needed later
-            // isMinifyEnabled = true 
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Required for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }

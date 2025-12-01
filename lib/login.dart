@@ -7,6 +7,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
@@ -40,6 +42,9 @@ void setUserStatus(String userId, bool online) {
   }
 }
 
+
+
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -54,10 +59,20 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberMe = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadSavedCredentials();
-  }
+void initState() {
+  super.initState();
+  _loadSavedCredentials();
+  _setupNotifications();
+}
+
+Future<void> _setupNotifications() async {
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+}
+
 
   void _loadSavedCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -88,23 +103,29 @@ class _LoginPageState extends State<LoginPage> {
   }
 
  Future<void> _createFirestoreUser(Map<String, dynamic> data) async {
-    final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+  final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
 
-    if (!(await userRef.get()).exists) {
-      await userRef.set({
-        "uid": data["id"].toString(),
-        "fullname": data["fullname"],
-        "email": data["email"],
-        "profile_image": data["profile_image"] ?? "",
-        "role": data["role"],
-        "online": true,
-        "created_at": FieldValue.serverTimestamp(),
-        "vehicles": [],
-        "rating": 0,
-        "status": "active",
-      });
-    }
+  if (!(await userRef.get()).exists) {
+    
+    // GET TOKEN HERE
+    final token = await FirebaseMessaging.instance.getToken();
+
+    await userRef.set({
+      "uid": data["id"].toString(),
+      "fullname": data["fullname"],
+      "email": data["email"],
+      "profile_image": data["profile_image"] ?? "",
+      "role": data["role"],
+      "online": true,
+      "created_at": FieldValue.serverTimestamp(),
+      "vehicles": [],
+      "rating": 0,
+      "status": "active",
+      "fcm": token,   // <-- Save token for new user also
+    });
   }
+}
+
 
   void _login() async {
     final email = _emailController.text.trim();
@@ -169,12 +190,22 @@ class _LoginPageState extends State<LoginPage> {
                 print("🔥 Firestore user CREATED");
               } else {
                 print("✔ Firestore user already exists → updating status");
-                await userRef.update({
-                  "online": true,
-                  "avatar": data["profile_image"] ?? "",  // keep updated
-                  "name": data["fullname"],               // keep updated
-                });
-              }
+                        await userRef.update({
+                          "online": true,
+                          "avatar": data["profile_image"] ?? "",
+                          "name": data["fullname"],
+                        });
+
+                        // 🔥 Save FCM Token for Push Notifications
+                        try {
+                          final token = await FirebaseMessaging.instance.getToken();
+                          await userRef.update({"fcm": token});
+                          print("📩 FCM Token Updated: $token");
+                        } catch (e) {
+                          print("❌ Failed to save FCM Token: $e");
+                        }
+
+                                      }
 
           String role = data["role"];
           if (role == "Renter") {

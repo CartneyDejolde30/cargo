@@ -165,12 +165,25 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Car uploaded successfully 🎉")),
-      );
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Car uploaded successfully ✔")),
+  );
 
-      Navigator.pop(context, true); // return to MyCarPage to refresh
-    } else {
+  await Future.delayed(const Duration(milliseconds: 300));
+
+  if (!mounted) return;
+
+  // Close everything and go directly to MyCars
+  Navigator.pushNamedAndRemoveUntil(
+    context,
+    '/mycars',
+    (route) => false, // remove all previous screens
+    arguments: widget.listing.owner, // << correct owner field
+  );
+}
+
+
+else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to upload. Try again.")),
       );

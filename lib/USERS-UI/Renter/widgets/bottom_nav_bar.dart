@@ -29,7 +29,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/chat_list');
         break;
       case 4: // Profile
-        // Keep current screen or navigate to profile if needed
+        Navigator.pushReplacementNamed(context, '/profile');
         break;
     }
   }

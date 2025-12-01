@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:animate_do/animate_do.dart';
+
 import '../widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
 
@@ -26,12 +28,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     loadUser();
   }
 
-  /// Load logged user ID from SharedPreferences
   Future<void> loadUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     currentUserId = prefs.getString("user_id") ?? "";
-
-    print("DEBUG → Logged in User: $currentUserId");
 
     if (currentUserId.isEmpty) return;
 
@@ -39,7 +38,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     setState(() {});
   }
 
-  /// Listen to all chats where current user is part of the "members" list
   void listenChats() {
     FirebaseFirestore.instance
         .collection("chats")
@@ -54,15 +52,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
-  /// Search filtering
   void searchChats(String text) {
     setState(() {
       filteredChats = text.isEmpty
           ? chats
           : chats.where((chat) {
-              // Fetch peer name dynamically from Firestore so search works
               final List members = chat["members"];
-              final peerId = members.first == currentUserId ? members.last : members.first;
+              final peerId =
+                  members.first == currentUserId ? members.last : members.first;
               return peerId.toLowerCase().contains(text.toLowerCase());
             }).toList();
     });
@@ -72,35 +69,48 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _header(),
-            _searchBar(),
-            _title(),
-            Expanded(child: _buildList()),
-          ],
-        ),
-      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentNavIndex,
         onTap: (index) => setState(() => _currentNavIndex = index),
       ),
+
+      body: SafeArea(
+        child: Column(
+          children: [
+            _appBar(),
+            _searchBar(),
+            _sectionTitle(),
+            _storyBubbles(),
+            Expanded(child: _buildList()),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _header() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
+  // ---------- UI COMPONENTS ----------
+
+  Widget _appBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+      ),
       child: Row(
         children: [
-          _action(Icons.arrow_back, () => Navigator.pop(context)),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(Icons.arrow_back, size: 22),
+          ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text("Chats",
-                style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold)),
+            child: Text(
+              "Messages",
+              style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
           ),
-          _action(Icons.more_vert, () {}),
+          Image.asset("assets/cargo.png", width: 32),
         ],
       ),
     );
@@ -108,50 +118,96 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _searchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       child: TextField(
         controller: _searchController,
         onChanged: searchChats,
         decoration: InputDecoration(
-          hintText: "Search chats...",
-          prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
-          filled: true,
+          prefixIcon: const Icon(Icons.search),
+          hintText: "Search...",
           fillColor: Colors.grey.shade200,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
         ),
       ),
     );
   }
 
-  Widget _title() {
+  Widget _sectionTitle() {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text("Recent",
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        child: Text(
+          "Recent",
+          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
+    );
+  }
+
+  Widget _storyBubbles() {
+    if (chats.isEmpty) return const SizedBox();
+
+    return SizedBox(
+      height: 95,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 20),
+        itemCount: chats.length,
+        itemBuilder: (_, i) => _storyItem(chats[i], i),
+      ),
+    );
+  }
+
+  Widget _storyItem(QueryDocumentSnapshot chat, int index) {
+    List members = chat["members"];
+    String peerId = members.first == currentUserId ? members.last : members.first;
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection("users").doc(peerId).get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox();
+
+        final user = snapshot.data!;
+        final img = user["profile_image"] ?? "";
+        final name = (user["fullname"] ?? "").split(" ").first;
+
+        return FadeInUp(
+          duration: Duration(milliseconds: 200 + (index * 60)),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: img.startsWith("http") ? NetworkImage(img) : null,
+                  child: img.isEmpty ? const Icon(Icons.person, size: 28, color: Colors.black54) : null,
+                ),
+                const SizedBox(height: 5),
+                Text(name, style: const TextStyle(fontSize: 11)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildList() {
     if (filteredChats.isEmpty) {
-      return Center(
-        child: Text("No chats found",
-            style: GoogleFonts.poppins(color: Colors.grey)),
-      );
+      return Center(child: Text("No chats found", style: GoogleFonts.poppins(color: Colors.grey)));
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       itemCount: filteredChats.length,
-      itemBuilder: (_, i) => _chatTile(filteredChats[i]),
+      itemBuilder: (_, i) => _chatTile(filteredChats[i], i),
     );
   }
 
-  /// Chat UI Tile
-  Widget _chatTile(QueryDocumentSnapshot chat) {
-    // Determine the other user in the chat
+  Widget _chatTile(QueryDocumentSnapshot chat, int index) {
     List members = chat["members"];
     String peerId = members.first == currentUserId ? members.last : members.first;
 
@@ -161,78 +217,71 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection("users").doc(peerId).get(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox(height: 50);
+        if (!snapshot.hasData) return const SizedBox(height: 65);
 
         final user = snapshot.data!;
+        final name = user["fullname"] ?? "User";
+        final img = user["profile_image"] ?? "";
 
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChatDetailScreen(
-                  peerId: peerId,
-                  peerName: user["fullname"] ?? "Unknown",
-                  peerAvatar: user["profile_image"] ?? "",
-                  chatId: chat.id,
+        return FadeInUp(
+          duration: Duration(milliseconds: 200 + index * 80),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) =>
+                      ChatDetailScreen(peerId: peerId, peerName: name, peerAvatar: img, chatId: chat.id),
+                  transitionsBuilder: (_, animation, __, child) =>
+                      FadeTransition(opacity: animation, child: child),
                 ),
+              );
+            },
+
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16),
               ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 18),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.network(
-                    user["profile_image"] ?? "",
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage: img.isNotEmpty ? NetworkImage(img) : null,
+                    child: img.isEmpty ? const Icon(Icons.person, color: Colors.black54) : null,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user["fullname"] ?? "Unknown",
-                        style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600, fontSize: 15),
-                      ),
-                      Text(
-                        isTyping ? "Typing..." : chat["lastMessage"],
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          color: isUnread ? Colors.black : Colors.grey,
+
+                  const SizedBox(width: 14),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
+                        Text(
+                          isTyping ? "Typing..." : chat["lastMessage"],
+                          style: TextStyle(color: isUnread ? Colors.black : Colors.grey.shade600),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  chat["lastTimestamp"] != null
-                      ? chat["lastTimestamp"].toDate().toString().substring(11, 16)
-                      : "",
-                )
-              ],
+
+                  Text(
+                    chat["lastTimestamp"] != null
+                        ? chat["lastTimestamp"].toDate().toString().substring(11, 16)
+                        : "",
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
-
-  Widget _action(IconData icon, VoidCallback action) => GestureDetector(
-        onTap: action,
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, size: 20),
-        ),
-      );
 }

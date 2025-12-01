@@ -28,6 +28,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   String currentUserId = "";
   bool isTyping = false;
+  File? selectedImage;
 
   CollectionReference get messageRef =>
       FirebaseFirestore.instance.collection("chats").doc(widget.chatId).collection("messages");
@@ -43,9 +44,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _loadUser() async {
     final prefs = await SharedPreferences.getInstance();
     currentUserId = prefs.getString("user_id") ?? "";
-
-    print("DEBUG: Logged in user → $currentUserId");
-
     await _createChatIfNeeded();
     setState(() {});
     _markMessagesSeen();
@@ -65,7 +63,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         "createdAt": FieldValue.serverTimestamp(),
         "seen": false,
       });
-      print("CHAT CREATED ✔");
     }
   }
 
@@ -109,6 +106,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
 
     _messageController.clear();
+    selectedImage = null;
+    setState(() {});
     _setTyping(false);
   }
 
@@ -116,17 +115,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+    final img = await picker.pickImage(source: ImageSource.gallery);
 
-    if (file != null) {
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-      final ref = FirebaseStorage.instance.ref("chat_images/$fileName");
-
-      await ref.putFile(File(file.path));
-      final url = await ref.getDownloadURL();
-
-      _sendMessage(imageUrl: url);
+    if (img != null) {
+      selectedImage = File(img.path);
+      setState(() {});
     }
+  }
+
+  Future<void> _uploadImage() async {
+    if (selectedImage == null) return;
+
+    final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+    final ref = FirebaseStorage.instance.ref("chat_images/$fileName");
+
+    await ref.putFile(selectedImage!);
+    final url = await ref.getDownloadURL();
+
+    await _sendMessage(imageUrl: url);
   }
 
   // ---------------------- STREAMS ----------------------
@@ -151,11 +157,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: Column(
         children: [
           Expanded(child: _buildMessagesList()),
+          if (selectedImage != null) _previewSelectedImage(),
           _buildInputBar(),
         ],
       ),
@@ -165,27 +172,51 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
-      titleSpacing: 0,
+      elevation: 1,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Row(
+      title: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              opaque: true,
+              pageBuilder: (_, __, ___) => FullImageView(widget.peerAvatar),
+              transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+            ),
+          );
+        },
+        child: Row(
+          children: [
+            CircleAvatar(backgroundImage: NetworkImage(widget.peerAvatar)),
+            const SizedBox(width: 10),
+            Text(widget.peerName, style: GoogleFonts.poppins(fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previewSelectedImage() {
+    return Container(
+      margin: const EdgeInsets.all(10),
+      child: Stack(
+        alignment: Alignment.topRight,
         children: [
-          CircleAvatar(backgroundImage: NetworkImage(widget.peerAvatar)),
-          const SizedBox(width: 10),
-          Text(widget.peerName, style: GoogleFonts.poppins(fontSize: 16)),
-          const SizedBox(width: 6),
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection("chats").doc(widget.chatId).snapshots(),
-            builder: (_, snap) {
-              final typing = snap.hasData && snap.data?["${widget.peerId}_typing"] == true;
-              return Text(
-                typing ? "typing..." : "",
-                style: const TextStyle(fontSize: 12, color: Colors.green, fontStyle: FontStyle.italic),
-              );
-            },
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(selectedImage!, height: 140),
           ),
+          GestureDetector(
+            onTap: () => setState(() => selectedImage = null),
+            child: const CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.black,
+              child: Icon(Icons.close, color: Colors.white, size: 16),
+            ),
+          )
         ],
       ),
     );
@@ -218,21 +249,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           if (msg["image"] != "")
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(msg["image"], width: 180),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                PageRouteBuilder(
+                  opaque: true,
+                  pageBuilder: (_, __, ___) => FullImageView(msg["image"]),
+                  transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(msg["image"], width: 180),
+              ),
             ),
 
           Container(
             margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isMe ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
               msg["text"],
-              style: TextStyle(color: isMe ? Colors.white : Colors.black),
+              style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 15),
             ),
           ),
 
@@ -258,21 +299,42 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               controller: _messageController,
               onChanged: (v) => _setTyping(v.isNotEmpty),
               decoration: InputDecoration(
-                hintText: "Type a message...",
-                hintStyle: GoogleFonts.poppins(color: Colors.grey.shade500),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                hintText: "Message...",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          CircleAvatar(
-            backgroundColor: Colors.black,
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () => _sendMessage(),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => selectedImage != null ? _uploadImage() : _sendMessage(),
+            child: CircleAvatar(
+              backgroundColor: Colors.black,
+              child: Icon(selectedImage != null ? Icons.upload : Icons.send, color: Colors.white),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class FullImageView extends StatelessWidget {
+  final String url;
+
+  const FullImageView(this.url, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Scaffold(
+        backgroundColor: Colors.black87,
+        body: Center(
+          child: Hero(
+            tag: url,
+            child: Image.network(url),
+          ),
+        ),
       ),
     );
   }
