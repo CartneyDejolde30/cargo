@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
+import '../Renter/bookings/booking_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CarDetailScreen extends StatefulWidget {
   final int carId;
@@ -34,7 +36,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   Map<String, dynamic>? carData;
   List<dynamic> reviews = [];
 
-  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
+
+  Future<Map<String, String?>> _getUserData() async {
+  final prefs = await SharedPreferences.getInstance();
+  return {
+    'userId': prefs.getString('user_id'),
+    'fullName': prefs.getString('fullname'),
+    'email': prefs.getString('email'),
+    'municipality': prefs.getString('municipality'),
+  };
+}
 
   String formatImage(String path) {
     if (path.isEmpty) return "https://via.placeholder.com/400x300";
@@ -302,15 +314,50 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               right: 0,
               child: Container(
                 padding: EdgeInsets.all(20),
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BookingScreen(
+                            carId: widget.carId,
+                            carName: widget.carName,
+                            carImage: widget.carImage,
+                            pricePerDay: price,
+                            location: location,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      "Book Now",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  child: Text("Book Now",
-                      style: GoogleFonts.poppins(color: Colors.white)),
                 ),
               ),
             ),

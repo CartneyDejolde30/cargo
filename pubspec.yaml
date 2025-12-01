@@ -54,8 +54,8 @@ dependencies:
   audioplayers: ^6.0.0
 
   
-
-  
+  # For date formatting
+  intl: ^0.18.0  
 
 
   #google acc
