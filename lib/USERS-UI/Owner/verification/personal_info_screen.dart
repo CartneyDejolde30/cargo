@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/id_upload_screen.dart';
 
@@ -45,7 +46,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   void initState() {
     super.initState();
+
     verification = widget.existingData ?? UserVerification();
+
     _firstNameController.text = verification.firstName ?? '';
     _lastNameController.text = verification.lastName ?? '';
     _emailController.text = verification.email ?? '';
@@ -55,12 +58,26 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 
   Future<void> _loadCaragaData() async {
-    final String response = await rootBundle.loadString('assets/data/caraga.json');
+    final response = await rootBundle.loadString('assets/data/caraga.json');
     final data = json.decode(response);
 
     setState(() {
-      caragaData = data['Region VIII (Caraga)'] ?? {};
+      // JSON already starts with provinces, NOT region → assign whole file
+      caragaData = data;
+
       provinces = caragaData.keys.toList();
+
+      if (verification.permProvince != null && caragaData.containsKey(verification.permProvince)) {
+        municipalities = caragaData[verification.permProvince].keys.toList();
+      }
+
+      if (verification.permCity != null &&
+          verification.permProvince != null &&
+          caragaData[verification.permProvince][verification.permCity] != null) {
+        barangays = List<String>.from(
+            caragaData[verification.permProvince][verification.permCity]
+        );
+      }
     });
   }
 
@@ -71,6 +88,57 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _emailController.dispose();
     _mobileController.dispose();
     super.dispose();
+  }
+
+  bool _canContinue() {
+    return (verification.firstName?.isNotEmpty ?? false) &&
+        (verification.lastName?.isNotEmpty ?? false) &&
+        verification.permRegion != null &&
+        verification.email != null &&
+        verification.mobileNumber != null &&
+        verification.gender != null &&
+        verification.dateOfBirth != null;
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+  }
+
+  bool _isValidPhone(String phone) {
+    return RegExp(r'^[0-9]{11}$').hasMatch(phone);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  void _submit() {
+    verification.firstName = _firstNameController.text;
+    verification.lastName = _lastNameController.text;
+    verification.email = _emailController.text;
+    verification.mobileNumber = _mobileController.text;
+
+    if (!_isValidEmail(verification.email!)) {
+      _showError("Invalid email address.");
+      return;
+    }
+
+    if (!_isValidPhone(verification.mobileNumber!)) {
+      _showError("Mobile number must be 11 digits.");
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IDUploadScreen(verification: verification),
+      ),
+    );
   }
 
   @override
@@ -84,16 +152,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Verification',
+        title: Text('Verification',
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+            fontSize: 18)),
         centerTitle: true,
       ),
+
       body: SafeArea(
         child: Column(
           children: [
@@ -117,12 +183,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Personal Information',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 24),
 
                     _buildTextField('First Name', _firstNameController,
@@ -133,79 +194,73 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         onChanged: (v) => verification.lastName = v),
                     const SizedBox(height: 24),
 
-                    Text(
-                      'PERMANENT ADDRESS',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-
+                    Text('PERMANENT ADDRESS',
+                        style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600])),
                     const SizedBox(height: 16),
 
-                    // Region
-                    _buildDropdown('Region', regions, verification.permRegion,
-                          (v) {
+                    _buildDropdown('Region', regions, verification.permRegion, (v) {
+                      setState(() {
+                        verification.permRegion = v;
+
+                        // Load list only when Region VIII selected
+                        if (v == 'Region VIII (Caraga)') {
+                          provinces = caragaData.keys.toList();
+                        } else {
+                          provinces = [];
+                        }
+
+                        verification.permProvince = null;
+                        verification.permCity = null;
+                        verification.permBarangay = null;
+                        municipalities = [];
+                        barangays = [];
+                      });
+                    }),
+                    const SizedBox(height: 16),
+
+                    if (verification.permRegion == 'Region VIII (Caraga)')
+                      _buildDropdown('Province', provinces, verification.permProvince, (v) {
                         setState(() {
-                          verification.permRegion = v;
-                          if (v == 'Region VIII (Caraga)') {
-                            provinces = caragaData.keys.toList();
-                          }
+                          verification.permProvince = v;
+                          municipalities = v != null ? caragaData[v].keys.toList() : [];
+                          verification.permCity = null;
+                          barangays = [];
                         });
                       }),
-
                     const SizedBox(height: 16),
 
-                    // Province
-                    if (verification.permRegion == 'Region VIII (Caraga)')
-                      _buildDropdown('Province', provinces, verification.permProvince,
-                              (v) {
-                            setState(() {
-                              verification.permProvince = v;
-                              municipalities = caragaData[v]!.keys.toList();
-                              verification.permCity = null;
-                              barangays.clear();
-                            });
-                          }),
-
-                    const SizedBox(height: 16),
-
-                    // Municipality
                     if (municipalities.isNotEmpty)
-                      _buildDropdown('Municipality', municipalities, verification.permCity,
-                              (v) {
-                            setState(() {
-                              verification.permCity = v;
-                              barangays = List<String>.from(caragaData[verification.permProvince][v]);
-                              verification.permBarangay = null;
-                            });
-                          }),
-
+                      _buildDropdown('Municipality', municipalities, verification.permCity, (v) {
+                        setState(() {
+                          verification.permCity = v;
+                          barangays = v != null ? List<String>.from(caragaData[verification.permProvince][v]) : [];
+                          verification.permBarangay = null;
+                        });
+                      }),
                     const SizedBox(height: 16),
 
-                    // Barangay
                     if (barangays.isNotEmpty)
                       _buildDropdown('Barangay', barangays, verification.permBarangay,
                               (v) => setState(() => verification.permBarangay = v)),
+
 
                     const SizedBox(height: 24),
 
                     _buildTextField('Email Address', _emailController,
                         keyboardType: TextInputType.emailAddress,
                         onChanged: (v) => verification.email = v),
-
                     const SizedBox(height: 16),
 
                     _buildTextField('Mobile Number', _mobileController,
                         keyboardType: TextInputType.phone,
                         onChanged: (v) => verification.mobileNumber = v),
-
                     const SizedBox(height: 16),
 
                     _buildDropdown('Gender', genders, verification.gender,
                         (v) => setState(() => verification.gender = v)),
-
                     const SizedBox(height: 16),
 
                     _buildDatePicker(),
@@ -219,30 +274,18 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _canContinue()
-                      ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => IDUploadScreen(verification: verification),
-                      ),
-                    );
-                  }
-                      : null,
+                  onPressed: _canContinue() ? _submit : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _canContinue()
-                        ? const Color(0xFFCDFE3D)
-                        : Colors.grey[300],
+                    backgroundColor: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _canContinue() ? Colors.black : Colors.grey[500],
-                    ),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _canContinue() ? Colors.black : Colors.grey[500]),
                   ),
                 ),
               ),
@@ -253,15 +296,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     );
   }
 
-  bool _canContinue() {
-    return (verification.firstName?.isNotEmpty ?? false) &&
-        (verification.lastName?.isNotEmpty ?? false) &&
-        verification.permRegion != null &&
-        verification.email != null &&
-        verification.mobileNumber != null &&
-        verification.gender != null &&
-        verification.dateOfBirth != null;
-  }
+  // ---------- UI Helpers ----------
 
   Widget _buildProgressDot(bool active) => Container(
     width: 10,
@@ -306,10 +341,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,

@@ -1,19 +1,37 @@
-class VehicleModel {
-  final String name;
-  final String category;
-  final String location;
-  final String price;
-  final String image;
-  final double rating;
-  final String? seats;
+class UserVerification {
+  int? userId;
+  String? firstName;
+  String? lastName;
+  String? email;
+  String? mobileNumber;
+  String? gender;
+  DateTime? dateOfBirth;
+  String? permRegion;
+  String? permProvince;
+  String? permCity;
+  String? permBarangay;
+  String? idType;
+  String? idFrontPhoto;
+  String? idBackPhoto;
+  String? selfiePhoto;
 
-  VehicleModel({
-    required this.name,
-    required this.category,
-    required this.location,
-    required this.price,
-    required this.image,
-    required this.rating,
-    this.seats,
-  });
+  Map<String, dynamic> toJson() {
+    return {
+      "user_id": userId,
+      "first_name": firstName,
+      "last_name": lastName,
+      "email": email,
+      "mobile": mobileNumber,
+      "gender": gender,
+      "dob": dateOfBirth?.toIso8601String(),
+      "region": permRegion,
+      "province": permProvince,
+      "municipality": permCity,
+      "barangay": permBarangay,
+      "id_type": idType,
+      "id_front_photo": idFrontPhoto,
+      "id_back_photo": idBackPhoto,
+      "selfie_photo": selfiePhoto,
+    };
+  }
 }

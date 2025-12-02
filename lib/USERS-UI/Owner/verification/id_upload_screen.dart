@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/selfie_screen.dart';
 
@@ -31,6 +32,22 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
     {'value': 'postal_id', 'label': 'Postal ID'},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Restore previously entered data if user navigates back
+    _selectedIdType = widget.verification.idType;
+    
+    if (widget.verification.idFrontPhoto != null) {
+      _frontImage = File(widget.verification.idFrontPhoto!);
+    }
+    if (widget.verification.idBackPhoto != null) {
+      _backImage = File(widget.verification.idBackPhoto!);
+    }
+  }
+
+  // Camera Take
   Future<void> _pickImage(bool isFront) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -50,17 +67,11 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError("Failed to capture image");
     }
   }
 
+  // Pick from Gallery
   Future<void> _pickFromGallery(bool isFront) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -80,17 +91,11 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError("Failed to pick from gallery");
     }
   }
 
+  // Bottom sheet selector
   void _showImageSourceOptions(bool isFront) {
     showModalBottomSheet(
       context: context,
@@ -102,14 +107,10 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Choose Image Source',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text('Choose Image Source',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 24),
+
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.black),
               title: Text('Camera', style: GoogleFonts.poppins(fontSize: 15)),
@@ -118,6 +119,7 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
                 _pickImage(isFront);
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.black),
               title: Text('Gallery', style: GoogleFonts.poppins(fontSize: 15)),
@@ -132,8 +134,39 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
     );
   }
 
+  void _showError(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _continue() {
+    if (_selectedIdType == null) {
+      _showError("Please select an ID type.");
+      return;
+    }
+
+    if (_frontImage == null || _backImage == null) {
+      _showError("Please upload front and back images of the ID.");
+      return;
+    }
+
+    // Save selection to model
+    widget.verification.idType = _selectedIdType;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SelfieScreen(verification: widget.verification)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final canContinue = _selectedIdType != null && _frontImage != null && _backImage != null;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -153,9 +186,11 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
         ),
         centerTitle: true,
       ),
+
       body: SafeArea(
         child: Column(
           children: [
+            // Progress status bar (unchanged)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
@@ -168,58 +203,80 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
                 ],
               ),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Upload Valid ID',
+                    Text('Upload Valid ID',
                       style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                        fontSize: 18, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    Text(
-                      'Please upload a clear photo of your government-issued ID.',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-                    ),
+
+                    Text('Please upload a clear photo of your government-issued ID.',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
                     const SizedBox(height: 24),
+
+                    // Dropdown for ID selection
                     _buildDropdown(),
+
                     const SizedBox(height: 32),
+
                     _buildUploadSection('Front of ID', true),
                     const SizedBox(height: 24),
+
                     _buildUploadSection('Back of ID', false),
                   ],
                 ),
               ),
             ),
-            _buildContinueButton(),
+
+            // Continue button
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canContinue ? _continue : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: canContinue ? const Color(0xFFCDFE3D) : Colors.grey[300],
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: Text(
+                    'Continue',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: canContinue ? Colors.black : Colors.grey[500],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProgressDot(bool isActive) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFCDFE3D) : Colors.grey[300],
-        shape: BoxShape.circle,
-      ),
-    );
-  }
+  /// ---------- UI Helpers (No UI change) ----------
 
-  Widget _buildProgressLine(bool isActive) {
-    return Container(
-      height: 2,
-      color: isActive ? const Color(0xFFCDFE3D) : Colors.grey[300],
-    );
-  }
+  Widget _buildProgressDot(bool active) => Container(
+    width: 10,
+    height: 10,
+    decoration: BoxDecoration(
+      color: active ? const Color(0xFFCDFE3D) : Colors.grey[300],
+      shape: BoxShape.circle,
+    ),
+  );
+
+  Widget _buildProgressLine(bool active) => Container(
+    height: 2,
+    color: active ? const Color(0xFFCDFE3D) : Colors.grey[300],
+  );
 
   Widget _buildDropdown() {
     return Column(
@@ -227,25 +284,27 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
       children: [
         Text('ID Type', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
         const SizedBox(height: 8),
+
         Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 16),
+
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedIdType,
               isExpanded: true,
               hint: Text('Select ID Type', style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 12)),
-              icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
-              items: idTypes.map((id) {
-                return DropdownMenuItem(
-                  value: id['value'],
-                  child: Text(id['label']!, style: GoogleFonts.poppins(fontSize: 13)),
-                );
-              }).toList(),
-              onChanged: (value) => setState(() => _selectedIdType = value),
+              items: idTypes.map((id) => DropdownMenuItem(
+                value: id['value'],
+                child: Text(id['label']!, style: GoogleFonts.poppins(fontSize: 13)),
+              )).toList(),
+
+              onChanged: (value) {
+                setState(() {
+                  _selectedIdType = value;
+                  widget.verification.idType = value; // store to model
+                });
+              },
             ),
           ),
         ),
@@ -255,11 +314,13 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
 
   Widget _buildUploadSection(String title, bool isFront) {
     final image = isFront ? _frontImage : _backImage;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
+
         GestureDetector(
           onTap: () => _showImageSourceOptions(isFront),
           child: Container(
@@ -272,58 +333,22 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
                 width: 2,
               ),
             ),
+
             child: image != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(image, width: double.infinity, height: double.infinity, fit: BoxFit.cover),
-                  )
+                    child: Image.file(image, width: double.infinity, fit: BoxFit.cover))
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.camera_alt_outlined, size: 40, color: Colors.grey[600]),
                       const SizedBox(height: 16),
-                      Text('Tap to upload', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+                      Text('Tap to upload', style: GoogleFonts.poppins(fontSize: 14)),
                     ],
                   ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildContinueButton() {
-    final canContinue = _selectedIdType != null && _frontImage != null && _backImage != null;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: canContinue
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SelfieScreen(verification: widget.verification),
-                    ),
-                  );
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: canContinue ? const Color(0xFFCDFE3D) : Colors.grey[300],
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-            elevation: 0,
-          ),
-          child: Text(
-            'Continue',
-            style: GoogleFonts.poppins(
-              color: canContinue ? Colors.black : Colors.grey[500],
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
