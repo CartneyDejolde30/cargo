@@ -188,7 +188,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withAlpha((0.2 * 255).round()),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),

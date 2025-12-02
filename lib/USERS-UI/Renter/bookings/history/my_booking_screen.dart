@@ -4,6 +4,7 @@ import 'booking_card_widget.dart';
 import 'booking_empty_state_widget.dart';
 import 'temp_booking_data.dart';
 import 'booking_tabs_widget.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -15,6 +16,7 @@ class MyBookingsScreen extends StatefulWidget {
 class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _currentTabIndex = 0;
+  int _selectedNavIndex = 1; // Bookings tab is index 1
 
   @override
   void initState() {
@@ -48,6 +50,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     }
   }
 
+  void _handleNavigation(int index) {
+    setState(() => _selectedNavIndex = index);
+    // Navigation is handled by BottomNavBar widget
+  }
+
   @override
   Widget build(BuildContext context) {
     final bookings = _getBookingsForTab();
@@ -57,6 +64,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: Text(
           'My Bookings',
           style: GoogleFonts.poppins(
@@ -69,23 +77,23 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       ),
       body: Column(
         children: [
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildTabBar(),
-          SizedBox(height: 24),
+          const SizedBox(height: 16),
           Expanded(
             child: bookings.isEmpty
                 ? BookingEmptyStateWidget(
                     onBrowseCars: () {
-                      // Navigate to car browse screen
-                      print('Browse cars tapped');
+                      // Navigate to home/car browse screen
+                      Navigator.pushNamed(context, '/renters');
                     },
                   )
                 : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100), // Added bottom padding for nav bar
                     itemCount: bookings.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: BookingCardWidget(
                           booking: bookings[index],
                           status: _getStatusForTab(),
@@ -95,6 +103,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                   ),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _selectedNavIndex,
+        onTap: _handleNavigation,
       ),
     );
   }
@@ -114,21 +126,21 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     }
   }
 
- Widget _buildTabBar() {
-  return BookingTabsWidget(
-    currentTabIndex: _currentTabIndex,
-    onTabChanged: (index) {
-      _tabController.animateTo(index);
-    },
-    // Optional: Add badge counts
-    badgeCounts: [
-      TempBookingData.activeBookings.length,
-      TempBookingData.pendingBookings.length,
-      TempBookingData.upcomingBookings.length,
-      TempBookingData.pastBookings.length,
-    ],
-  );
-}
+  Widget _buildTabBar() {
+    return BookingTabsWidget(
+      currentTabIndex: _currentTabIndex,
+      onTabChanged: (index) {
+        _tabController.animateTo(index);
+      },
+      // Optional: Add badge counts
+      badgeCounts: [
+        TempBookingData.activeBookings.length,
+        TempBookingData.pendingBookings.length,
+        TempBookingData.upcomingBookings.length,
+        TempBookingData.pastBookings.length,
+      ],
+    );
+  }
 
   Widget _buildTab(String label, int index) {
     bool isSelected = _currentTabIndex == index;
@@ -138,7 +150,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
           _tabController.animateTo(index);
         },
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? Colors.black : Colors.transparent,
             borderRadius: BorderRadius.circular(10),

@@ -747,7 +747,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       CircleMarker(
         point: pos,
         radius: _radius * 1000, // Convert km to meters
-        color: Colors.green.withOpacity(0.3),
+        color: Colors.green.withAlpha((0.05 * 255).round()),
         borderColor: Colors.green,
         borderStrokeWidth: 2,
         useRadiusInMeter: true,
@@ -865,7 +865,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       border: Border.all(color: Colors.grey.shade300),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                           color: Colors.black.withAlpha((0.1 * 255).round()),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

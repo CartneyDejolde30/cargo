@@ -1,5 +1,4 @@
 //import 'package:supabase_flutter/supabase_flutter.dart';
-import 'booking_model.dart';
 
 /*class BookingService {
  final SupabaseClient _supabase = Supabase.instance.client;

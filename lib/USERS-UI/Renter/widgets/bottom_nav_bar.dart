@@ -19,11 +19,11 @@ class BottomNavBar extends StatelessWidget {
       case 0: // Home
         Navigator.pushReplacementNamed(context, '/renters');
         break;
-      case 1: // Search
-        Navigator.pushReplacementNamed(context, '/car_list');
-        break;
-      case 2: // Orders/Bookings
+      case 1: // Bookings
         Navigator.pushReplacementNamed(context, '/my_bookings');
+        break;
+      case 2: // Notifications
+        Navigator.pushReplacementNamed(context, '/my_notifications');
         break;
       case 3: // Chats
         Navigator.pushReplacementNamed(context, '/chat_list');
@@ -45,7 +45,7 @@ class BottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha((0.1 * 255).round()),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -65,13 +65,13 @@ class BottomNavBar extends StatelessWidget {
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.search_rounded,
+                icon: Icons.book,
                 index: 1,
                 isActive: currentIndex == 1,
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.shopping_bag_outlined,
+                icon: Icons.notifications,
                 index: 2,
                 isActive: currentIndex == 2,
               ),

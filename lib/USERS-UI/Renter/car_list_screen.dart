@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
-
+import '../Renter/search_filter_screen.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_detail_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
@@ -22,7 +22,7 @@ class CarListScreen extends StatefulWidget {
 class _CarListScreenState extends State<CarListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
-  int _selectedNavIndex = 1;
+  int _selectedNavIndex = 0;
 
   List<Map<String, dynamic>> _cars = [];
   bool _loading = true;
@@ -73,28 +73,55 @@ class _CarListScreenState extends State<CarListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  backgroundColor: Colors.white,
-  resizeToAvoidBottomInset: false, // 👈 this prevents overflow from keyboard
-  appBar: _buildAppBar(),
-  body: SafeArea(
-    child: _loading
-        ? _buildLoading()
-        : SingleChildScrollView(
-            child: _buildContent(),
-          ),
-  ),
-  bottomNavigationBar: BottomNavBar(
-    currentIndex: _selectedNavIndex,
-    onTap: _handleNavigation,
-  ),
-);
-
+      backgroundColor: Colors.grey.shade50,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: _loading
+            ? _buildLoading()
+            : CustomScrollView(
+                slivers: [
+                  _buildSliverAppBar(),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(20),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _buildSearchBar(),
+                        const SizedBox(height: 20),
+                        _buildCategoryFilter(),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Newly Listed",
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ]),
+                    ),
+                  ),
+                  _buildCarGrid(),
+                ],
+              ),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _selectedNavIndex,
+        onTap: _handleNavigation,
+      ),
+    );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
       backgroundColor: Colors.white,
       elevation: 0,
+      pinned: false,
+      floating: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () => Navigator.pop(context),
@@ -109,92 +136,56 @@ class _CarListScreenState extends State<CarListScreen> {
       ),
       centerTitle: true,
       actions: [
-        IconButton(icon: const Icon(Icons.more_vert, color: Colors.black), onPressed: () {}),
+        IconButton(
+          icon: const Icon(Icons.more_vert, color: Colors.black),
+          onPressed: () {},
+        ),
       ],
     );
   }
 
   Widget _buildLoading() => const Center(child: CircularProgressIndicator());
 
-  Widget _buildContent() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-          _buildCategoryFilter(),
-          const SizedBox(height: 24),
-
-          Text(
-            "Available Cars",
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: _cars.length,
-            itemBuilder: (context, index) {
-              final car = _cars[index];
-              return _buildCarCard(
-                carId: int.tryParse(car['id'].toString()) ?? 0,
-                name: "${car['brand']} ${car['model']}",
-                rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-                location: car['location'].isEmpty ? "Unknown" : car['location'],
-                price: "₱${car['price']}/day",
-                image: getImageUrl(car['image']),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSearchBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                const Icon(Icons.search, color: Colors.grey, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: "Search your dream car...",
-                      hintStyle: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SearchFilterScreen(),
           ),
+        );
+
+        if (result != null && result is Map<String, dynamic>) {
+          print("Search parameters: $result");
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.tune, size: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.search, color: Colors.grey, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Search your dream car...",
+                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -214,14 +205,24 @@ class _CarListScreenState extends State<CarListScreen> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.grey.shade100,
+                color: isSelected ? Colors.black : Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [],
               ),
               child: Text(
                 category,
                 style: GoogleFonts.poppins(
                   color: isSelected ? Colors.white : Colors.black,
                   fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),
@@ -231,13 +232,49 @@ class _CarListScreenState extends State<CarListScreen> {
     );
   }
 
+  Widget _buildCarGrid() {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.7,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final car = _cars[index];
+            return _buildCarCard(
+              carId: int.tryParse(car['id'].toString()) ?? 0,
+              name: "${car['brand']} ${car['model']}",
+              year: car['car_year'] ?? "",
+              rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+              location: car['location'].isEmpty ? "Unknown" : car['location'],
+              price: car['price'],
+              seats: int.tryParse(car['seat'].toString()) ?? 4,
+              transmission: car['transmission'] ?? "Automatic",
+              image: getImageUrl(car['image']),
+              hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
+            );
+          },
+          childCount: _cars.length,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCarCard({
     required int carId,
     required String name,
+    required String year,
     required double rating,
     required String location,
     required String price,
+    required int seats,
+    required String transmission,
     required String image,
+    bool hasUnlimitedMileage = false,
   }) {
     return GestureDetector(
       onTap: () {
@@ -260,40 +297,137 @@ class _CarListScreenState extends State<CarListScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                image,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 80),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.orange, size: 12),
-                      const SizedBox(width: 4),
-                      Text(rating.toString(), style: GoogleFonts.poppins(fontSize: 11)),
-                    ],
+            // Image with badge
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    image,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 140,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(location, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  Text(price, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
-                ],
+                ),
+                if (hasUnlimitedMileage)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "Unlimited Mileage",
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            // Car Details
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Price
+                    Text(
+                      "₱${price}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Car Name & Year
+                    Text(
+                      "$name $year",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Location & Rating
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Specs
+                    Row(
+                      children: [
+                        Icon(Icons.event_seat, size: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$seats-seater",
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.speed, size: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            transmission,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

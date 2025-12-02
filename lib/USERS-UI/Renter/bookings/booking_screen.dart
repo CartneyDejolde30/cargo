@@ -392,7 +392,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 bookWithDriver = value;
               });
             },
-            activeColor: Colors.black,
+            activeThumbColor: Colors.black,
           ),
         ],
       ),
@@ -674,7 +674,7 @@ class _BookingScreenState extends State<BookingScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+             color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: Offset(0, -5),
           ),

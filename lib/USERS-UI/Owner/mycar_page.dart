@@ -230,7 +230,7 @@ class _MyCarPageState extends State<MyCarPage> {
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: Colors.grey.shade300),
       boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 3)),
+        BoxShadow( color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 6, offset: const Offset(0, 3)),
       ],
     ),
     child: Column(

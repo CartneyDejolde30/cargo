@@ -189,7 +189,7 @@ class _NotificationPageState extends State<NotificationPage> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12.withOpacity(0.08),
+               color: Colors.black.withAlpha((0.08 * 255).round()),
               blurRadius: 6,
               offset: const Offset(0, 2),
             )

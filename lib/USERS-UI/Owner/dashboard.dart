@@ -29,12 +29,10 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // 🔹 Clean Light Header Style
             Container(
               width: double.infinity,
@@ -44,7 +42,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 10,
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withAlpha((0.05 * 255).round()),
                     offset: const Offset(0, 3),
                   )
                 ],
@@ -56,7 +54,6 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -75,14 +72,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
-
                   Text(
                     "Welcome back 👋",
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
-
                   Text(
                     userName,
                     style: const TextStyle(
@@ -98,9 +92,9 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 25),
 
             // 🔹 Stats Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: const Text(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18),
+              child: Text(
                 "Overview",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
@@ -129,9 +123,9 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 30),
 
             // 🔹 Actions Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: const Text(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18),
+              child: Text(
                 "Actions",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
@@ -144,47 +138,45 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 children: [
                   ActionButton(
-                      title: "Pending Requests",
-                      count: 2,
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFb58900), 
-                          Color(0xFF8b6f00),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PendingRequestsPage()),
-                        );
-                      },
+                    title: "Pending Requests",
+                    count: 2,
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFb58900),
+                        Color(0xFF8b6f00),
+                      ],
                     ),
-
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PendingRequestsPage()),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 14),
                   ActionButton(
-                      title: "Active Bookings",
-                      count: 3,
-                      gradient: const LinearGradient(
-                        colors: [Colors.blueAccent, Colors.lightBlue],
-                      ),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ActiveBookingsPage()),
-                      ),
+                    title: "Active Bookings",
+                    count: 3,
+                    gradient: const LinearGradient(
+                      colors: [Colors.blueAccent, Colors.lightBlue],
                     ),
-
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ActiveBookingsPage()),
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 50),
+            const SizedBox(height: 20), // Reduced space since no bottom nav here
           ],
         ),
       ),
+      // NO BOTTOM NAVIGATION BAR - It's in OwnerHomeScreen
     );
   }
 }
-
 
 // ==================== COMPONENTS ====================
 
@@ -192,7 +184,12 @@ class StatCard extends StatelessWidget {
   final String title, value;
   final IconData icon;
 
-  const StatCard({required this.title, required this.value, required this.icon, super.key});
+  const StatCard({
+    required this.title, 
+    required this.value, 
+    required this.icon, 
+    super.key
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +206,11 @@ class StatCard extends StatelessWidget {
           const Spacer(),
           Text(
             title,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 14, 
+              color: Colors.grey.shade700, 
+              fontWeight: FontWeight.w600
+            ),
           ),
           Text(
             value,
@@ -249,8 +250,22 @@ class ActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-            Text("$count", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              title, 
+              style: const TextStyle(
+                color: Colors.white, 
+                fontSize: 17, 
+                fontWeight: FontWeight.bold
+              )
+            ),
+            Text(
+              "$count", 
+              style: const TextStyle(
+                color: Colors.white, 
+                fontSize: 20, 
+                fontWeight: FontWeight.bold
+              )
+            ),
           ],
         ),
       ),
