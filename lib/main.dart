@@ -8,13 +8,10 @@ import 'package:flutter_application_1/USERS-UI/Renter/profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/mycar_page.dart'; 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-<<<<<<< HEAD
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-=======
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/booking_screen.dart'; // Booking form
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart'; // ✅ Add this new import
->>>>>>> bb48e6c074f231da35874910dd0eada0e24359ad
+import 'package:flutter_application_1/USERS-UI/Renter/bookings/booking_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -92,18 +89,12 @@ class MyApp extends StatelessWidget {
         '/renters': (context) => const HomeScreen(),
         '/car_list': (context) => const CarListScreen(),
         '/chat_list': (context) => const ChatListScreen(),
-<<<<<<< HEAD
-        "/profile": (context) => const ProfileScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/my_bookings': (context) => const MyBookingsScreen(),
         '/mycars': (context) {
-  final ownerId = ModalRoute.of(context)!.settings.arguments as int;
-  return MyCarPage(ownerId: ownerId);
-},
-
-=======
-        '/my_bookings': (context) => const MyBookingsScreen(), // ✅ Changed this to MyBookingsScreen
-        // You might also want to add a route for the booking form if needed:
-        // '/booking': (context) => const BookingScreen(...), // This needs parameters though
->>>>>>> bb48e6c074f231da35874910dd0eada0e24359ad
+          final ownerId = ModalRoute.of(context)!.settings.arguments as int;
+          return MyCarPage(ownerId: ownerId);
+        },
       },
     );
   }
