@@ -36,7 +36,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   Map<String, dynamic>? carData;
   List<dynamic> reviews = [];
 
-  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
+  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
   final prefs = await SharedPreferences.getInstance();

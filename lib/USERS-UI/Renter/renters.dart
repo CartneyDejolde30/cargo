@@ -43,11 +43,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     String cleanPath = rawPath.replaceFirst("uploads/", "");
 
-    return "http://192.168.1.11/carGOAdmin/uploads/$cleanPath";
+    return "http://10.72.15.180/carGOAdmin/uploads/$cleanPath";
   }
 
   Future<void> fetchCars() async {
-    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_cars.php";
+    final String apiUrl = "http://10.72.15.180/carGOAdmin/api/get_cars.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
