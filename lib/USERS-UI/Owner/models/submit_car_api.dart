@@ -41,7 +41,7 @@ Future<bool> submitCarListing({
     "has_unlimited_mileage": listing.hasUnlimitedMileage ? "1" : "0",
     "mileage_limit": listing.mileageLimit.toString(),
 
-    "price_per_day": listing.dailyRate.toString(), // FIXED NAME!
+    "price_per_day": listing.dailyRate.toString(), 
     "location": listing.location ?? "",
     "latitude": listing.latitude.toString(),
     "longitude": listing.longitude.toString(),
@@ -68,7 +68,8 @@ if (crFile != null) {
 
   if (extraPhotos.isNotEmpty) {
     for (var file in extraPhotos) {
-      request.files.add(await http.MultipartFile.fromPath("extra_images[]", file.path));
+      request.files.add(await http.MultipartFile.fromPath("extra_photos[]", file.path));
+
     }
     print("📤 Extra Images Uploaded: ${extraPhotos.length}");
   }

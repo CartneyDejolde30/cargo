@@ -45,12 +45,15 @@ class _MessagePageState extends State<MessagePage> {
     return members.first == currentUserId ? members.last : members.first;
   }
 
+  bool isValidUrl(String url) {
+    return url.startsWith("http");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      /// ======= TOP BAR =======
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
@@ -76,7 +79,6 @@ class _MessagePageState extends State<MessagePage> {
           : Column(
               children: [
 
-                /// 🔍 SEARCH BAR
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: TextField(
@@ -101,10 +103,12 @@ class _MessagePageState extends State<MessagePage> {
                     stream: getChats(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator(color: Colors.black));
+                        return const Center(
+                            child: CircularProgressIndicator(color: Colors.black));
                       }
 
                       final chats = snapshot.data!.docs;
+
                       if (chats.isEmpty) {
                         return Center(
                           child: Text(
@@ -116,8 +120,7 @@ class _MessagePageState extends State<MessagePage> {
 
                       return Column(
                         children: [
-                          
-                          /// ====== STORY BUBBLES ======
+
                           SizedBox(
                             height: 95,
                             child: ListView.builder(
@@ -129,13 +132,16 @@ class _MessagePageState extends State<MessagePage> {
                                 final userId = extractOtherUser(chatDoc["members"]);
 
                                 return FutureBuilder<DocumentSnapshot>(
-                                  future: FirebaseFirestore.instance.collection("users").doc(userId).get(),
+                                  future: FirebaseFirestore.instance
+                                      .collection("users")
+                                      .doc(userId)
+                                      .get(),
                                   builder: (context, snapshot) {
                                     if (!snapshot.hasData) return const SizedBox();
 
                                     final user = snapshot.data!;
-                                    final avatar = user["profile_image"] ?? "";
-                                    final name = user["fullname"] ?? "User";
+                                    final avatar = user["avatar"] ?? "";
+                                    final name = user["name"] ?? "User";
 
                                     return Padding(
                                       padding: const EdgeInsets.only(right: 14),
@@ -143,33 +149,21 @@ class _MessagePageState extends State<MessagePage> {
                                         duration: Duration(milliseconds: 300 + (index * 60)),
                                         child: Column(
                                           children: [
-                                            Stack(
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 30,
-                                                  backgroundColor: Colors.grey.shade300,
-                                                  backgroundImage: avatar.isNotEmpty
-                                                      ? CachedNetworkImageProvider(avatar)
-                                                      : null,
-                                                  child: avatar.isEmpty
-                                                      ? const Icon(Icons.person, color: Colors.black, size: 28)
-                                                      : null,
-                                                ),
-                                                if (user["online"] == true)
-                                                  const Positioned(
-                                                    right: 0,
-                                                    bottom: 0,
-                                                    child: CircleAvatar(
-                                                      radius: 7,
-                                                      backgroundColor: Colors.green,
-                                                    ),
-                                                  ),
-                                              ],
+                                            CircleAvatar(
+                                              radius: 30,
+                                              backgroundColor: Colors.grey.shade300,
+                                              backgroundImage: isValidUrl(avatar)
+                                                  ? CachedNetworkImageProvider(avatar)
+                                                  : null,
+                                              child: !isValidUrl(avatar)
+                                                  ? const Icon(Icons.person, size: 28)
+                                                  : null,
                                             ),
                                             const SizedBox(height: 5),
                                             Text(
                                               name.split(" ").first,
-                                              style: const TextStyle(color: Colors.black, fontSize: 12),
+                                              style: const TextStyle(
+                                                  color: Colors.black, fontSize: 12),
                                             )
                                           ],
                                         ),
@@ -181,7 +175,6 @@ class _MessagePageState extends State<MessagePage> {
                             ),
                           ),
 
-                          /// ====== MESSAGE LIST ======
                           Expanded(
                             child: ListView.builder(
                               itemCount: chats.length,
@@ -191,115 +184,58 @@ class _MessagePageState extends State<MessagePage> {
                                 final userId = extractOtherUser(chatDoc["members"]);
 
                                 return FutureBuilder<DocumentSnapshot>(
-                                  future: FirebaseFirestore.instance.collection("users").doc(userId).get(),
+                                  future: FirebaseFirestore.instance
+                                      .collection("users")
+                                      .doc(userId)
+                                      .get(),
                                   builder: (context, snap) {
                                     if (!snap.hasData) return const SizedBox();
 
                                     final user = snap.data!;
-                                    final avatar = user["profile_image"] ?? "";
-                                    final name = user["fullname"] ?? "Unknown";
+                                    final avatar = user["avatar"] ?? "";
+                                    final name = user["name"] ?? "Unknown";
                                     final lastMessage = chatDoc["lastMessage"] ?? "";
 
-                                    if (searchQuery.isNotEmpty &&
-                                        !name.toLowerCase().contains(searchQuery.toLowerCase())) {
-                                      return const SizedBox();
-                                    }
-
-                                    return StreamBuilder(
-                                      stream: chatDoc.reference
-                                          .collection("messages")
-                                          .where("receiverId", isEqualTo: currentUserId)
-                                          .where("seen", isEqualTo: false)
-                                          .snapshots(),
-                                      builder: (context, unreadSnap) {
-                                        final unread = unreadSnap.data?.docs.length ?? 0;
-
-                                        return SlideInUp(
-                                          duration: Duration(milliseconds: 350 + index * 80),
-                                          child: Slidable(
-                                            endActionPane: ActionPane(
-                                              motion: const DrawerMotion(),
-                                              children: [
-                                                SlidableAction(
-                                                  onPressed: (_) {},
-                                                  backgroundColor: Colors.blue,
-                                                  icon: Icons.archive,
-                                                ),
-                                                SlidableAction(
-                                                  onPressed: (_) {},
-                                                  backgroundColor: Colors.red,
-                                                  icon: Icons.delete,
-                                                ),
-                                              ],
-                                            ),
-
-                                            child: Container(
-                                              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                              padding: const EdgeInsets.symmetric(vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey.shade100,
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-
-                                              child: ListTile(
-                                                leading: CircleAvatar(
-                                                  radius: 26,
-                                                  backgroundColor: Colors.grey.shade300,
-                                                  backgroundImage: avatar.isNotEmpty
-                                                      ? CachedNetworkImageProvider(avatar)
-                                                      : null,
-                                                  child: avatar.isEmpty
-                                                      ? const Icon(Icons.person, color: Colors.black54)
-                                                      : null,
-                                                ),
-
-                                                title: Text(
-                                                  name,
-                                                  style: GoogleFonts.poppins(
-                                                    fontWeight: unread > 0 ? FontWeight.bold : FontWeight.w500,
-                                                    color: Colors.black,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-
-                                                subtitle: Text(
-                                                  lastMessage == "typing..." ? "Typing..." : lastMessage,
-                                                  maxLines: 1,
-                                                  style: TextStyle(
-                                                    fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
-                                                    color: unread > 0 ? Colors.black : Colors.grey.shade600,
-                                                  ),
-                                                ),
-
-                                                trailing: unread > 0
-                                                    ? CircleAvatar(
-                                                        radius: 13,
-                                                        backgroundColor: Colors.blueAccent,
-                                                        child: Text(
-                                                          unread.toString(),
-                                                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                                                        ),
-                                                      )
-                                                    : Icon(Icons.check, size: 16, color: Colors.grey.shade600),
-
-                                                onTap: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) => ChatDetailScreen(
-                                                        chatId: chatDoc.id,
-                                                        peerId: userId,
-                                                        peerName: name,
-                                                        peerAvatar: avatar,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
+                                    return SlideInUp(
+                                      duration: Duration(milliseconds: 350 + index * 80),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          radius: 26,
+                                          backgroundColor: Colors.grey.shade300,
+                                          backgroundImage: isValidUrl(avatar)
+                                              ? CachedNetworkImageProvider(avatar)
+                                              : null,
+                                          child: !isValidUrl(avatar)
+                                              ? const Icon(Icons.person)
+                                              : null,
+                                        ),
+                                        title: Text(
+                                          name,
+                                          style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        subtitle: Text(
+                                          lastMessage == "typing..."
+                                              ? "Typing..."
+                                              : lastMessage,
+                                          maxLines: 1,
+                                          style:
+                                              TextStyle(color: Colors.grey.shade600),
+                                        ),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ChatDetailScreen(
+                                                chatId: chatDoc.id,
+                                                peerId: userId,
+                                                peerName: name,
+                                                peerAvatar: avatar,
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
+                                          );
+                                        },
+                                      ),
                                     );
                                   },
                                 );

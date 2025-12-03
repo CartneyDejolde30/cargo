@@ -1,10 +1,5 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/edit_profile_screen.dart';
 

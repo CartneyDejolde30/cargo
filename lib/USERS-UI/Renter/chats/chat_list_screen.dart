@@ -88,7 +88,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
-  // ---------- UI COMPONENTS ----------
+  // ---------------- UI ----------------
 
   Widget _appBar() {
     return Container(
@@ -170,8 +170,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         if (!snapshot.hasData) return const SizedBox();
 
         final user = snapshot.data!;
-        final img = user["profile_image"] ?? "";
-        final name = (user["fullname"] ?? "").split(" ").first;
+        final name = user.data().toString().contains("name") ? user["name"] : "User";
+        final img = user.data().toString().contains("avatar") ? user["avatar"] : "";
 
         return FadeInUp(
           duration: Duration(milliseconds: 200 + (index * 60)),
@@ -182,11 +182,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: Colors.grey.shade300,
-                  backgroundImage: img.startsWith("http") ? NetworkImage(img) : null,
+                  backgroundImage: img.isNotEmpty ? NetworkImage(img) : null,
                   child: img.isEmpty ? const Icon(Icons.person, size: 28, color: Colors.black54) : null,
                 ),
                 const SizedBox(height: 5),
-                Text(name, style: const TextStyle(fontSize: 11)),
+                Text(name.split(" ").first, style: const TextStyle(fontSize: 11)),
               ],
             ),
           ),
@@ -211,8 +211,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     List members = chat["members"];
     String peerId = members.first == currentUserId ? members.last : members.first;
 
+    bool isTyping = chat.data().toString().contains("${peerId}_typing")
+        ? chat["${peerId}_typing"]
+        : false;
+
     bool isUnread = chat["lastSender"] != currentUserId && chat["seen"] == false;
-    bool isTyping = chat["${peerId}_typing"] == true;
 
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection("users").doc(peerId).get(),
@@ -220,8 +223,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         if (!snapshot.hasData) return const SizedBox(height: 65);
 
         final user = snapshot.data!;
-        final name = user["fullname"] ?? "User";
-        final img = user["profile_image"] ?? "";
+        final name = user.data().toString().contains("name") ? user["name"] : "User";
+        final img = user.data().toString().contains("avatar") ? user["avatar"] : "";
 
         return FadeInUp(
           duration: Duration(milliseconds: 200 + index * 80),

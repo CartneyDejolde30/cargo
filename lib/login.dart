@@ -121,7 +121,7 @@ Future<void> _setupNotifications() async {
       "vehicles": [],
       "rating": 0,
       "status": "active",
-      "fcm": token,   // <-- Save token for new user also
+      "fcm": token,  
     });
   }
 }

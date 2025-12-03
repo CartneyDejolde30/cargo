@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/notification_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -10,25 +12,40 @@ class BottomNavBar extends StatelessWidget {
     required this.onTap,
   });
 
+  // ✅ FIX: Add this function INSIDE BottomNavBar
+  void _openNotifications(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    int userId = int.tryParse(prefs.getString("user_id") ?? "0") ?? 0;
+
+    print("📌 Loaded User ID for Notifications: $userId");
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationScreen(userId: userId),
+      ),
+    );
+  }
+
   void _handleNavigation(BuildContext context, int index) {
     // Call the onTap callback first
     onTap(index);
-    
-    // Navigate to specific screens
+
     switch (index) {
-      case 0: // Home
+      case 0:
         Navigator.pushReplacementNamed(context, '/renters');
         break;
-      case 1: // Search
-        Navigator.pushReplacementNamed(context, '/car_list');
-        break;
-      case 2: // Orders/Bookings
+      case 1:
         Navigator.pushReplacementNamed(context, '/my_bookings');
         break;
-      case 3: // Chats
+      case 2:
+        _openNotifications(context);   // ✅ FIXED
+        break;
+      case 3:
         Navigator.pushReplacementNamed(context, '/chat_list');
         break;
-      case 4: // Profile
+      case 4:
         Navigator.pushReplacementNamed(context, '/profile');
         break;
     }
@@ -45,7 +62,7 @@ class BottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha((0.1 * 255).round()),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -57,36 +74,11 @@ class BottomNavBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(
-                context: context,
-                icon: Icons.home_rounded,
-                index: 0,
-                isActive: currentIndex == 0,
-              ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.search_rounded,
-                index: 1,
-                isActive: currentIndex == 1,
-              ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.shopping_bag_outlined,
-                index: 2,
-                isActive: currentIndex == 2,
-              ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.chat_bubble_outline_rounded, // Changed to chat icon
-                index: 3,
-                isActive: currentIndex == 3,
-              ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.person_outline_rounded,
-                index: 4,
-                isActive: currentIndex == 4,
-              ),
+              _buildNavItem(context, Icons.home_rounded, 0, currentIndex == 0),
+              _buildNavItem(context, Icons.book, 1, currentIndex == 1),
+              _buildNavItem(context, Icons.notifications, 2, currentIndex == 2),
+              _buildNavItem(context, Icons.chat_bubble_outline_rounded, 3, currentIndex == 3),
+              _buildNavItem(context, Icons.person_outline_rounded, 4, currentIndex == 4),
             ],
           ),
         ),
@@ -94,12 +86,8 @@ class BottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem({
-    required BuildContext context,
-    required IconData icon,
-    required int index,
-    required bool isActive,
-  }) {
+  Widget _buildNavItem(
+      BuildContext context, IconData icon, int index, bool isActive) {
     return GestureDetector(
       onTap: () => _handleNavigation(context, index),
       child: Container(

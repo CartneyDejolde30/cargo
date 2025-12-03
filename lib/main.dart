@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/notification_screen.dart';
 import 'onboarding.dart';
 import 'login.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart'; 
@@ -102,10 +103,12 @@ class MyApp extends StatelessWidget {
         // '/booking': (context) => const BookingScreen(...), // This needs parameters though
         '/profile': (context) => const ProfileScreen(),
         '/my_bookings': (context) => const MyBookingsScreen(),
+       
         '/mycars': (context) {
           final ownerId = ModalRoute.of(context)!.settings.arguments as int;
           return MyCarPage(ownerId: ownerId);
         },
+        
       },
     );
   }
