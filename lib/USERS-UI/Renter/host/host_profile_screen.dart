@@ -43,29 +43,67 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   }
 
   Future<void> fetchOwnerProfile() async {
-    final url = Uri.parse("${baseUrl}api/get_owner_profile.php?owner_id=${widget.ownerId}");
+  final url = Uri.parse("${baseUrl}api/get_owner_profile.php?owner_id=${widget.ownerId}");
 
-    try {
-      final response = await http.get(url);
+  // ✅ Enhanced debug logs
+  print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  print("🔍 FETCHING OWNER PROFILE");
+  print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  print("Owner ID: ${widget.ownerId}");
+  print("Owner ID Type: ${widget.ownerId.runtimeType}");
+  print("Owner Name: ${widget.ownerName}");
+  print("URL: $url");
+  print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
+  try {
+    final response = await http.get(url);
+    
+    print("📡 Response Status: ${response.statusCode}");
+    print("📦 Response Body: ${response.body}");
 
-        if (result["status"] == "success") {
-          setState(() {
-            ownerData = result["owner"];
-            totalCars = result["total_cars"] ?? 0;
-            totalReviews = result["total_reviews"] ?? 0;
-            averageRating = double.tryParse(result["average_rating"].toString()) ?? 0.0;
-            loading = false;
-          });
-        }
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+
+      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      print("📊 API RESPONSE:");
+      print("Status: ${result["status"]}");
+      
+      if (result["status"] == "success") {
+        print("✅ SUCCESS - Owner Data:");
+        print("  - Owner Name: ${result["owner"]?["fullname"]}");
+        print("  - Total Cars: ${result["total_cars"]}");
+        print("  - Total Reviews: ${result["total_reviews"]}");
+        print("  - Average Rating: ${result["average_rating"]}");
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        
+        setState(() {
+          ownerData = result["owner"];
+          totalCars = result["total_cars"] ?? 0;
+          totalReviews = result["total_reviews"] ?? 0;
+          averageRating = double.tryParse(result["average_rating"].toString()) ?? 0.0;
+          loading = false;
+        });
+        
+        print("✅ State Updated:");
+        print("  - totalCars in state: $totalCars");
+        print("  - totalReviews in state: $totalReviews");
+      } else {
+        print("❌ API Error: ${result["message"]}");
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        setState(() => loading = false);
       }
-    } catch (e) {
-      print("❌ ERROR FETCHING OWNER PROFILE: $e");
+    } else {
+      print("❌ HTTP Error: ${response.statusCode}");
       setState(() => loading = false);
     }
+  } catch (e) {
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    print("❌ EXCEPTION CAUGHT:");
+    print("Error: $e");
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    setState(() => loading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -395,3 +433,4 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
     );
   }
 }
+

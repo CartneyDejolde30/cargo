@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../bookings/pricing/pricing_calculator.dart';
+import 'map_route_screen.dart'; 
 
 class BookingScreen extends StatefulWidget {
   final int carId;
@@ -14,6 +17,10 @@ class BookingScreen extends StatefulWidget {
   final String? userFullName;
   final String? userEmail;
   final String? userMunicipality;
+  
+  // Owner location coordinates (optional)
+  final double? ownerLatitude;
+  final double? ownerLongitude;
 
   const BookingScreen({
     super.key,
@@ -26,6 +33,8 @@ class BookingScreen extends StatefulWidget {
     this.userFullName,
     this.userEmail,
     this.userMunicipality,
+    this.ownerLatitude,
+    this.ownerLongitude,
   });
 
   @override
@@ -34,8 +43,7 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   int currentStep = 0;
-  bool bookWithDriver = false;
-  String selectedGender = 'Male';
+  bool needsDelivery = false;
   String selectedPeriod = 'Day';
 
   // Controllers
@@ -48,21 +56,14 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? returnDate;
   TimeOfDay pickupTime = TimeOfDay(hour: 9, minute: 0);
   TimeOfDay returnTime = TimeOfDay(hour: 17, minute: 0);
+  
+  BookingPriceBreakdown? priceBreakdown;
 
   double get basePrice => double.tryParse(widget.pricePerDay) ?? 0;
-  double driverFee = 500; // Per day driver fee
 
   int get numberOfDays {
     if (pickupDate == null || returnDate == null) return 1;
     return returnDate!.difference(pickupDate!).inDays + 1;
-  }
-
-  double get totalAmount {
-    double total = basePrice * numberOfDays;
-    if (bookWithDriver) {
-      total += driverFee * numberOfDays;
-    }
-    return total;
   }
 
   @override
@@ -74,6 +75,64 @@ class _BookingScreenState extends State<BookingScreen> {
     }
     if (widget.userEmail != null && widget.userEmail!.isNotEmpty) {
       emailController.text = widget.userEmail!;
+    }
+    _calculatePrice();
+  }
+
+  @override
+  void dispose() {
+    fullNameController.dispose();
+    emailController.dispose();
+    contactController.dispose();
+    super.dispose();
+  }
+
+  void _calculatePrice() {
+    setState(() {
+      priceBreakdown = PricingCalculator.calculatePrice(
+        pricePerDay: basePrice,
+        numberOfDays: numberOfDays,
+        withDriver: false,
+        rentalPeriod: selectedPeriod,
+        needsDelivery: needsDelivery,
+        deliveryDistance: 5.0,
+        includeInsurance: false,
+      );
+    });
+  }
+
+  Future<void> _openMapDirections() async {
+    if (widget.ownerLatitude != null && widget.ownerLongitude != null) {
+      // Navigate to the MapRouteScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MapRouteScreen(
+            destinationLat: widget.ownerLatitude!,
+            destinationLng: widget.ownerLongitude!,
+            locationName: widget.location,
+            carName: widget.carName,
+          ),
+        ),
+      );
+    } else {
+      // If no coordinates, try to open external maps by location name
+      final searchUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(widget.location)}'
+      );
+      
+      if (await canLaunchUrl(searchUrl)) {
+        await launchUrl(searchUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Unable to open maps application'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -107,6 +166,7 @@ class _BookingScreenState extends State<BookingScreen> {
         } else {
           returnDate = picked;
         }
+        _calculatePrice();
       });
     }
   }
@@ -160,26 +220,33 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
-          _buildProgressIndicator(),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDriverToggle(),
+                  // Car Info Card
+                  _buildCarInfoCard(),
+                  SizedBox(height: 24),
+
+                  // Delivery Toggle
+                  _buildDeliveryToggle(),
                   SizedBox(height: 24),
 
                   // User Information Section
+                  Text(
+                    'Renter Information',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+
                   _buildTextField(
                     controller: fullNameController,
                     label: 'Full Name',
@@ -206,23 +273,11 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   SizedBox(height: 24),
 
-                  // Gender Selection
-                  Text(
-                    'Gender',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  _buildGenderSelection(),
-                  SizedBox(height: 24),
-
                   // Rental Period
                   Text(
-                    'Rental Date & Time',
+                    'Rental Period',
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -274,16 +329,20 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   SizedBox(height: 24),
 
-                  // Car Location
+                  // Car Location with Map Button
                   Text(
                     'Car Location',
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: 12),
-                  _buildLocationDisplay(),
+                  _buildLocationWithMap(),
+                  SizedBox(height: 24),
+
+                  // Price Breakdown
+                  _buildPriceBreakdown(),
                   SizedBox(height: 100),
                 ],
               ),
@@ -295,65 +354,72 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildProgressIndicator() {
+  Widget _buildCarInfoCard() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         children: [
-          _buildStepIndicator(0, 'Booking details'),
-          Expanded(child: _buildConnector(0)),
-          _buildStepIndicator(1, 'Payment methods'),
-          Expanded(child: _buildConnector(1)),
-          _buildStepIndicator(2, 'confirmation'),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              widget.carImage,
+              width: 80,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 80,
+                height: 60,
+                color: Colors.grey.shade300,
+                child: Icon(Icons.directions_car),
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.carName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                    SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.location,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStepIndicator(int step, String label) {
-    bool isActive = currentStep >= step;
-    return Column(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isActive ? Colors.black : Colors.white,
-            border: Border.all(
-              color: isActive ? Colors.black : Colors.grey.shade300,
-              width: 2,
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: isActive
-                ? Icon(Icons.check, color: Colors.white, size: 16)
-                : Container(),
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            color: isActive ? Colors.black : Colors.grey,
-            fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConnector(int step) {
-    bool isActive = currentStep > step;
-    return Container(
-      height: 2,
-      margin: EdgeInsets.only(bottom: 20),
-      color: isActive ? Colors.black : Colors.grey.shade300,
-    );
-  }
-
-  Widget _buildDriverToggle() {
+  Widget _buildDeliveryToggle() {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -368,7 +434,7 @@ class _BookingScreenState extends State<BookingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Book with driver',
+                  'Car Delivery',
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -376,23 +442,25 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Don\'t have a driver book with driver',
+                  'Base ₱${PricingCalculator.deliveryFeeBase.toStringAsFixed(0)} + ₱${PricingCalculator.deliveryFeePerKm}/km',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
           Switch(
-            value: bookWithDriver,
+            value: needsDelivery,
             onChanged: (value) {
               setState(() {
-                bookWithDriver = value;
+                needsDelivery = value;
+                _calculatePrice();
               });
             },
-            activeThumbColor: Colors.black,
+            activeColor: Colors.black,
           ),
         ],
       ),
@@ -450,59 +518,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildGenderSelection() {
-    return Row(
-      children: [
-        _buildGenderOption('Male', Icons.male),
-        SizedBox(width: 12),
-        _buildGenderOption('Female', Icons.female),
-        SizedBox(width: 12),
-        _buildGenderOption('Others', Icons.transgender),
-      ],
-    );
-  }
-
-  Widget _buildGenderOption(String gender, IconData icon) {
-    bool isSelected = selectedGender == gender;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selectedGender = gender;
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? Colors.black : Colors.grey.shade200,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.grey.shade600,
-                size: 24,
-              ),
-              SizedBox(height: 4),
-              Text(
-                gender,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildPeriodSelector() {
     return Row(
       children: [
@@ -517,11 +532,20 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildPeriodOption(String period) {
     bool isSelected = selectedPeriod == period;
+    String discountText = '';
+    
+    if (period == 'Weekly') {
+      discountText = ' (${(PricingCalculator.weeklyDiscountRate * 100).toStringAsFixed(0)}% off)';
+    } else if (period == 'Monthly') {
+      discountText = ' (${(PricingCalculator.monthlyDiscountRate * 100).toStringAsFixed(0)}% off)';
+    }
+    
     return Expanded(
       child: GestureDetector(
         onTap: () {
           setState(() {
             selectedPeriod = period;
+            _calculatePrice();
           });
         },
         child: Container(
@@ -533,14 +557,28 @@ class _BookingScreenState extends State<BookingScreen> {
               color: isSelected ? Colors.black : Colors.grey.shade300,
             ),
           ),
-          child: Text(
-            period,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
+          child: Column(
+            children: [
+              Text(
+                period,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              if (discountText.isNotEmpty)
+                Text(
+                  discountText,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    color: isSelected ? Colors.green.shade300 : Colors.green.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -580,7 +618,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 Expanded(
                   child: Text(
                     date != null
-                        ? DateFormat('dd January yyyy').format(date)
+                        ? DateFormat('dd MMMM yyyy').format(date)
                         : 'Select date',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -641,27 +679,190 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildLocationDisplay() {
+  Widget _buildLocationWithMap() {
     return Container(
-      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.location_on, color: Colors.red, size: 20),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              widget.location,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Colors.black87,
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.red, size: 20),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.location,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade200),
+          InkWell(
+            onTap: _openMapDirections,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.directions, color: Colors.blue.shade700, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'View Route on Map',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceBreakdown() {
+    if (priceBreakdown == null) return SizedBox();
+
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Price Breakdown',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          
+          _buildBreakdownRow(
+            'Base Rental',
+            '${PricingCalculator.formatCurrency(priceBreakdown!.baseRental)}',
+            subtitle: '₱${priceBreakdown!.pricePerDay.toStringAsFixed(0)} × ${priceBreakdown!.numberOfDays} days',
+          ),
+          
+          if (priceBreakdown!.discount > 0)
+            _buildBreakdownRow(
+              '${selectedPeriod} Discount',
+              '-${PricingCalculator.formatCurrency(priceBreakdown!.discount)}',
+              isDiscount: true,
+              subtitle: '${priceBreakdown!.discountPercentage.toStringAsFixed(1)}% off',
+            ),
+          
+          if (needsDelivery)
+            _buildBreakdownRow(
+              'Delivery Fee',
+              PricingCalculator.formatCurrency(priceBreakdown!.deliveryFee),
+            ),
+          
+          _buildBreakdownRow(
+            'Service Fee',
+            PricingCalculator.formatCurrency(priceBreakdown!.serviceFee),
+            subtitle: '5% platform fee',
+          ),
+          
+          Divider(height: 24, thickness: 1.5),
+          
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Amount',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                PricingCalculator.formatCurrency(priceBreakdown!.totalAmount),
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: 8),
+          Text(
+            'Effective rate: ${PricingCalculator.formatCurrency(priceBreakdown!.effectiveDailyRate)}/day',
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreakdownRow(
+    String label,
+    String amount, {
+    String? subtitle,
+    bool isDiscount = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                amount,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDiscount ? Colors.green.shade700 : Colors.black,
+                ),
+              ),
+            ],
+          ),
+          if (subtitle != null)
+            Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -674,7 +875,7 @@ class _BookingScreenState extends State<BookingScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-             color: Colors.black.withAlpha((0.05 * 255).round()),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, -5),
           ),
@@ -700,7 +901,9 @@ class _BookingScreenState extends State<BookingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '₱${totalAmount.toStringAsFixed(2)}',
+                priceBreakdown != null 
+                    ? PricingCalculator.formatCurrency(priceBreakdown!.totalAmount)
+                    : '₱0.00',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 16,
@@ -738,6 +941,10 @@ class _BookingScreenState extends State<BookingScreen> {
       _showError('Please enter your email');
       return false;
     }
+    if (!_isValidEmail(emailController.text.trim())) {
+      _showError('Please enter a valid email address');
+      return false;
+    }
     if (contactController.text.trim().isEmpty) {
       _showError('Please enter your contact number');
       return false;
@@ -753,11 +960,18 @@ class _BookingScreenState extends State<BookingScreen> {
     return true;
   }
 
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -765,58 +979,263 @@ class _BookingScreenState extends State<BookingScreen> {
   void _proceedToPayment() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Booking Summary',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text('Car: ${widget.carName}', style: GoogleFonts.poppins()),
-            Text('Days: $numberOfDays', style: GoogleFonts.poppins()),
-            Text('With Driver: ${bookWithDriver ? "Yes (+₱${driverFee * numberOfDays})" : "No"}',
-                style: GoogleFonts.poppins()),
-            Divider(),
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
+            SizedBox(width: 12),
             Text(
-              'Total: ₱${totalAmount.toStringAsFixed(2)}',
+              'Confirm Booking',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 18,
               ),
             ),
           ],
         ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSummaryRow('Car', widget.carName),
+              _buildSummaryRow('Rental Period', selectedPeriod),
+              _buildSummaryRow('Duration', '$numberOfDays day${numberOfDays > 1 ? "s" : ""}'),
+              _buildSummaryRow(
+                'Pickup',
+                pickupDate != null
+                    ? '${DateFormat('MMM dd, yyyy').format(pickupDate!)} at ${pickupTime.format(context)}'
+                    : 'Not set',
+              ),
+              _buildSummaryRow(
+                'Return',
+                returnDate != null
+                    ? '${DateFormat('MMM dd, yyyy').format(returnDate!)} at ${returnTime.format(context)}'
+                    : 'Not set',
+              ),
+              _buildSummaryRow('Delivery', needsDelivery ? 'Yes' : 'No'),
+              _buildSummaryRow('Location', widget.location),
+              Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Amount',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    PricingCalculator.formatCurrency(priceBreakdown!.totalAmount),
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You will be redirected to the payment gateway to complete your booking.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.poppins()),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Process payment and create booking
+              _processPayment();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text('Confirm', style: GoogleFonts.poppins(color: Colors.white)),
+            child: Text(
+              'Proceed to Payment',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  @override
-  void dispose() {
-    fullNameController.dispose();
-    emailController.dispose();
-    contactController.dispose();
-    super.dispose();
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _processPayment() {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.black),
+              SizedBox(height: 16),
+              Text(
+                'Processing payment...',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // TODO: Implement actual payment gateway integration
+    // For now, simulate a delay
+    Future.delayed(Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        _showSuccessDialog();
+      }
+    });
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle,
+                color: Colors.green.shade600,
+                size: 64,
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Booking Confirmed!',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Your booking has been successfully confirmed. Check your email for details.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close success dialog
+              Navigator.pop(context); // Return to previous screen
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(vertical: 14),
+              minimumSize: Size(double.infinity, 0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Done',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

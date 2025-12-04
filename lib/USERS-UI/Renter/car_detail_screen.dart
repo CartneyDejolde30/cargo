@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
-import '../Renter/bookings/booking_screen.dart';
+import 'bookings/booking_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Renter/host/host_profile_screen.dart';
 
@@ -37,7 +37,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   Map<String, dynamic>? carData;
   List<dynamic> reviews = [];
 
-  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -556,53 +556,53 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         ),
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => HostProfileScreen(
-                                  ownerId: carData?["owner_id"].toString() ?? "",
-                                  ownerName: ownerName,
-                                  ownerImage: carData?["owner_image"] ?? "",
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundImage: NetworkImage(ownerImage),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    ownerName,
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
-                                  onPressed: _messageOwner,
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.call, color: Colors.green),
-                                  onPressed: () => _callOwner(phone),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HostProfileScreen(
+          ownerId: carData?["owner_id"].toString() ?? "",  // ✅ This should work now
+          ownerName: ownerName,
+          ownerImage: carData?["owner_image"] ?? "",
+        ),
+      ),
+    );
+  },
+  child: Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey.shade200),
+    ),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 28,
+          backgroundImage: NetworkImage(ownerImage),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            ownerName,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+          onPressed: _messageOwner,
+        ),
+        IconButton(
+          icon: const Icon(Icons.call, color: Colors.green),
+          onPressed: () => _callOwner(phone),
+        ),
+      ],
+    ),
+  ),
+),
                       ],
                     ),
                   ),

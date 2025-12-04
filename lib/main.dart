@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/notification_screen.dart';
 import 'onboarding.dart';
 import 'login.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart'; 
@@ -11,10 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/booking_screen.dart'; 
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart'; 
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/booking_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -101,13 +97,6 @@ class MyApp extends StatelessWidget {
         '/my_bookings': (context) => const MyBookingsScreen(), // ✅ Changed this to MyBookingsScreen
         // You might also want to add a route for the booking form if needed:
         // '/booking': (context) => const BookingScreen(...), // This needs parameters though
-        '/profile': (context) => const ProfileScreen(),
-        '/my_bookings': (context) => const MyBookingsScreen(),
-       
-        '/mycars': (context) {
-          final ownerId = ModalRoute.of(context)!.settings.arguments as int;
-          return MyCarPage(ownerId: ownerId);
-        },
         
       },
     );
