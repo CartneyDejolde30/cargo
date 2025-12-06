@@ -137,9 +137,7 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
 
                     // Features
                     Text(
-                      widget.vehicleType == 'motorcycle'
-                        ? 'Your motorcycle\'s features'
-                        : 'Your car\'s features',
+                      'Your car\'s features',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),

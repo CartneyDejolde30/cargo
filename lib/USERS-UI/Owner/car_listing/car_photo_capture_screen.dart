@@ -83,11 +83,12 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
                         child: Text(
                           'Submit',
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFFCDFE3D),
+                            color: Colors.white, // remove 'const' here
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -98,7 +99,7 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
                       child: Text(
                         'Retake photo',
                         style: GoogleFonts.poppins(
-                          color: Colors.grey[700],
+                          color: Colors.black,
                           fontSize: 14,
                         ),
                       ),
@@ -145,7 +146,7 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
           'Tap to take photo',
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: Colors.black87,
           ),
         ),
       ],

@@ -202,7 +202,7 @@ void _continue() {
                     const SizedBox(height: 10),
 
                     Text("Set pickup and return location.",
-                        style: GoogleFonts.poppins(color: Colors.grey[600])),
+                        style: GoogleFonts.poppins(color: Colors.black87)),
 
                     const SizedBox(height: 20),
 
@@ -213,9 +213,9 @@ void _continue() {
                         setState(() {});
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.location_on, color: Colors.green),
+                        prefixIcon: const Icon(Icons.location_on, color: Colors.black),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.search, color: Colors.green),
+                          icon: const Icon(Icons.search, color: Colors.black),
                           onPressed: () => _searchAddress(_locationController.text),
                         ),
                         filled: true,
@@ -233,7 +233,7 @@ void _continue() {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Pin on Map", style: GoogleFonts.poppins(fontSize: 14)),
-                          Icon(_showMap ? Icons.expand_less : Icons.expand_more, color: Colors.green)
+                          Icon(_showMap ? Icons.expand_less : Icons.expand_more, color: Colors.black)
                         ],
                       ),
                     ),
@@ -277,7 +277,7 @@ void _continue() {
                             ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                             : const Icon(Icons.my_location),
                         label: Text(_isLoadingLocation ? "Locating..." : "Use Current Location"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                       ),
                     ],
                   ],
@@ -294,13 +294,14 @@ void _continue() {
                   disabledBackgroundColor: Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text(
-                  "Continue",
-                  style: GoogleFonts.poppins(
-                    color: _canContinue ? const Color(0xFFCDFE3D) : Colors.grey[400],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+child: Text(
+  "Continue",
+  style: GoogleFonts.poppins(
+    color: _canContinue ? Colors.white : Colors.grey[400] as Color,
+    fontWeight: FontWeight.w600,
+  ),
+),
+
               ),
             ),
           ],

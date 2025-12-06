@@ -115,10 +115,11 @@ void _saveAndContinue() {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isSelected ? Icons.check_circle : Icons.circle_outlined,
-              color: isSelected ? const Color(0xFFCDFE3D) : Colors.grey,
-              size: 20,
-            ),
+                isSelected ? Icons.check_circle : Icons.circle_outlined,
+                color: isSelected ? Colors.white : Colors.grey,
+                size: 20,
+              ),
+
             const SizedBox(width: 8),
             Text(
               label,
@@ -168,7 +169,7 @@ void _saveAndContinue() {
                       'Create your own rules',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -262,7 +263,7 @@ void _saveAndContinue() {
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canContinue() ? Colors.white : (Colors.grey[500] as Color),
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

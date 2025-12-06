@@ -432,7 +432,7 @@ Widget _buildDropdown(String label, List<String> items, String? value, Function(
           child: DropdownButton<String>(
             value: value,
             isExpanded: true,
-            hint: Text('Select $label', style: GoogleFonts.poppins(color: Colors.grey[600])),
+            hint: Text('Select $label', style: GoogleFonts.poppins(color: Colors.black87)),
             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black), // CHANGED from green
             items: items.map((item) {
               return DropdownMenuItem(

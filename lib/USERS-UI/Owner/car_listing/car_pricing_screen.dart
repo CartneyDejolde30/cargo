@@ -142,7 +142,7 @@ void _continue() {
                         "Minimum recommended: ₱50 / day",
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Colors.black87,
                         ),
                       ),
                     ),
@@ -171,13 +171,12 @@ void _continue() {
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue
-                          ? const Color(0xFFCDFE3D)
-                          : Colors.grey[500],
+                      color: _canContinue ? Colors.white : Colors.grey[500],
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                 ),
               ),
             ),

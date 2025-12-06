@@ -74,14 +74,15 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text(
+                      child: Text(
                     "Finish & Publish",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: _canSubmit() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canSubmit() ? Colors.white : Colors.grey[500], // fixed
                     ),
                   ),
+
                 ),
               ),
             ),

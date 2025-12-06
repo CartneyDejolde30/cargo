@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'car_listing/car_details.dart';
 import 'models/car_listing.dart';
+import 'car_listing/vehicle_type_selection_screen.dart';
 
 class MyCarPage extends StatefulWidget {
   final int ownerId;
@@ -224,25 +225,29 @@ class _MyCarPageState extends State<MyCarPage> {
           )
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.black,
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) => CarDetailsScreen(ownerId: widget.ownerId),
-              transitionsBuilder: (_, animation, __, child) =>
-                  FadeTransition(opacity: animation, child: child),
-            ),
-          );
-          if (result == true) fetchCars();
-        },
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          "Add Car",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
+floatingActionButton: FloatingActionButton.extended(
+  backgroundColor: Colors.black,
+  onPressed: () async {
+    // Navigate to VehicleTypeSelectionScreen first
+    final result = await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => VehicleTypeSelectionScreen(ownerId: widget.ownerId),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
       ),
+    );
+
+    // If the user completed adding a car, refresh the list
+    if (result == true) fetchCars();
+  },
+  icon: const Icon(Icons.add, color: Colors.white),
+  label: Text(
+    "Add Car",
+    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+  ),
+),
+
       body: Column(
         children: [
           // Search bar
