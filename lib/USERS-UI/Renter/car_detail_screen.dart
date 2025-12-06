@@ -703,7 +703,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                 child: SafeArea(
                   top: false,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      // Get user data for auto-fill
+                      final userData = await _getUserData();
+                      
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -713,6 +716,16 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                             carImage: widget.carImage,
                             pricePerDay: price,
                             location: location,
+                            userId: userData['userId'],
+                            userFullName: userData['fullName'],
+                            userEmail: userData['email'],
+                            userMunicipality: userData['municipality'],
+                            ownerLatitude: carData?["latitude"] != null 
+                                ? double.tryParse(carData!["latitude"].toString())
+                                : null,
+                            ownerLongitude: carData?["longitude"] != null
+                                ? double.tryParse(carData!["longitude"].toString())
+                                : null,
                           ),
                         ),
                       );

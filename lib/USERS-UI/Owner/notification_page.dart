@@ -76,10 +76,11 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   void _vibrate() async {
-    if (await Vibration.hasVibrator() ?? false) {
+    if (await Vibration.hasVibrator()) {
       Vibration.vibrate(duration: 80);
     }
   }
+
 
   void _groupByDate() {
     grouped.clear();

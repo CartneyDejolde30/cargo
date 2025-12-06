@@ -8,9 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
-import 'renters.dart';
-import 'car_list_screen.dart';
-import '../Renter/chats/chat_list_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final int userId;
@@ -69,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-            "http://10.72.15.180/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
+            "http://192.168.1.11/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
       );
 
       print("📩 RAW RESPONSE: ${res.body}");
@@ -152,10 +149,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _vibrate() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 80);
-    }
+  final hasVibrator = await Vibration.hasVibrator();
+  if (hasVibrator == true) {
+    Vibration.vibrate(duration: 80);
   }
+}
+
 
   // ---------------- UI (UNCHANGED) ---------------- //
 

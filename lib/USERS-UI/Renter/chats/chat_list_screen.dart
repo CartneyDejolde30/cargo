@@ -91,30 +91,27 @@ class _ChatListScreenState extends State<ChatListScreen> {
   // ---------------- UI ----------------
 
   Widget _appBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back, size: 22),
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+    ),
+    child: Row(
+      children: [
+        // Removed back button
+        Expanded(
+          child: Text(
+            "Messages",
+            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              "Messages",
-              style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Image.asset("assets/cargo.png", width: 32),
-        ],
-      ),
-    );
-  }
+        ),
+        Image.asset("assets/cargo.png", width: 32),
+      ],
+    ),
+  );
+}
+
 
   Widget _searchBar() {
     return Padding(

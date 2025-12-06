@@ -94,12 +94,12 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
     });
   }
 
-  int _getCountForRating(int rating) {
+  /*int _getCountForRating(int rating) {
     return reviews.where((review) {
       final reviewRating = double.tryParse(review["rating"].toString()) ?? 0;
       return reviewRating.floor() == rating;
     }).length;
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +223,7 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
 
   Widget _buildFilterChip(int rating) {
     final isSelected = selectedRating == rating;
-    final count = _getCountForRating(rating);
+    //final count = _getCountForRating(rating);
 
     return GestureDetector(
       onTap: () => _filterByRating(isSelected ? null : rating),

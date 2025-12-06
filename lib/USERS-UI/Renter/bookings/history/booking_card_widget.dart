@@ -11,20 +11,6 @@ class BookingCardWidget extends StatelessWidget {
     required this.status,
   });
 
-  Color _getStatusColor() {
-    switch (status) {
-      case 'active':
-        return Colors.black;
-      case 'pending':
-        return Colors.grey.shade700;
-      case 'upcoming':
-        return Colors.grey.shade600;
-      case 'past':
-        return Colors.grey.shade500;
-      default:
-        return Colors.grey;
-    }
-  }
 
   String _getStatusText() {
     switch (status) {

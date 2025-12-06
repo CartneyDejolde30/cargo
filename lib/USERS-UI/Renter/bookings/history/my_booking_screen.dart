@@ -142,30 +142,5 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildTab(String label, int index) {
-    bool isSelected = _currentTabIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 }

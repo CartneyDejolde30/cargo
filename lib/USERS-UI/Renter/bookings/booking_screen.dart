@@ -460,7 +460,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 _calculatePrice();
               });
             },
-            activeColor: Colors.black,
+            activeThumbColor: Colors.black,
           ),
         ],
       ),

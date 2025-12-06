@@ -54,6 +54,8 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       final permission = await _checkLocationPermission();
       if (!permission) return;
 
+      setState(() => _isLoading = true);
+
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -75,7 +77,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      _showErrorSnackBar('Location permission permanently denied');
+      _showErrorSnackBar('Location permission permanently denied. Please enable in settings.');
       return false;
     }
 
@@ -138,13 +140,13 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       _routeCoordinates = _decodeGeometry(route['geometry']);
     }
 
-    // Extract distance
+    // Extract distance (convert meters to km)
     if (route['distance'] != null) {
       final km = (route['distance'] / 1000).toStringAsFixed(1);
       _distance = '$km km';
     }
 
-    // Extract duration
+    // Extract duration (convert seconds to minutes)
     if (route['duration'] != null) {
       final minutes = (route['duration'] / 60).round();
       _duration = '$minutes min';
@@ -287,8 +289,10 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       polylines: [
         Polyline(
           points: _routeCoordinates,
-          color: Colors.blue.shade600,
+          color: Colors.blue.shade700,
           strokeWidth: 5.0,
+          borderColor: Colors.white,
+          borderStrokeWidth: 2.0,
         ),
       ],
     );
@@ -303,36 +307,44 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
             LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
             Colors.green.shade600,
             Icons.my_location,
+            'Your Location',
           ),
         _buildMarker(
           LatLng(widget.destinationLat, widget.destinationLng),
           Colors.red.shade600,
-          Icons.location_on,
+          Icons.directions_car,
+          'Car Location',
         ),
       ],
     );
   }
 
   // Build individual marker
-  Marker _buildMarker(LatLng position, Color color, IconData icon) {
+  Marker _buildMarker(LatLng position, Color color, IconData icon, String label) {
     return Marker(
       point: position,
-      width: 50,
-      height: 50,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+      width: 80,
+      height: 80,
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+        ],
       ),
     );
   }
@@ -522,7 +534,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.navigation, size: 18),
+                    icon: const Icon(Icons.close, size: 18),
                     label: Text(
                       'Close',
                       style: GoogleFonts.poppins(
