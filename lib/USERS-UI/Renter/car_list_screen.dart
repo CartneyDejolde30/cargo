@@ -39,11 +39,11 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-    return "http://192.168.1.11/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
+    return "http://10.72.15.180/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
   }
 
   Future<void> fetchCars() async {
-    const url = "http://192.168.1.11/carGOAdmin/api/get_cars.php";
+    const url = "http://10.72.15.180/carGOAdmin/api/get_cars.php";
 
     try {
       final res = await http.get(Uri.parse(url));
@@ -233,36 +233,37 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   Widget _buildCarGrid() {
-    return SliverPadding(
+  return SliverToBoxAdapter(
+    child: GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.7,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final car = _cars[index];
-            return _buildCarCard(
-              carId: int.tryParse(car['id'].toString()) ?? 0,
-              name: "${car['brand']} ${car['model']}",
-              year: car['car_year'] ?? "",
-              rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-              location: car['location'].isEmpty ? "Unknown" : car['location'],
-              price: car['price'],
-              seats: int.tryParse(car['seat'].toString()) ?? 4,
-              transmission: car['transmission'] ?? "Automatic",
-              image: getImageUrl(car['image']),
-              hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
-            );
-          },
-          childCount: _cars.length,
-        ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.60, // same as HomeScreen
       ),
-    );
-  }
+      itemCount: _cars.length,
+      itemBuilder: (context, index) {
+        final car = _cars[index];
+        return _buildCarCard(
+          carId: int.tryParse(car['id'].toString()) ?? 0,
+          name: "${car['brand']} ${car['model']}",
+          year: car['car_year'] ?? "",
+          rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+          location: (car['location'] ?? '').isEmpty ? "Unknown" : car['location'],
+          price: car['price'].toString(),
+          seats: int.tryParse(car['seat'].toString()) ?? 4,
+          transmission: car['transmission'] ?? "Automatic",
+          image: getImageUrl(car['image']),
+          hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
+        );
+      },
+    ),
+  );
+}
+
 
   Widget _buildCarCard({
     required int carId,

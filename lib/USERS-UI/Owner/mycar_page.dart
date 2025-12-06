@@ -192,7 +192,7 @@ class _MyCarPageState extends State<MyCarPage> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: .80,
+                          childAspectRatio: .65,
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];

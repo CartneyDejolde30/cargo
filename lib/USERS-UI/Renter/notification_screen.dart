@@ -8,9 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
-import 'renters.dart';
-import 'car_list_screen.dart';
-import '../Renter/chats/chat_list_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final int userId;

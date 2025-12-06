@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../bookings/pricing/pricing_calculator.dart';
 import 'map_route_screen.dart'; 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 
 class BookingScreen extends StatefulWidget {
   final int carId;
@@ -16,6 +19,8 @@ class BookingScreen extends StatefulWidget {
   final String? userId;
   final String? userFullName;
   final String? userEmail;
+  final String? userPhone;
+
   final String? userMunicipality;
   
   // Owner location coordinates (optional)
@@ -31,6 +36,7 @@ class BookingScreen extends StatefulWidget {
     required this.location,
     this.userId,
     this.userFullName,
+    this.userPhone,
     this.userEmail,
     this.userMunicipality,
     this.ownerLatitude,
@@ -66,6 +72,39 @@ class _BookingScreenState extends State<BookingScreen> {
     return returnDate!.difference(pickupDate!).inDays + 1;
   }
 
+Future<void> _submitBookingToServer() async {
+  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/create_booking.php");
+
+  final response = await http.post(url, body: {
+    "car_id": widget.carId.toString(),
+    "user_id": widget.userId ?? "",
+    "full_name": fullNameController.text.trim(),
+    "email": emailController.text.trim(),
+    "phone": contactController.text.trim(),
+
+    "pickup_date": pickupDate.toString().split(" ").first,
+    "return_date": returnDate.toString().split(" ").first,
+    "pickup_time": pickupTime.format(context),
+    "return_time": returnTime.format(context),
+
+    "period": selectedPeriod,
+    "needs_delivery": needsDelivery ? "1" : "0",
+
+    "total_amount": priceBreakdown!.totalAmount.toString(),
+  });
+
+  final data = jsonDecode(response.body);
+
+  if (data["success"] == true) {
+    Navigator.pop(context); // close loading
+    _showSuccessDialog();
+  } else {
+    Navigator.pop(context);
+    _showError("Booking failed: ${data['message']}");
+  }
+}
+
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +114,9 @@ class _BookingScreenState extends State<BookingScreen> {
     }
     if (widget.userEmail != null && widget.userEmail!.isNotEmpty) {
       emailController.text = widget.userEmail!;
+    }
+    if (widget.userPhone != null && widget.userPhone!.isNotEmpty) {
+      contactController.text = widget.userPhone!;
     }
     _calculatePrice();
   }
@@ -460,7 +502,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 _calculatePrice();
               });
             },
-            activeColor: Colors.black,
+            activeThumbColor: Colors.black,
           ),
         ],
       ),
@@ -1133,44 +1175,38 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _processPayment() {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Colors.black),
-              SizedBox(height: 16),
-              Text(
-                'Processing payment...',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => Center(
+      child: Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.black),
+            SizedBox(height: 16),
+            Text(
+              'Processing booking...',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  );
 
-    // TODO: Implement actual payment gateway integration
-    // For now, simulate a delay
-    Future.delayed(Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pop(context); // Close loading dialog
-        _showSuccessDialog();
-      }
-    });
-  }
+  // Send to backend
+  _submitBookingToServer();
+}
+
 
   void _showSuccessDialog() {
     showDialog(
