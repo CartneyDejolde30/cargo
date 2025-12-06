@@ -6,8 +6,9 @@ import 'car_location_screen.dart';
 
 class CarPricingScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarPricingScreen({super.key, required this.listing});
+  const CarPricingScreen({super.key, required this.listing,this.vehicleType = 'car',});
 
   @override
   State<CarPricingScreen> createState() => _CarPricingScreenState();
@@ -37,23 +38,26 @@ class _CarPricingScreenState extends State<CarPricingScreen> {
     return widget.listing.dailyRate != null && widget.listing.dailyRate! > 49;
   }
 
-  void _continue() {
-    if (_canContinue) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CarLocationScreen(listing: widget.listing),
+void _continue() {
+  if (_canContinue) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CarLocationScreen(
+          listing: widget.listing,
+          vehicleType: widget.vehicleType, // ADD THIS LINE
         ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Please enter a valid rental price above ₱50."),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Please enter a valid rental price above ₱50."),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -77,11 +81,13 @@ class _CarPricingScreenState extends State<CarPricingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'How much would you want your car to be rented per day?',
+                      widget.vehicleType == 'motorcycle' 
+                        ? 'How much would you want your motorcycle to be rented per day?'
+                        : 'How much would you want your car to be rented per day?',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: Colors.black, // Update to black
                       ),
                     ),
 
@@ -136,7 +142,7 @@ class _CarPricingScreenState extends State<CarPricingScreen> {
                         "Minimum recommended: ₱50 / day",
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Colors.black87,
                         ),
                       ),
                     ),
@@ -165,13 +171,12 @@ class _CarPricingScreenState extends State<CarPricingScreen> {
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue
-                          ? const Color(0xFFCDFE3D)
-                          : Colors.grey[500],
+                      color: _canContinue ? Colors.white : Colors.grey[500],
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                 ),
               ),
             ),

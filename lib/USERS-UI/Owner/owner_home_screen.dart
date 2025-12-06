@@ -85,7 +85,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       MyCarPage(ownerId: _ownerId),
       NotificationPage(userId: _ownerId),
       const MessagePage(),
-      const ProfilePage(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(

@@ -7,8 +7,9 @@ import 'car_photos_diagram_screen.dart';
 
 class UploadDocumentsScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const UploadDocumentsScreen({super.key, required this.listing});
+  const UploadDocumentsScreen({super.key, required this.listing, this.vehicleType = 'car',});
 
   @override
   State<UploadDocumentsScreen> createState() => _UploadDocumentsScreenState();
@@ -56,7 +57,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFCDFE3D),
+            color: Colors.white,
             width: 2,
           ),
         ),
@@ -67,13 +68,13 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFCDFE3D).withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.image,
                       size: 32,
-                      color: Color(0xFFCDFE3D),
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -81,7 +82,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                     'Upload',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.grey[700],
+                      color: Colors.black,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -155,7 +156,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -163,7 +164,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       'Upload clear copy of Official Receipt and Certificate of Registration',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -197,6 +198,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
             ),
 
             // Continue Button
+            // Continue Button
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
@@ -207,7 +209,10 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => CarPhotosDiagramScreen(listing: widget.listing),
+                              builder: (context) => CarPhotosDiagramScreen(
+                                listing: widget.listing,
+                                vehicleType: widget.vehicleType, // ADD THIS LINE
+                              ),
                             ),
                           );
                         }
@@ -221,7 +226,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canContinue() ? Colors.white : Colors.grey[500],
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

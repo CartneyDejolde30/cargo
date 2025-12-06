@@ -5,8 +5,13 @@ import 'car_features_screen.dart';
 
 class CarPreferencesScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarPreferencesScreen({super.key, required this.listing});
+  const CarPreferencesScreen({
+    super.key, 
+    required this.listing,
+    this.vehicleType = 'car',
+    });
 
   @override
   State<CarPreferencesScreen> createState() => _CarPreferencesScreenState();
@@ -62,7 +67,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CarFeaturesScreen(listing: widget.listing),
+          builder: (context) => CarFeaturesScreen(listing: widget.listing,vehicleType: widget.vehicleType, ),
         ),
       );
     } else {
@@ -101,7 +106,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -111,7 +116,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
                       'How much advance notice do you need before a trip starts?',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
-                    Text('(1 hour recommended)', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                    Text('(1 hour recommended)', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87)),
                     const SizedBox(height: 12),
                     _buildDropdown(
                       advanceNoticeOptions,
@@ -186,14 +191,15 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text(
+                 child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canContinue() ? Colors.white : Colors.grey[500], // fixed
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                 ),
               ),
             ),
@@ -213,7 +219,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
           value: value,
           isExpanded: true,
           hint: Text('Select', style: GoogleFonts.poppins(color: Colors.grey)),
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.green),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
           items: items.map((item) => DropdownMenuItem(value: item, child: Text(item, style: GoogleFonts.poppins()))).toList(),
           onChanged: onChanged,
         ),
@@ -227,14 +233,14 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Checkbox(value: value, onChanged: onChanged, activeColor: Colors.green),
+          Checkbox(value: value, onChanged: onChanged, activeColor: Colors.black),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
+                Text(subtitle, style: GoogleFonts.poppins(fontSize: 11, color: Colors.black87)),
               ],
             ),
           ),

@@ -10,8 +10,9 @@ import 'upload_documents_screen.dart';
 
 class CarLocationScreen extends StatefulWidget {
   final CarListing listing;
+   final String vehicleType;
 
-  const CarLocationScreen({super.key, required this.listing});
+  const CarLocationScreen({super.key, required this.listing, this.vehicleType = 'car',});
 
   @override
   State<CarLocationScreen> createState() => _CarLocationScreenState();
@@ -153,21 +154,24 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
         widget.listing.longitude != null;
   }
 
-  void _continue() {
-    if (!_canContinue) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a valid location before continuing.")),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UploadDocumentsScreen(listing: widget.listing),
-      ),
+void _continue() {
+  if (!_canContinue) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select a valid location before continuing.")),
     );
+    return;
   }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => UploadDocumentsScreen(
+        listing: widget.listing,
+        vehicleType: widget.vehicleType, // ADD THIS LINE
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +202,7 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                     const SizedBox(height: 10),
 
                     Text("Set pickup and return location.",
-                        style: GoogleFonts.poppins(color: Colors.grey[600])),
+                        style: GoogleFonts.poppins(color: Colors.black87)),
 
                     const SizedBox(height: 20),
 
@@ -209,9 +213,9 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                         setState(() {});
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.location_on, color: Colors.green),
+                        prefixIcon: const Icon(Icons.location_on, color: Colors.black),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.search, color: Colors.green),
+                          icon: const Icon(Icons.search, color: Colors.black),
                           onPressed: () => _searchAddress(_locationController.text),
                         ),
                         filled: true,
@@ -229,7 +233,7 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Pin on Map", style: GoogleFonts.poppins(fontSize: 14)),
-                          Icon(_showMap ? Icons.expand_less : Icons.expand_more, color: Colors.green)
+                          Icon(_showMap ? Icons.expand_less : Icons.expand_more, color: Colors.black)
                         ],
                       ),
                     ),
@@ -273,7 +277,7 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                             ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                             : const Icon(Icons.my_location),
                         label: Text(_isLoadingLocation ? "Locating..." : "Use Current Location"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                       ),
                     ],
                   ],
@@ -290,13 +294,14 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
                   disabledBackgroundColor: Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text(
-                  "Continue",
-                  style: GoogleFonts.poppins(
-                    color: _canContinue ? const Color(0xFFCDFE3D) : Colors.grey[400],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+child: Text(
+  "Continue",
+  style: GoogleFonts.poppins(
+    color: _canContinue ? Colors.white : Colors.grey[400] as Color,
+    fontWeight: FontWeight.w600,
+  ),
+),
+
               ),
             ),
           ],

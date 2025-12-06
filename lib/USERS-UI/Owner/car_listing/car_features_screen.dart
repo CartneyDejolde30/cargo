@@ -5,8 +5,9 @@ import 'car_rules_screen.dart';
 
 class CarFeaturesScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarFeaturesScreen({super.key, required this.listing});
+  const CarFeaturesScreen({super.key, required this.listing, this.vehicleType = 'car', });
 
   @override
   State<CarFeaturesScreen> createState() => _CarFeaturesScreenState();
@@ -60,7 +61,7 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CarRulesScreen(listing: widget.listing),
+          builder: (context) => CarRulesScreen(listing: widget.listing,vehicleType: widget.vehicleType,),
         ),
       );
     } else {
@@ -95,7 +96,9 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Let guests know what your car has to offer',
+                      widget.vehicleType == 'motorcycle' 
+                        ? 'Let guests know what your motorcycle has to offer'
+                        : 'Let guests know what your car has to offer',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
@@ -106,7 +109,9 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
 
                     // Description
                     Text(
-                      'What makes your car special?',
+                      widget.vehicleType == 'motorcycle'
+                        ? 'What makes your motorcycle special?'
+                        : 'What makes your car special?',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),

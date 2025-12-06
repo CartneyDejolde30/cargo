@@ -7,8 +7,9 @@ import 'package:flutter_application_1/USERS-UI/Owner/models/submit_car_api.dart'
 
 class CarPhotosDiagramScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarPhotosDiagramScreen({super.key, required this.listing});
+  const CarPhotosDiagramScreen({super.key, required this.listing,this.vehicleType = 'car',});
 
   @override
   State<CarPhotosDiagramScreen> createState() => _CarPhotosDiagramScreenState();
@@ -30,9 +31,9 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Take Car Photos",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black),
-        ),
+  widget.vehicleType == 'motorcycle' ? "Take Motorcycle Photos" : "Take Car Photos",
+  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black),
+),
         centerTitle: true,
       ),
 
@@ -73,14 +74,15 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text(
+                      child: Text(
                     "Finish & Publish",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: _canSubmit() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canSubmit() ? Colors.white : Colors.grey[500], // fixed
                     ),
                   ),
+
                 ),
               ),
             ),

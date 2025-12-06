@@ -57,7 +57,7 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("🚘 Car successfully submitted!"),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.black,
         ),
       );
 
@@ -120,7 +120,7 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
                         "Submit Vehicle",
                         style: GoogleFonts.poppins(
                           fontSize: 18,
-                          color: const Color(0xFFCDFE3D),
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

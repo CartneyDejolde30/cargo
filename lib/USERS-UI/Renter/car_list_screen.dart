@@ -20,7 +20,6 @@ class CarListScreen extends StatefulWidget {
 }
 
 class _CarListScreenState extends State<CarListScreen> {
-  final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
   int _selectedNavIndex = 0;
 

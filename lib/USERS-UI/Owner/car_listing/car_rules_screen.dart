@@ -5,8 +5,9 @@ import 'car_pricing_screen.dart';
 
 class CarRulesScreen extends StatefulWidget {
   final CarListing listing;
+   final String vehicleType;
 
-  const CarRulesScreen({super.key, required this.listing});
+  const CarRulesScreen({super.key, required this.listing,this.vehicleType = 'car',});
 
   @override
   State<CarRulesScreen> createState() => _CarRulesScreenState();
@@ -37,26 +38,29 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
     return selectedRules.isNotEmpty && hasUnlimitedMileage != null;
   }
 
-  void _saveAndContinue() {
-    if (_canContinue()) {
-      widget.listing.rules = selectedRules;
-      widget.listing.hasUnlimitedMileage = hasUnlimitedMileage ?? false;
+void _saveAndContinue() {
+  if (_canContinue()) {
+    widget.listing.rules = selectedRules;
+    widget.listing.hasUnlimitedMileage = hasUnlimitedMileage ?? false;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CarPricingScreen(listing: widget.listing),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CarPricingScreen(
+          listing: widget.listing,
+          vehicleType: widget.vehicleType, // ADD THIS LINE
         ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Please select rules and mileage option."),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Please select rules and mileage option."),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   void _showAddRuleDialog() {
     final controller = TextEditingController();
@@ -111,10 +115,11 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isSelected ? Icons.check_circle : Icons.circle_outlined,
-              color: isSelected ? const Color(0xFFCDFE3D) : Colors.grey,
-              size: 20,
-            ),
+                isSelected ? Icons.check_circle : Icons.circle_outlined,
+                color: isSelected ? Colors.white : Colors.grey,
+                size: 20,
+              ),
+
             const SizedBox(width: 8),
             Text(
               label,
@@ -152,11 +157,11 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Your Cars, Your Rules',
+                      widget.vehicleType == 'motorcycle' ? 'Your Motorcycle, Your Rules' : 'Your Cars, Your Rules',
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: Colors.black, // Also update color to black
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -164,7 +169,7 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
                       'Create your own rules',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -258,7 +263,7 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
                   child: Text(
                     'Continue',
                     style: GoogleFonts.poppins(
-                      color: _canContinue() ? const Color(0xFFCDFE3D) : Colors.grey[500],
+                      color: _canContinue() ? Colors.white : (Colors.grey[500] as Color),
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

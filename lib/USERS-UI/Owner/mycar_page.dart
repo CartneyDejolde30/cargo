@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'car_listing/car_details.dart';
 import 'models/car_listing.dart';
+import 'car_listing/vehicle_type_selection_screen.dart';
 
 class MyCarPage extends StatefulWidget {
   final int ownerId;
@@ -64,9 +66,8 @@ class _MyCarPageState extends State<MyCarPage> {
 
       final matchesSearch = brand.contains(query) || model.contains(query);
       final matchesFilter =
-      selectedFilter == "All" ||
-      selectedFilter.toLowerCase() == car["status"].toString().toLowerCase();
-
+          selectedFilter == "All" ||
+              selectedFilter.toLowerCase() == car["status"].toString().toLowerCase();
 
       return matchesSearch && matchesFilter;
     }).toList();
@@ -79,14 +80,69 @@ class _MyCarPageState extends State<MyCarPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Car?"),
-        content: const Text("Are you sure you want to delete this car?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                size: 48,
+                color: Colors.red.shade600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Delete Car?",
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Are you sure you want to delete this car?",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              "Cancel",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete"),
+            child: Text(
+              "Delete",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -105,6 +161,27 @@ class _MyCarPageState extends State<MyCarPage> {
       if (result["success"] == true) {
         cars.removeWhere((car) => car["id"].toString() == id.toString());
         applyFilters();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Car deleted successfully',
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint("❌ Delete error: $e");
@@ -113,55 +190,69 @@ class _MyCarPageState extends State<MyCarPage> {
 
   /* ---------------- COLOR BASED ON STATUS ---------------- */
   Color getStatusColor(String status) {
-  final normalized = status.trim().toLowerCase();
+    final normalized = status.trim().toLowerCase();
 
-  if (normalized == "approved") return Colors.green;
-  if (normalized == "pending") return Colors.orange;
-  if (normalized == "rejected") return Colors.redAccent;
-  if (normalized == "rented") return Colors.blueAccent;
+    if (normalized == "approved") return Colors.green;
+    if (normalized == "pending") return Colors.orange;
+    if (normalized == "rejected") return Colors.redAccent;
+    if (normalized == "rented") return Colors.blueAccent;
 
-  return Colors.grey; // fallback
-}
-
+    return Colors.grey;
+  }
 
   /* ---------------- UI ---------------- */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 1,
-        title: const Text("My Cars", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "My Cars",
+          style: GoogleFonts.poppins(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: -0.5,
+          ),
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Image.asset("assets/cargo.png", width: 40),
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset("assets/cargo.png", width: 32),
           )
         ],
       ),
-
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) => CarDetailsScreen(ownerId: widget.ownerId),
-              transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-            ),
-          );
-          if (result == true) fetchCars();
-        },
+floatingActionButton: FloatingActionButton.extended(
+  backgroundColor: Colors.black,
+  onPressed: () async {
+    // Navigate to VehicleTypeSelectionScreen first
+    final result = await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => VehicleTypeSelectionScreen(ownerId: widget.ownerId),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
       ),
+    );
+
+    // If the user completed adding a car, refresh the list
+    if (result == true) fetchCars();
+  },
+  icon: const Icon(Icons.add, color: Colors.white),
+  label: Text(
+    "Add Car",
+    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+  ),
+),
 
       body: Column(
         children: [
           // Search bar
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               onChanged: (value) {
                 searchQuery = value;
@@ -169,30 +260,58 @@ class _MyCarPageState extends State<MyCarPage> {
               },
               decoration: InputDecoration(
                 hintText: "Search car...",
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: GoogleFonts.poppins(
+                  color: Colors.grey.shade500,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                        onPressed: () {
+                          setState(() {
+                            searchQuery = "";
+                            applyFilters();
+                          });
+                        },
+                      )
+                    : null,
                 filled: true,
-                fillColor: Colors.grey.shade200,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.black, width: 1.5),
+                ),
               ),
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Car List
           Expanded(
             child: isLoading
                 ? _buildShimmer()
                 : filteredCars.isEmpty
-                    ? const Center(child: Text("No matching results"))
+                    ? _buildEmptyState()
                     : GridView.builder(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         itemCount: filteredCars.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: .65,
+                          
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                          childAspectRatio: .80,
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];
@@ -200,19 +319,8 @@ class _MyCarPageState extends State<MyCarPage> {
                           final status = car["status"] ?? "Unknown";
 
                           return FadeInUp(
-                            duration: Duration(milliseconds: 200 + (index * 100)),
-                            child: GestureDetector(
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CarDetailsScreen(ownerId: widget.ownerId, existingListing: CarListing.fromJson(car)),
-                                  ),
-                                );
-                                if (result == true) fetchCars();
-                              },
-                              child: _carCard(car, imageUrl, status),
-                            ),
+                            duration: Duration(milliseconds: 200 + (index * 50)),
+                            child: _carCard(car, imageUrl, status),
                           );
                         },
                       ),
@@ -222,137 +330,290 @@ class _MyCarPageState extends State<MyCarPage> {
     );
   }
 
+  /* ---------------- EMPTY STATE ---------------- */
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.directions_car_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            searchQuery.isEmpty ? "No cars yet" : "No matching results",
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            searchQuery.isEmpty
+                ? "Add your first car to get started"
+                : "Try adjusting your search",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /* ---------------- CAR CARD ---------------- */
   Widget _carCard(Map<String, dynamic> car, String imageUrl, String status) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade300),
-      boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 3)),
-      ],
-    ),
-    child: Column(
-      children: [
-        
-        /// ✅ Image only opens preview, NOT edit
-        GestureDetector(
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (_) => Dialog(
-                backgroundColor: Colors.transparent,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(imageUrl, fit: BoxFit.cover),
-                ),
-              ),
-            );
-          },
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(imageUrl, height: 100, width: double.infinity, fit: BoxFit.cover),
-              ),
-              Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: getStatusColor(status),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      car["status"].toString().toUpperCase(),  // USE ORIGINAL TEXT
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Image with Preview
+          GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 300,
+                        color: Colors.grey.shade200,
+                        child: Icon(
+                          Icons.directions_car,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ),
                   ),
                 ),
-
-            ],
-          ),
-        ),
-
-        Expanded(
-          child: InkWell(
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CarDetailsScreen(ownerId: widget.ownerId, existingListing: CarListing.fromJson(car)),
-                ),
               );
-
-              if (result == true) fetchCars();
             },
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("${car['brand']} ${car['model']}",
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text("₱ ${car['price_per_day']}/day",
-                      style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                  
-                  const Spacer(),
-
-                  /// ✅ Now menu is clickable without redirecting
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: PopupMenuButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.black),
-                      onSelected: (value) {
-                        if (value == "delete") deleteCar(int.parse(car["id"].toString()));
-                        if (value == "edit") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CarDetailsScreen(ownerId: widget.ownerId, existingListing: CarListing.fromJson(car)),
-                            ),
-                          );
-                        }
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: "edit", child: Text("Edit")),
-                        PopupMenuItem(value: "delete", child: Text("Delete", style: TextStyle(color: Colors.red))),
-                      ],
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  child: Image.network(
+                    imageUrl,
+                    height: 110,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 110,
+                      color: Colors.grey.shade200,
+                      child: Icon(
+                        Icons.directions_car,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: getStatusColor(status),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: getStatusColor(status).withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      car["status"].toString().toUpperCase(),
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        )
-      ],
-    ),
-  );
-}
+
+          // Car Details
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CarDetailsScreen(
+                      ownerId: widget.ownerId,
+                      existingListing: CarListing.fromJson(car),
+                    ),
+                  ),
+                );
+
+                if (result == true) fetchCars();
+              },
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${car['brand']} ${car['model']}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.black87,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.payments_outlined, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          "₱ ${car['price_per_day']}/day",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+
+                    // Menu Button
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: PopupMenuButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.more_horiz_rounded,
+                            size: 20,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        offset: const Offset(0, 10),
+                        onSelected: (value) {
+                          if (value == "delete") {
+                            deleteCar(int.parse(car["id"].toString()));
+                          }
+                          if (value == "edit") {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CarDetailsScreen(
+                                  ownerId: widget.ownerId,
+                                  existingListing: CarListing.fromJson(car),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: "edit",
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 20, color: Colors.grey.shade700),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Edit",
+                                  style: GoogleFonts.poppins(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: "delete",
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.red),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Delete",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
   /* ---------------- SHIMMER LOADER ---------------- */
   Widget _buildShimmer() {
     return GridView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: 6,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: .8,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: .80,
       ),
       itemBuilder: (_, __) => Shimmer.fromColors(
         baseColor: Colors.grey.shade300,
         highlightColor: Colors.grey.shade100,
         child: Container(
-          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
       ),
     );
