@@ -10,8 +10,9 @@ import 'upload_documents_screen.dart';
 
 class CarLocationScreen extends StatefulWidget {
   final CarListing listing;
+   final String vehicleType;
 
-  const CarLocationScreen({super.key, required this.listing});
+  const CarLocationScreen({super.key, required this.listing, this.vehicleType = 'car',});
 
   @override
   State<CarLocationScreen> createState() => _CarLocationScreenState();
@@ -153,21 +154,24 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
         widget.listing.longitude != null;
   }
 
-  void _continue() {
-    if (!_canContinue) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a valid location before continuing.")),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UploadDocumentsScreen(listing: widget.listing),
-      ),
+void _continue() {
+  if (!_canContinue) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select a valid location before continuing.")),
     );
+    return;
   }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => UploadDocumentsScreen(
+        listing: widget.listing,
+        vehicleType: widget.vehicleType, // ADD THIS LINE
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

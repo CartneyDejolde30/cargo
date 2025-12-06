@@ -5,8 +5,13 @@ import 'car_features_screen.dart';
 
 class CarPreferencesScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarPreferencesScreen({super.key, required this.listing});
+  const CarPreferencesScreen({
+    super.key, 
+    required this.listing,
+    this.vehicleType = 'car',
+    });
 
   @override
   State<CarPreferencesScreen> createState() => _CarPreferencesScreenState();
@@ -62,7 +67,7 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CarFeaturesScreen(listing: widget.listing),
+          builder: (context) => CarFeaturesScreen(listing: widget.listing,vehicleType: widget.vehicleType, ),
         ),
       );
     } else {

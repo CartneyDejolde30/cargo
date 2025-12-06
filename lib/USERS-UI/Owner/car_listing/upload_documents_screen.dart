@@ -7,8 +7,9 @@ import 'car_photos_diagram_screen.dart';
 
 class UploadDocumentsScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const UploadDocumentsScreen({super.key, required this.listing});
+  const UploadDocumentsScreen({super.key, required this.listing, this.vehicleType = 'car',});
 
   @override
   State<UploadDocumentsScreen> createState() => _UploadDocumentsScreenState();
@@ -197,6 +198,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
             ),
 
             // Continue Button
+            // Continue Button
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
@@ -207,7 +209,10 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => CarPhotosDiagramScreen(listing: widget.listing),
+                              builder: (context) => CarPhotosDiagramScreen(
+                                listing: widget.listing,
+                                vehicleType: widget.vehicleType, // ADD THIS LINE
+                              ),
                             ),
                           );
                         }
