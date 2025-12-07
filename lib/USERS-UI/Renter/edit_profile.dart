@@ -274,7 +274,16 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
         await prefs.setString("fullname", updated["fullname"]);
         await prefs.setString("phone", updated["phone"] ?? "");
         await prefs.setString("address", updated["address"] ?? "");
-        await prefs.setString("profile_image", updated["profile_image"] ?? "");
+        String baseURL = "http://10.72.15.180/carGOAdmin/uploads/";
+        String img = updated["profile_image"] ?? "";
+
+
+
+        String finalURL = img.startsWith("http") ? img : baseURL + img;
+
+await prefs.setString("profile_image", finalURL);
+
+
 
         if (!mounted) return;
 

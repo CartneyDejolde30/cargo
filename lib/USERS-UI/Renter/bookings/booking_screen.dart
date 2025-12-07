@@ -14,12 +14,12 @@ class BookingScreen extends StatefulWidget {
   final String carImage;
   final String pricePerDay;
   final String location;
-  
+  final String ownerId;
   // User info for auto-fill
   final String? userId;
   final String? userFullName;
   final String? userEmail;
-  final String? userPhone;
+  final String? userContact;
 
   final String? userMunicipality;
   
@@ -33,10 +33,11 @@ class BookingScreen extends StatefulWidget {
     required this.carName,
     required this.carImage,
     required this.pricePerDay,
+    required this.ownerId,
     required this.location,
     this.userId,
     this.userFullName,
-    this.userPhone,
+    this.userContact,
     this.userEmail,
     this.userMunicipality,
     this.ownerLatitude,
@@ -72,38 +73,6 @@ class _BookingScreenState extends State<BookingScreen> {
     return returnDate!.difference(pickupDate!).inDays + 1;
   }
 
-Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/create_booking.php");
-
-  final response = await http.post(url, body: {
-    "car_id": widget.carId.toString(),
-    "user_id": widget.userId ?? "",
-    "full_name": fullNameController.text.trim(),
-    "email": emailController.text.trim(),
-    "phone": contactController.text.trim(),
-
-    "pickup_date": pickupDate.toString().split(" ").first,
-    "return_date": returnDate.toString().split(" ").first,
-    "pickup_time": pickupTime.format(context),
-    "return_time": returnTime.format(context),
-
-    "period": selectedPeriod,
-    "needs_delivery": needsDelivery ? "1" : "0",
-
-    "total_amount": priceBreakdown!.totalAmount.toString(),
-  });
-
-  final data = jsonDecode(response.body);
-
-  if (data["success"] == true) {
-    Navigator.pop(context); // close loading
-    _showSuccessDialog();
-  } else {
-    Navigator.pop(context);
-    _showError("Booking failed: ${data['message']}");
-  }
-}
-
 
   @override
   void initState() {
@@ -115,8 +84,8 @@ Future<void> _submitBookingToServer() async {
     if (widget.userEmail != null && widget.userEmail!.isNotEmpty) {
       emailController.text = widget.userEmail!;
     }
-    if (widget.userPhone != null && widget.userPhone!.isNotEmpty) {
-      contactController.text = widget.userPhone!;
+    if (widget.userContact != null && widget.userContact!.isNotEmpty) {
+      contactController.text = widget.userContact!;
     }
     _calculatePrice();
   }
@@ -158,7 +127,7 @@ Future<void> _submitBookingToServer() async {
         ),
       );
     } else {
-      // If no coordinates, try to open external maps by location name
+      
       final searchUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(widget.location)}'
       );
@@ -1205,6 +1174,55 @@ Future<void> _submitBookingToServer() async {
 
   // Send to backend
   _submitBookingToServer();
+}
+
+Future<void> _submitBookingToServer() async {
+  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/create_booking.php");
+
+  try {
+    final response = await http.post(url, body: {
+      "car_id": widget.carId.toString(),
+      "owner_id": widget.ownerId.toString(),
+      "user_id": widget.userId ?? "",
+      "full_name": fullNameController.text.trim(),
+      "email": emailController.text.trim(),
+      "contact": contactController.text.trim(),
+
+      "pickup_date": pickupDate.toString().split(" ").first,
+      "return_date": returnDate.toString().split(" ").first,
+      "pickup_time": pickupTime.format(context),
+      "return_time": returnTime.format(context),
+
+      "rental_period": selectedPeriod,
+      "needs_delivery": needsDelivery ? "1" : "0",
+      "total_amount": priceBreakdown!.totalAmount.toString(),
+    });
+
+    print("📌 RAW RESPONSE: ${response.body}");
+
+    dynamic data;
+
+    // Protect against invalid JSON so dialog will close
+    try {
+      data = jsonDecode(response.body);
+    } catch (e) {
+      Navigator.pop(context);
+      _showError("Invalid server response");
+      return;
+    }
+
+    if (data["success"] == true) {
+      Navigator.pop(context);
+      _showSuccessDialog();
+    } else {
+      Navigator.pop(context);
+      _showError(data["message"] ?? "Booking failed");
+    }
+
+  } catch (e) {
+    Navigator.pop(context); // ENSURES LOADING CLOSES
+    _showError("Server error: $e");
+  }
 }
 
 

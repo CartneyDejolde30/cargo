@@ -311,7 +311,7 @@ floatingActionButton: FloatingActionButton.extended(
                           
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: .80,
+                          childAspectRatio: .65,
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];

@@ -1,8 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class PendingRequestsPage extends StatelessWidget {
-  const PendingRequestsPage({super.key});
+  final String ownerId; // <-- pass owner ID from login
+
+  const PendingRequestsPage({super.key, required this.ownerId});
+
+  Future<List<dynamic>> fetchPendingRequests() async {
+  final url = Uri.parse(
+    "http://10.72.15.180/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
+  );
+
+  try {
+    final response = await http.get(url);
+
+    print("🔥 RAW RESPONSE: ${response.body}");
+
+    if (response.statusCode != 200 || response.body.isEmpty) {
+      return [];
+    }
+
+    final data = jsonDecode(response.body);
+
+    if (data["success"] == true) {
+      return data["requests"];
+    }
+
+    return [];
+  } catch (e) {
+    print("❌ ERROR FETCHING: $e");
+    return [];
+  }
+}
+
+void rejectBooking(String bookingId, BuildContext context) {
+  TextEditingController reasonController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Reject Booking"),
+      content: TextField(
+        controller: reasonController,
+        decoration: const InputDecoration(
+          labelText: "Reason for rejection",
+          border: OutlineInputBorder(),
+        ),
+        maxLines: 3,
+      ),
+      actions: [
+        TextButton(
+          child: const Text("Cancel"),
+          onPressed: () => Navigator.pop(context),
+        ),
+        ElevatedButton(
+          child: const Text("Submit"),
+          onPressed: () async {
+            if (reasonController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Please enter a reason")),
+              );
+              return;
+            }
+
+            Navigator.pop(context); // Close dialog
+
+            final url = Uri.parse(
+              "http://10.72.15.180/carGOAdmin/api/reject_request.php",
+            );
+
+            final response = await http.post(url, body: {
+              "booking_id": bookingId,
+              "reason": reasonController.text.trim(),
+            });
+
+            final data = jsonDecode(response.body);
+
+            if (data["success"]) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Booking Rejected")),
+              );
+
+              // Refresh list
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PendingRequestsPage(ownerId: ownerId)),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(data["message"] ?? "Error rejecting booking")),
+              );
+            }
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+
+Future<void> approveBooking(String bookingId, BuildContext context) async {
+  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/approve_request.php");
+
+  final response = await http.post(url, body: {
+    "booking_id": bookingId,
+  });
+
+  final data = jsonDecode(response.body);
+
+  if (data["success"]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Booking Approved")),
+    );
+
+    // Refresh the screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => PendingRequestsPage(ownerId: ownerId)),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(data["message"] ?? "Error approving booking")),
+    );
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -38,23 +162,50 @@ class PendingRequestsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 3, // Example number of requests
-        itemBuilder: (context, index) {
-          return _buildRequestCard(context, index);
+
+      // ---------------- REAL DATA FROM API ----------------
+      body: FutureBuilder(
+        future: fetchPendingRequests(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.black));
+          }
+
+          final requests = snapshot.data as List;
+
+          if (requests.isEmpty) {
+            return Center(
+              child: Text(
+                "No pending requests",
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: requests.length,
+            itemBuilder: (context, index) {
+              return _buildRequestCard(context, requests[index]);
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, int index) {
+  // ---------------- CARD USING REAL DATA ----------------
+  Widget _buildRequestCard(BuildContext context, dynamic req) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RequestDetailsPage(requestIndex: index),
+            builder: (_) => RequestDetailsPage(request: req),
           ),
         );
       },
@@ -74,7 +225,7 @@ class PendingRequestsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Car Image
+            // ---------------- CAR IMAGE ----------------
             Stack(
               children: [
                 ClipRRect(
@@ -83,20 +234,19 @@ class PendingRequestsPage extends StatelessWidget {
                     topRight: Radius.circular(16),
                   ),
                   child: Image.network(
-                    'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800',
+                    req["car_image"] ?? "",
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 200,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.directions_car, size: 80),
-                      );
-                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.directions_car, size: 80),
+                    ),
                   ),
                 ),
-                // Status Badge
+
+                // ---------------- STATUS BADGE ----------------
                 Positioned(
                   top: 12,
                   left: 12,
@@ -118,19 +268,19 @@ class PendingRequestsPage extends StatelessWidget {
                 ),
               ],
             ),
-            
-            // Details Section
+
+            // ---------------- DETAILS SECTION ----------------
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Price and Rating Row
+                  // Price
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'PHP 5000/day',
+                        "₱${req["total_amount"]}",
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -152,32 +302,33 @@ class PendingRequestsPage extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 8),
-                  
-                  // Car Name and Year
+
+                  // Car name
                   Text(
-                    'Toyota, HiAce 2025',
+                    req["car_name"] ?? "Unknown Car",
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
                   ),
+
                   const SizedBox(height: 8),
-                  
-                  // Location and Details
+
+                  // ---------------- LOCATION CHIPS ----------------
                   Row(
                     children: [
-                      _buildDetailChip('Midsayap'),
+                      _buildDetailChip(req["pickup_date"] ?? ""),
                       const SizedBox(width: 8),
-                      _buildDetailChip('7+-seater'),
-                      const SizedBox(width: 8),
-                      _buildDetailChip('Automatic'),
+                      _buildDetailChip(req["rental_period"]),
                     ],
                   ),
+
                   const SizedBox(height: 16),
-                  
-                  // Booking Details
+
+                  // ---------------- BOOKING DETAILS ----------------
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -186,22 +337,27 @@ class PendingRequestsPage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildInfoRow(Icons.person, 'Renter', 'John Doe'),
+                        _buildInfoRow(Icons.person, 'Renter', req["full_name"]),
                         const SizedBox(height: 8),
-                        _buildInfoRow(Icons.calendar_today, 'Pickup Date', 'Nov 11, 2025'),
+                        _buildInfoRow(
+                            Icons.calendar_today, 'Pickup Date', req["pickup_date"]),
                         const SizedBox(height: 8),
-                        _buildInfoRow(Icons.event, 'Return Date', 'Nov 15, 2025'),
+                        _buildInfoRow(
+                            Icons.event, 'Return Date', req["return_date"]),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 16),
-                  
-                  // Action Buttons
+
+                  // ---------------- ACTION BUTTONS ----------------
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            rejectBooking(req["booking_id"].toString(), context);
+                          },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(color: Colors.red, width: 2),
@@ -221,7 +377,9 @@ class PendingRequestsPage extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            approveBooking(req["booking_id"].toString(), context);
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -249,6 +407,8 @@ class PendingRequestsPage extends StatelessWidget {
       ),
     );
   }
+
+  // ---------------- REUSED UI COMPONENTS ----------------
 
   Widget _buildDetailChip(String label) {
     return Container(
@@ -306,12 +466,12 @@ class PendingRequestsPage extends StatelessWidget {
   }
 }
 
-// ============= DETAILS PAGE =============
+// ---------------- DETAILS PAGE RECEIVING REAL DATA ----------------
 
 class RequestDetailsPage extends StatelessWidget {
-  final int requestIndex;
+  final dynamic request;
 
-  const RequestDetailsPage({super.key, required this.requestIndex});
+  const RequestDetailsPage({super.key, required this.request});
 
   @override
   Widget build(BuildContext context) {
@@ -345,100 +505,48 @@ class RequestDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Car Image
             Image.network(
-              'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800',
+              request["car_image"],
               height: 250,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 250,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.directions_car, size: 100),
-                );
-              },
+              errorBuilder: (_, __, ___) =>
+                  Container(height: 250, color: Colors.grey[300], child: Icon(Icons.car_crash)),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Car Title
                   Text(
-                    'Toyota, HiAce 2025',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    request["car_name"],
+                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'PHP 5000/day',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green,
-                    ),
-                  ),
+
                   const SizedBox(height: 20),
-                  
-                  // Renter Information
-                  _buildSection(
-                    'Renter Information',
-                    [
-                      _buildDetailRow('Name', 'John Doe'),
-                      _buildDetailRow('Contact', '+63 912 345 6789'),
-                      _buildDetailRow('Email', 'johndoe@email.com'),
-                    ],
-                  ),
-                  
+
+                  _buildSection("Renter Information", [
+                    _buildDetailRow("Name", request["full_name"]),
+                    _buildDetailRow("Contact", request["contact"]),
+                    _buildDetailRow("Email", request["email"]),
+                  ]),
+
                   const SizedBox(height: 20),
-                  
-                  // Booking Details
-                  _buildSection(
-                    'Booking Details',
-                    [
-                      _buildDetailRow('Pickup Date', 'Nov 11, 2025 - 10:00 AM'),
-                      _buildDetailRow('Return Date', 'Nov 15, 2025 - 5:00 PM'),
-                      _buildDetailRow('Duration', '4 days'),
-                      _buildDetailRow('Total Amount', 'PHP 20,000'),
-                    ],
-                  ),
-                  
+
+                  _buildSection("Booking Details", [
+                    _buildDetailRow("Pickup Date", request["pickup_date"]),
+                    _buildDetailRow("Return Date", request["return_date"]),
+                    _buildDetailRow("Period", request["rental_period"]),
+                    _buildDetailRow("Total Amount", "₱${request["total_amount"]}"),
+                  ]),
+
                   const SizedBox(height: 20),
-                  
-                  // Location
-                  _buildSection(
-                    'Pickup Location',
-                    [
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, color: Colors.red[400], size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Midsayap, Cotabato, Philippines',
-                              style: GoogleFonts.poppins(fontSize: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // Action Buttons
+
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {
-                            _showRejectDialog(context);
-                          },
+                          onPressed: () {},
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: const BorderSide(color: Colors.red, width: 2),
@@ -448,35 +556,22 @@ class RequestDetailsPage extends StatelessWidget {
                           ),
                           child: Text(
                             'Reject',
-                            style: GoogleFonts.poppins(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
+                            style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            _showApproveDialog(context);
-                          },
+                          onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: Text(
                             'Approve',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
+                            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -495,14 +590,7 @@ class RequestDetailsPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
+        Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
@@ -510,9 +598,7 @@ class RequestDetailsPage extends StatelessWidget {
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -524,85 +610,9 @@ class RequestDetailsPage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showApproveDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Approve Request?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text(
-          'Are you sure you want to approve this booking request?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              // TODO: Implement approve logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Approve', style: GoogleFonts.poppins(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRejectDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Reject Request?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text(
-          'Are you sure you want to reject this booking request?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              // TODO: Implement reject logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Reject', style: GoogleFonts.poppins(color: Colors.white)),
-          ),
+          Text(label, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
+          Text(value,
+              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
         ],
       ),
     );

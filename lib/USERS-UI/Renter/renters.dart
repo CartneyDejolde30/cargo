@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
@@ -26,15 +28,38 @@ class _HomeScreenState extends State<HomeScreen> {
   // Cache to avoid repeated HEAD requests for the same image
   final Map<String, String> _resolvedImageCache = {};
 
-  @override
-  void initState() {
-    super.initState();
-    fetchCars();
+Future<void> saveFcmToken() async {
+  String? token = await FirebaseMessaging.instance.getToken();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) VerifyPopup.showIfNotVerified(context);
-    });
-  }
+  if (token == null) return;
+
+  // Get user id (assuming you stored it in SharedPreferences)
+  final prefs = await SharedPreferences.getInstance();
+  final userId = prefs.getString("user_id");
+
+  if (userId == null) return;
+
+  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/save_fcm_token.php");
+
+  await http.post(url, body: {
+    "user_id": userId,
+    "fcm_token": token,
+  });
+
+  print("🔥 FCM Token saved: $token");
+}
+
+
+  @override
+void initState() {
+  super.initState();
+  fetchCars();
+  saveFcmToken();  // <-- ADD THIS
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) VerifyPopup.showIfNotVerified(context);
+  });
+}
 
   /// Synchronous formatter (keeps behavior for quick usage).
   /// Accepts nullable input and always returns a non-null URL string.

@@ -59,11 +59,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   ImageProvider? _getProfileImage() {
-    if (profileImage.isNotEmpty) {
-      return NetworkImage(profileImage);
-    }
-    return null;
+  if (profileImage.isNotEmpty &&
+      profileImage != "null" &&
+      profileImage != "NULL" &&
+      profileImage != "None" &&
+      profileImage.startsWith("http")) {
+    return NetworkImage(profileImage);
   }
+  return null;
+}
+
 
   Future<void> logout() async {
     final confirm = await showDialog<bool>(

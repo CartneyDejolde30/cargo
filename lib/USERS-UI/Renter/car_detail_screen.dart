@@ -716,6 +716,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           carImage: widget.carImage,
                           pricePerDay: price,
                           location: location,
+                          ownerId: carData?["owner_id"].toString() ?? "",
 
                           userId: userData['userId'],                
                           userFullName: userData['fullName'],         
