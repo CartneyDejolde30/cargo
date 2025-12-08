@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
+import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -499,10 +500,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         onTap: () {},
                       ),
                       _MenuItemData(
-                        icon: Icons.privacy_tip_outlined,
-                        title: "Privacy Policy",
-                        subtitle: "Read our privacy policy",
-                        onTap: () {},
+                        icon: Icons.help_outline_rounded,
+                        title: "FAQs",
+                        subtitle: "Frequently asked questions",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FAQsScreen()),
+                          );
+                        },
                       ),
                     ]),
 

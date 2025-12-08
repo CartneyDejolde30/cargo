@@ -7,7 +7,11 @@ class CarFeaturesScreen extends StatefulWidget {
   final CarListing listing;
   final String vehicleType;
 
-  const CarFeaturesScreen({super.key, required this.listing, this.vehicleType = 'car', });
+  const CarFeaturesScreen({
+    super.key, 
+    required this.listing, 
+    this.vehicleType = 'car',
+  });
 
   @override
   State<CarFeaturesScreen> createState() => _CarFeaturesScreenState();
@@ -16,7 +20,8 @@ class CarFeaturesScreen extends StatefulWidget {
 class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
   final _descriptionController = TextEditingController();
 
-  final List<Map<String, dynamic>> availableFeatures = [
+  // Car Features
+  final List<Map<String, dynamic>> carFeatures = [
     {'name': 'AUX input', 'icon': Icons.audiotrack},
     {'name': 'All-wheel drive', 'icon': Icons.all_inclusive},
     {'name': 'Android auto', 'icon': Icons.android},
@@ -38,15 +43,47 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
     {'name': 'Wheelchair accessible', 'icon': Icons.accessible},
   ];
 
+  // Motorcycle Features
+  final List<Map<String, dynamic>> motorcycleFeatures = [
+    {'name': 'ABS Brakes', 'icon': Icons.settings_input_component},
+    {'name': 'Traction Control', 'icon': Icons.compare_arrows},
+    {'name': 'Riding Modes', 'icon': Icons.tune},
+    {'name': 'Quick Shifter', 'icon': Icons.speed},
+    {'name': 'Cruise Control', 'icon': Icons.near_me},
+    {'name': 'Heated Grips', 'icon': Icons.local_fire_department},
+    {'name': 'USB Charging Port', 'icon': Icons.usb},
+    {'name': 'Center Stand', 'icon': Icons.support},
+    {'name': 'Side Panniers', 'icon': Icons.work_outline},
+    {'name': 'Top Box', 'icon': Icons.inventory_2},
+    {'name': 'Windshield', 'icon': Icons.shield},
+    {'name': 'LED Lighting', 'icon': Icons.lightbulb_outline},
+    {'name': 'Digital Display', 'icon': Icons.speed},
+    {'name': 'Bluetooth Connectivity', 'icon': Icons.bluetooth},
+    {'name': 'Security System', 'icon': Icons.security},
+    {'name': 'Passenger Backrest', 'icon': Icons.airline_seat_recline_normal},
+    {'name': 'Hand Guards', 'icon': Icons.front_hand},
+    {'name': 'Crash Bars', 'icon': Icons.health_and_safety},
+    {'name': 'GPS Navigation', 'icon': Icons.gps_fixed},
+    {'name': 'Tire Pressure Monitor', 'icon': Icons.tire_repair},
+    {'name': 'Adjustable Suspension', 'icon': Icons.height},
+    {'name': 'Fog Lights', 'icon': Icons.wb_twilight},
+    {'name': 'Engine Guard', 'icon': Icons.shield_outlined},
+    {'name': 'Saddle Bags', 'icon': Icons.shopping_bag},
+  ];
+
   @override
   void initState() {
     super.initState();
     _descriptionController.text = widget.listing.description ?? "";
-
-    // 🔧 Fix: triggers button update when typing
     _descriptionController.addListener(() {
       setState(() {});
     });
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   bool _canContinue() {
@@ -61,21 +98,34 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CarRulesScreen(listing: widget.listing,vehicleType: widget.vehicleType,),
+          builder: (context) => CarRulesScreen(
+            listing: widget.listing,
+            vehicleType: widget.vehicleType,
+          ),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Please add a description and select at least 1 feature."),
+          content: Text(
+            widget.vehicleType == 'motorcycle'
+                ? "Please add a description and select at least 1 feature."
+                : "Please add a description and select at least 1 feature."
+          ),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  List<Map<String, dynamic>> get _currentFeatures {
+    return widget.vehicleType == 'motorcycle' ? motorcycleFeatures : carFeatures;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMoto = widget.vehicleType == 'motorcycle';
+    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -96,9 +146,9 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.vehicleType == 'motorcycle' 
-                        ? 'Let guests know what your motorcycle has to offer'
-                        : 'Let guests know what your car has to offer',
+                      isMoto
+                          ? 'Let guests know what your motorcycle has to offer'
+                          : 'Let guests know what your car has to offer',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
@@ -107,12 +157,15 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Description
+                    // Description Section
                     Text(
-                      widget.vehicleType == 'motorcycle'
-                        ? 'What makes your motorcycle special?'
-                        : 'What makes your car special?',
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+                      isMoto
+                          ? 'What makes your motorcycle special?'
+                          : 'What makes your car special?',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -121,7 +174,9 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                       maxLines: 4,
                       style: GoogleFonts.poppins(fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Describe your amazing car...',
+                        hintText: isMoto
+                            ? 'Describe your amazing motorcycle...'
+                            : 'Describe your amazing car...',
                         hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
                         filled: true,
                         fillColor: Colors.grey[100],
@@ -135,10 +190,13 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Features
+                    // Features Section
                     Text(
-                      'Your car\'s features',
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+                      isMoto ? 'Your motorcycle\'s features' : 'Your car\'s features',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -151,17 +209,19 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                       ),
-                      itemCount: availableFeatures.length,
+                      itemCount: _currentFeatures.length,
                       itemBuilder: (context, index) {
-                        final feature = availableFeatures[index];
+                        final feature = _currentFeatures[index];
                         final isSelected = widget.listing.features.contains(feature['name']);
 
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              isSelected
-                                  ? widget.listing.features.remove(feature['name'])
-                                  : widget.listing.features.add(feature['name']);
+                              if (isSelected) {
+                                widget.listing.features.remove(feature['name']);
+                              } else {
+                                widget.listing.features.add(feature['name']);
+                              }
                             });
                           },
                           child: Container(
@@ -182,13 +242,18 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                                   color: isSelected ? Colors.white : Colors.grey[700],
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  feature['name'],
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    color: isSelected ? Colors.white : Colors.grey[800],
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Text(
+                                    feature['name'],
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      color: isSelected ? Colors.white : Colors.grey[800],
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -213,7 +278,9 @@ class _CarFeaturesScreenState extends State<CarFeaturesScreen> {
                     backgroundColor: Colors.black,
                     disabledBackgroundColor: Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   child: Text(
                     'Continue',
