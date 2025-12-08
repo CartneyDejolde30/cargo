@@ -66,7 +66,12 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      Position pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      Position pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+
 
       LatLng newPos = LatLng(pos.latitude, pos.longitude);
 

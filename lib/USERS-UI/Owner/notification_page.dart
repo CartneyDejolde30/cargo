@@ -124,7 +124,7 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
   }
 
   void _vibrate() async {
-    if (await Vibration.hasVibrator() ?? false) {
+    if (await Vibration.hasVibrator() ) {
       Vibration.vibrate(duration: 80);
     }
   }

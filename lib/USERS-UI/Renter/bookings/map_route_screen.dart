@@ -57,7 +57,9 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       setState(() => _isLoading = true);
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       if (mounted) {

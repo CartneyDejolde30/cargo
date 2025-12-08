@@ -43,8 +43,11 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
 
       // Get current position
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
+
 
       // Get address from coordinates
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -634,8 +637,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     try {
       Position pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
+
 
       LatLng newPos = LatLng(pos.latitude, pos.longitude);
 

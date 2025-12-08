@@ -177,9 +177,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => WillPopScope(
-          onWillPop: () async => false,
-          child: Dialog(
+        builder: (context) => PopScope(
+            canPop: false,
+            child: Dialog(
             backgroundColor: Colors.transparent,
             elevation: 0,
             child: Container(
