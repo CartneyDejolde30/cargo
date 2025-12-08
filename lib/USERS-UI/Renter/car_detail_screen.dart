@@ -37,7 +37,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   Map<String, dynamic>? carData;
   List<dynamic> reviews = [];
 
-  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
+  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -254,7 +254,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                             Text(
                               "${widget.rating}",
                               style: GoogleFonts.poppins(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -286,7 +286,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         Text(
                           "Specifications",
                           style: GoogleFonts.poppins(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -323,7 +323,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         Text(
                           "Rental Information",
                           style: GoogleFonts.poppins(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -355,7 +355,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                         Text(
                                           "Price per day",
                                           style: GoogleFonts.poppins(
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             color: Colors.grey.shade600,
                                           ),
                                         ),
@@ -629,6 +629,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ReviewsScreen(
+                                    carId: widget.carId,
                                     carName: widget.carName,
                                     totalReviews: reviews.length,
                                     averageRating: widget.rating,
@@ -704,32 +705,31 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                   top: false,
                   child: ElevatedButton(
                     onPressed: () async {
-                      // Get user data for auto-fill
-                      final userData = await _getUserData();
-                      
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BookingScreen(
-                            carId: widget.carId,
-                            carName: widget.carName,
-                            carImage: widget.carImage,
-                            pricePerDay: price,
-                            location: location,
-                            userId: userData['userId'],
-                            userFullName: userData['fullName'],
-                            userEmail: userData['email'],
-                            userMunicipality: userData['municipality'],
-                            ownerLatitude: carData?["latitude"] != null 
-                                ? double.tryParse(carData!["latitude"].toString())
-                                : null,
-                            ownerLongitude: carData?["longitude"] != null
-                                ? double.tryParse(carData!["longitude"].toString())
-                                : null,
-                          ),
+                    final userData = await _getUserData();  
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingScreen(
+                          carId: widget.carId,
+                          carName: widget.carName,
+                          carImage: widget.carImage,
+                          pricePerDay: price,
+                          location: location,
+                          ownerId: carData?["owner_id"].toString() ?? "",
+
+                          userId: userData['userId'],                
+                          userFullName: userData['fullName'],         
+                          userEmail: userData['email'],               
+                          userMunicipality: userData['municipality'], 
+
+                          ownerLatitude: double.tryParse(carData?["latitude"]?.toString() ?? ""),
+                          ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),     
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),

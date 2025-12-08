@@ -1,16 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class ReviewsScreen extends StatefulWidget {
+  final int carId;
   final String carName;
-  final int totalReviews;
+  final int totalReviews;        
   final double averageRating;
 
   const ReviewsScreen({
     super.key,
+    required this.carId,
     required this.carName,
-    this.totalReviews = 125,
-    this.averageRating = 5.0,
+    required this.totalReviews,     
+    required this.averageRating,
+    
   });
 
   @override
@@ -20,48 +25,72 @@ class ReviewsScreen extends StatefulWidget {
 class _ReviewsScreenState extends State<ReviewsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'name': 'Mr. Jack',
-      'avatar': 'https://ui-avatars.com/api/?name=Mr+Jack&background=random',
-      'rating': 5.0,
-      'date': 'Today',
-      'review': 'The rental car was clean, reliable, and the service was exceptional. Highly recommended. I like reservation and enjoyable.',
-    },
-    {
-      'name': 'Robert',
-      'avatar': 'https://ui-avatars.com/api/?name=Robert&background=random',
-      'rating': 5.0,
-      'date': 'Yesterday',
-      'review': 'The rental car was clean, reliable, and the service was exceptional. Highly recommended. I like reservation and enjoyable.',
-    },
-    {
-      'name': 'Jubed',
-      'avatar': 'https://ui-avatars.com/api/?name=Jubed&background=random',
-      'rating': 5.0,
-      'date': '2 Weeks ago',
-      'review': 'The rental car was clean, reliable, and the service was exceptional. Highly recommended. I like reservation and enjoyable.',
-    },
-    {
-      'name': 'Mr. Jon',
-      'avatar': 'https://ui-avatars.com/api/?name=Mr+Jon&background=random',
-      'rating': 4.0,
-      'date': '3 Weeks ago',
-      'review': 'The rental car was clean, reliable, and the service was exceptional. Highly recommended. I like reservation and enjoyable.',
-    },
-    {
-      'name': 'Harlock',
-      'avatar': 'https://ui-avatars.com/api/?name=Harlock&background=random',
-      'rating': 4.0,
-      'date': '3 Weeks ago',
-      'review': 'The rental car was clean, reliable, and the service was exceptional. Highly recommended. I like reservation and enjoyable.',
-    },
-  ];
+  List<Map<String, dynamic>> _reviews = [];
+  List<Map<String, dynamic>> _filteredReviews = [];
+
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReviews();
+    _searchController.addListener(() {
+      _filterReviews(_searchController.text.trim());
+    });
+  }
+
+  Future<void> _fetchReviews() async {
+    final url = Uri.parse(
+        "http://10.72.15.180/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data["success"] == true) {
+        setState(() {
+          _reviews = List<Map<String, dynamic>>.from(data["reviews"]);
+          _filteredReviews = List.from(_reviews);
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _filterReviews(String query) {
+    if (query.isEmpty) {
+      setState(() => _filteredReviews = List.from(_reviews));
+      return;
+    }
+
+    query = query.toLowerCase();
+
+    setState(() {
+      _filteredReviews = _reviews.where((review) {
+        final name = review['name'].toString().toLowerCase();
+        final text = review['comment'].toString().toLowerCase();
+        return name.contains(query) || text.contains(query);
+      }).toList();
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  String _formatDate(String dateString) {
+    final date = DateTime.parse(dateString);
+    final now = DateTime.now();
+    final diff = now.difference(date).inDays;
+
+    if (diff == 0) return "Today";
+    if (diff == 1) return "Yesterday";
+    if (diff < 7) return "$diff days ago";
+    if (diff < 30) return "${(diff / 7).floor()} weeks ago";
+    return "${(diff / 30).floor()} months ago";
   }
 
   @override
@@ -76,7 +105,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Reviews',
+          "Reviews",
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontSize: 18,
@@ -84,152 +113,101 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 100),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Rating Summary
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${widget.averageRating} Reviews (${widget.totalReviews})',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Search Bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: Row(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.search,
-                          color: Colors.grey,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: "Find reviews",
-                              hintStyle: GoogleFonts.poppins(
-                                color: Colors.grey,
-                                fontSize: 14,
+                        Row(
+                          children: [
+                            const Icon(Icons.star,
+                                color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${widget.averageRating} ★  |  ${widget.totalReviews} Reviews",
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
-                              border: InputBorder.none,
                             ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Search Bar
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.search,
+                                  color: Colors.grey, size: 22),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  decoration: InputDecoration(
+                                    hintText: "Find reviews",
+                                    hintStyle: GoogleFonts.poppins(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                    border: InputBorder.none,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Review List
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _filteredReviews.length,
+                          itemBuilder: (context, index) {
+                            final r = _filteredReviews[index];
+                            return _buildReviewCard(
+                              name: r["name"],
+                              avatar: r["avatar"],
+                              rating: r["rating"],
+                              date: _formatDate(r["created_at"]),
+                              review: r["comment"],
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Reviews List
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _reviews.length,
-                    itemBuilder: (context, index) {
-                      final review = _reviews[index];
-                      return _buildReviewCard(
-                        name: review['name'],
-                        avatar: review['avatar'],
-                        rating: review['rating'],
-                        date: review['date'],
-                        review: review['review'],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Bottom Book Button
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withAlpha((0.2 * 255).round()),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  // Book now action
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Book Now',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
+  }
+
+  double _calculateAverageRating() {
+    if (_filteredReviews.isEmpty) return 0;
+    double total = 0;
+    for (var r in _filteredReviews) {
+      total += r["rating"];
+    }
+    return (total / _filteredReviews.length);
   }
 
   Widget _buildReviewCard({
@@ -252,18 +230,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    avatar,
-                    fit: BoxFit.cover,
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  avatar,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(width: 12),

@@ -49,6 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+
 
     setState(() {
       userName = prefs.getString("fullname") ?? "User";
@@ -56,15 +58,26 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       phone = prefs.getString("phone") ?? "";
       address = prefs.getString("address") ?? "";
       profileImage = prefs.getString("profile_image") ?? "";
+      print("PROFILE IMAGE FROM PREFS → $profileImage");
     });
   }
 
   ImageProvider? _getProfileImage() {
-    if (profileImage.isNotEmpty) {
-      return NetworkImage(profileImage);
-    }
+  if (profileImage.isEmpty) return null;
+
+  // Clean URL
+  final url = profileImage.trim();
+
+  print("FINAL PROFILE URL → $url");
+
+  // URL must begin with http or https
+  if (!url.startsWith("http")) {
     return null;
   }
+
+  return NetworkImage(url);
+}
+
 
   Future<void> logout() async {
     final confirm = await showDialog<bool>(

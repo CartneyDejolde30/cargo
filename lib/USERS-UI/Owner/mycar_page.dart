@@ -17,7 +17,7 @@ class MyCarPage extends StatefulWidget {
 }
 
 class _MyCarPageState extends State<MyCarPage> {
-  final String apiUrl = "http://192.168.1.11/carGOAdmin/cars_api.php";
+  final String apiUrl = "http://10.72.15.180/carGOAdmin/cars_api.php";
 
   List<Map<String, dynamic>> cars = [];
   List<Map<String, dynamic>> filteredCars = [];
@@ -308,13 +308,14 @@ floatingActionButton: FloatingActionButton.extended(
                         itemCount: filteredCars.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
+                          
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: .80,
+                          childAspectRatio: .65,
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];
-                          final imageUrl = "http://192.168.1.11/carGOAdmin/${car['image']}";
+                          final imageUrl = "http://10.72.15.180/carGOAdmin/${car['image']}";
                           final status = car["status"] ?? "Unknown";
 
                           return FadeInUp(

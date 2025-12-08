@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
@@ -23,27 +25,88 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _cars = [];
 
-  @override
-  void initState() {
-    super.initState();
-    fetchCars();
+  // Cache to avoid repeated HEAD requests for the same image
+  final Map<String, String> _resolvedImageCache = {};
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) VerifyPopup.showIfNotVerified(context);
-    });
+Future<void> saveFcmToken() async {
+  String? token = await FirebaseMessaging.instance.getToken();
+
+  if (token == null) return;
+
+  // Get user id (assuming you stored it in SharedPreferences)
+  final prefs = await SharedPreferences.getInstance();
+  final userId = prefs.getString("user_id");
+
+  if (userId == null) return;
+
+  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/save_fcm_token.php");
+
+  await http.post(url, body: {
+    "user_id": userId,
+    "fcm_token": token,
+  });
+
+  print("🔥 FCM Token saved: $token");
+}
+
+
+  @override
+void initState() {
+  super.initState();
+  fetchCars();
+  saveFcmToken();  // <-- ADD THIS
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) VerifyPopup.showIfNotVerified(context);
+  });
+}
+
+  /// Synchronous formatter (keeps behavior for quick usage).
+  /// Accepts nullable input and always returns a non-null URL string.
+  String formatImage(String? rawPath) {
+    final path = rawPath?.toString().trim() ?? '';
+    if (path.isEmpty) return "https://via.placeholder.com/300";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+    final cleanPath = path.replaceFirst("uploads/", "");
+    return "http://10.72.15.180/carGOAdmin/uploads/$cleanPath";
   }
 
-  String formatImage(String rawPath) {
-    if (rawPath.isEmpty) {
-      return "https://via.placeholder.com/300";
+  /// Async resolver that checks whether an image URL exists (via HEAD).
+  /// Returns a working URL or placeholder and caches the result.
+  Future<String> resolveImageUrlCached(String? rawPath) async {
+    const placeholder = "https://via.placeholder.com/400x250?text=No+Image";
+
+    final path = rawPath?.toString().trim() ?? '';
+    if (path.isEmpty) return placeholder;
+
+    String candidate;
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      candidate = path;
+    } else {
+      final clean = path.replaceFirst("uploads/", "");
+      candidate = "http://10.72.15.180/carGOAdmin/uploads/$clean";
     }
 
-    String cleanPath = rawPath.replaceFirst("uploads/", "");
-    return "http:/192.168.1.11/carGOAdmin/uploads/$cleanPath";
+    if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
+
+    try {
+      final resp = await http.head(Uri.parse(candidate)).timeout(const Duration(seconds: 4));
+      if (resp.statusCode == 200) {
+        _resolvedImageCache[candidate] = candidate;
+        return candidate;
+      }
+    } catch (_) {
+      // ignore network errors, fall through to placeholder
+    }
+
+    _resolvedImageCache[candidate] = placeholder;
+    return placeholder;
   }
 
   Future<void> fetchCars() async {
-    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_cars.php";
+    final String apiUrl = "http://10.72.15.180/carGOAdmin/api/get_cars.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -61,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("❌ Error fetching cars: $e");
     }
 
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _handleNavigation(int index) {
@@ -198,12 +261,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             itemCount: bestCars.length,
                             itemBuilder: (context, index) {
                               final car = bestCars[index];
+
+                              // normalize location safely
+                              final rawLocation = (car['location'] ?? '').toString().trim();
+                              final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
+
                               return _buildCarCard(
                                 carId: int.tryParse(car['id'].toString()) ?? 0,
-                                image: formatImage(car['image'] ?? ""),
+                                image: formatImage(car['image'] ?? ''),
                                 name: "${car['brand']} ${car['model']}",
                                 rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-                                location: car['location'].toString().isEmpty ? "Unknown" : car['location'],
+                                location: locationText,
                                 seats: int.tryParse(car['seat'].toString()) ?? 4,
                                 price: car['price'].toString(),
                               );
@@ -227,12 +295,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemCount: newlyListed.length,
                               itemBuilder: (context, index) {
                                 final car = newlyListed[index];
+
+                                final rawLocation = (car['location'] ?? '').toString().trim();
+                                final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
+
                                 return _buildNewlyListedCard(
                                   carId: int.tryParse(car['id'].toString()) ?? 0,
-                                  image: formatImage(car['image'] ?? ""),
+                                  image: formatImage(car['image'] ?? ''),
                                   name: "${car['brand']} ${car['model']}",
                                   year: car['car_year'] ?? "",
-                                  location: car['location'].toString().isEmpty ? "Unknown" : car['location'],
+                                  location: locationText,
                                   seats: int.tryParse(car['seat'].toString()) ?? 4,
                                   transmission: car['transmission'] ?? "Automatic",
                                   price: car['price'].toString(),
@@ -330,20 +402,36 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image — now resolved via FutureBuilder to avoid 404 noise
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                image,
-                height: 110,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 110,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
-                ),
+              child: FutureBuilder<String>(
+                future: resolveImageUrlCached(image),
+                builder: (context, snap) {
+                  final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
+                  return Image.network(
+                    imageUrl,
+                    height: 110,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        height: 110,
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 110,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                    ),
+                  );
+                },
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -445,17 +533,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
                   ),
-                  child: Image.network(
-                    image,
-                    height: 160,
-                    width: 140,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 160,
-                      width: 140,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                    ),
+                  child: FutureBuilder<String>(
+                    future: resolveImageUrlCached(image),
+                    builder: (context, snap) {
+                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
+                      return Image.network(
+                        imageUrl,
+                        height: 160,
+                        width: 140,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            height: 160,
+                            width: 140,
+                            color: Colors.grey.shade200,
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 160,
+                          width: 140,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 if (hasUnlimitedMileage)

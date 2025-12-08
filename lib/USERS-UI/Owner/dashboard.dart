@@ -25,6 +25,26 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     _setupAnimations();
   }
 
+  Future<String> getOwnerId() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Always read as String first (safer)
+  String? ownerId = prefs.getString("user_id");
+
+  // If stored as int, convert it
+  if (ownerId == null) {
+    int? ownerIdInt = prefs.getInt("user_id");
+    if (ownerIdInt != null) {
+      ownerId = ownerIdInt.toString();
+    }
+  }
+
+  // Default fallback
+  return ownerId ?? "1";
+}
+
+
+
   void _setupAnimations() {
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
@@ -460,12 +480,18 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                 count: 2,
                 icon: Icons.pending_actions_outlined,
                 backgroundColor: Colors.black,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PendingRequestsPage()),
-                  );
-                },
+                onTap: () async {
+  String ownerId = await getOwnerId();
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PendingRequestsPage(ownerId: ownerId),
+    ),
+  );
+},
+
+
               ),
               const SizedBox(height: 14),
               ModernActionButton(
