@@ -25,7 +25,7 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
   List<Map<String, dynamic>> filteredReviews = [];
   int? selectedRating; // null means "All"
   
-  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   @override
   void initState() {
@@ -275,7 +275,7 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

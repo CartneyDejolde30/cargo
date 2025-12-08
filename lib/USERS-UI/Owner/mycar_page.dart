@@ -17,7 +17,7 @@ class MyCarPage extends StatefulWidget {
 }
 
 class _MyCarPageState extends State<MyCarPage> {
-  final String apiUrl = "http://10.72.15.180/carGOAdmin/cars_api.php";
+  final String apiUrl = "http://192.168.1.11/carGOAdmin/cars_api.php";
 
   List<Map<String, dynamic>> cars = [];
   List<Map<String, dynamic>> filteredCars = [];
@@ -315,7 +315,7 @@ floatingActionButton: FloatingActionButton.extended(
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];
-                          final imageUrl = "http://10.72.15.180/carGOAdmin/${car['image']}";
+                          final imageUrl = "http://192.168.1.11/carGOAdmin/${car['image']}";
                           final status = car["status"] ?? "Unknown";
 
                           return FadeInUp(
@@ -381,7 +381,7 @@ floatingActionButton: FloatingActionButton.extended(
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -445,7 +445,7 @@ floatingActionButton: FloatingActionButton.extended(
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: getStatusColor(status).withOpacity(0.3),
+                          color: getStatusColor(status).withValues(alpha: 0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),

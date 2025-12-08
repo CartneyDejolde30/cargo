@@ -23,7 +23,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
   bool loading = true;
   List<Map<String, dynamic>> cars = [];
 
-  final String baseUrl = "http://10.72.15.180/carGOAdmin/";
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   @override
   void initState() {
@@ -230,7 +230,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -287,7 +287,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 4,
                         ),
                       ],

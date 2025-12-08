@@ -15,7 +15,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> with SingleTickerProviderStateMixin {
-  final String apiUrl = "http://10.72.15.180/carGOAdmin/update.php";
+  final String apiUrl = "http://192.168.1.11/carGOAdmin/update.php";
 
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
@@ -274,7 +274,7 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
         await prefs.setString("fullname", updated["fullname"]);
         await prefs.setString("phone", updated["phone"] ?? "");
         await prefs.setString("address", updated["address"] ?? "");
-        String baseURL = "http://10.72.15.180/carGOAdmin/uploads/";
+        String baseURL = "http://192.168.1.11/carGOAdmin/uploads/";
         String img = updated["profile_image"] ?? "";
 
 
@@ -431,7 +431,7 @@ await prefs.setString("profile_image", finalURL);
                       border: Border.all(color: Colors.white, width: 4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 4),
                         ),
@@ -466,7 +466,7 @@ await prefs.setString("profile_image", finalURL);
                           border: Border.all(color: Colors.white, width: 4),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -565,7 +565,7 @@ await prefs.setString("profile_image", finalURL);
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),

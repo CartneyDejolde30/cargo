@@ -5,7 +5,7 @@ import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.da
 class VerificationService {
 
   // Change to your real endpoint
-  static const String baseUrl = "http://10.72.15.180/carGOAdmin/submit_verification.php";
+  static const String baseUrl = "http://192.168.1.11/carGOAdmin/submit_verification.php";
 
   /// Submit full verification form (multi-step final submit)
   static Future<bool> submitVerification(UserVerification data) async {

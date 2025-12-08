@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     setState(() => _isLoading = true);
     _saveCredentials();
 
-    final url = Uri.parse("http://10.72.15.180/carGOAdmin/login.php");
+    final url = Uri.parse("http://192.168.1.11/carGOAdmin/login.php");
 
     try {
       final response = await http.post(
@@ -404,7 +404,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -442,7 +442,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -535,7 +535,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -640,7 +640,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),

@@ -38,11 +38,11 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-    return "http://10.72.15.180/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
+    return "http://192.168.1.11/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
   }
 
   Future<void> fetchCars() async {
-    const url = "http://10.72.15.180/carGOAdmin/api/get_cars.php";
+    const url = "http://192.168.1.11/carGOAdmin/api/get_cars.php";
 
     try {
       final res = await http.get(Uri.parse(url));
@@ -165,7 +165,7 @@ class _CarListScreenState extends State<CarListScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -209,7 +209,7 @@ class _CarListScreenState extends State<CarListScreen> {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -298,7 +298,7 @@ class _CarListScreenState extends State<CarListScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

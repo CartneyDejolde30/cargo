@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'faqs_screen.dart';
 import 'policy_document_screen.dart';
 
 class FAQsScreen extends StatefulWidget {
@@ -581,14 +580,14 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
         boxShadow: isExpanded
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

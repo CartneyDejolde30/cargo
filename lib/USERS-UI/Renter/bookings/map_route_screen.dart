@@ -336,7 +336,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
               border: Border.all(color: Colors.white, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -367,7 +367,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.7),
+              Colors.black.withValues(alpha: 0.7),
               Colors.transparent,
             ],
           ),
@@ -378,7 +378,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.black.withOpacity(0.5),
+                backgroundColor: Colors.black.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(width: 12),
@@ -397,7 +397,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                   Text(
                     widget.locationName,
                     style: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 12,
                     ),
                     maxLines: 1,
@@ -426,7 +426,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -472,7 +472,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),

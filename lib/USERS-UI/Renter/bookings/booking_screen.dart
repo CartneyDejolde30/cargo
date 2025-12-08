@@ -51,6 +51,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   int currentStep = 0;
   bool needsDelivery = false;
+  bool isVerifiedUser = false;
   String selectedPeriod = 'Day';
 
   // Controllers
@@ -77,6 +78,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    _checkVerificationOnInit(); 
     // Auto-fill user data from profile
     if (widget.userFullName != null && widget.userFullName!.isNotEmpty) {
       fullNameController.text = widget.userFullName!;
@@ -97,6 +99,86 @@ class _BookingScreenState extends State<BookingScreen> {
     contactController.dispose();
     super.dispose();
   }
+  void _showVerificationError() {
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.block, color: Colors.red.shade600, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Access Denied',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your account is not verified. Please complete verification before booking.',
+                style: GoogleFonts.poppins(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This booking attempt has been logged for security.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx); // Close dialog
+                Navigator.pop(context); // Return to car detail
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                'Go Back',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
 
   void _calculatePrice() {
     setState(() {
@@ -111,6 +193,41 @@ class _BookingScreenState extends State<BookingScreen> {
       );
     });
   }
+
+  Future<void> _checkVerificationOnInit() async {
+    if (widget.userId == null || widget.userId!.isEmpty) {
+      // No user ID - assume not verified
+      setState(() => isVerifiedUser = false);
+      _showVerificationError();
+      return;
+    }
+
+    try {
+      final url = Uri.parse(
+        "http://10.72.15.180/carGOAdmin/api/check_user_verification.php?user_id=${widget.userId}"
+      );
+      
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        
+        setState(() {
+          isVerifiedUser = result['is_verified'] ?? false;
+        });
+
+        if (!isVerifiedUser) {
+          _showVerificationError();
+        }
+      } else {
+        _showVerificationError();
+      }
+    } catch (e) {
+      print("❌ Verification Check Error: $e");
+      _showVerificationError();
+    }
+  }
+
 
   Future<void> _openMapDirections() async {
     if (widget.ownerLatitude != null && widget.ownerLongitude != null) {
@@ -886,7 +1003,7 @@ class _BookingScreenState extends State<BookingScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, -5),
           ),
@@ -1144,6 +1261,10 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _processPayment() {
+    if (!isVerifiedUser) {
+      _showError('Verification required. Please verify your account first.');
+      return;
+    }
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -1174,10 +1295,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
   // Send to backend
   _submitBookingToServer();
+
+  
 }
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.72.15.180/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse("http://192.168.1.11/carGOAdmin/api/create_booking.php");
 
   try {
     final response = await http.post(url, body: {
