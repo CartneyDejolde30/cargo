@@ -29,23 +29,27 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final _emailFocus = FocusNode();
   final _mobileFocus = FocusNode();
 
-  final List<String> regions = [
-    'NCR',
-    'Region I',
-    'Region II',
-    'Region III',
-    'Region IV-A',
-    'Region V',
-    'Region VI',
-    'Region VII',
-    'Region VIII (Caraga)'
-  ];
-
   final List<String> genders = ['Male', 'Female'];
 
-  Map<String, dynamic> caragaData = {};
-  List<String> provinces = [];
-  List<String> municipalities = [];
+  // Agusan del Sur municipalities
+  final List<String> municipalities = [
+    'Bayugan',
+    'Bunawan',
+    'Esperanza',
+    'La Paz',
+    'Loreto',
+    'Prosperidad',
+    'Rosario',
+    'San Francisco',
+    'San Luis',
+    'Santa Josefa',
+    'Sibagat',
+    'Talacogon',
+    'Trento',
+    'Veruela',
+  ];
+
+  Map<String, dynamic> barangaysData = {};
   List<String> barangays = [];
 
   @override
@@ -59,7 +63,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _emailController.text = verification.email ?? '';
     _mobileController.text = verification.mobileNumber ?? '';
 
-    _loadCaragaData();
+    // Set default values for region and province
+    verification.permRegion = 'Region XIII (Caraga)';
+    verification.permProvince = 'Agusan del Sur';
+
+    _loadBarangaysData();
 
     // Add listeners for real-time validation
     _firstNameController.addListener(() => setState(() {}));
@@ -68,24 +76,20 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _mobileController.addListener(() => setState(() {}));
   }
 
-  Future<void> _loadCaragaData() async {
+  Future<void> _loadBarangaysData() async {
     final response = await rootBundle.loadString('assets/data/caraga.json');
     final data = json.decode(response);
 
     setState(() {
-      caragaData = data;
-      provinces = caragaData.keys.toList();
-
-      if (verification.permProvince != null && caragaData.containsKey(verification.permProvince)) {
-        municipalities = caragaData[verification.permProvince].keys.toList();
+      // Extract Agusan del Sur data
+      if (data.containsKey('Agusan del Sur')) {
+        barangaysData = data['Agusan del Sur'];
       }
 
-      if (verification.permCity != null &&
-          verification.permProvince != null &&
-          caragaData[verification.permProvince][verification.permCity] != null) {
-        barangays = List<String>.from(
-            caragaData[verification.permProvince][verification.permCity]
-        );
+      // Load barangays if municipality is already selected
+      if (verification.permCity != null && 
+          barangaysData.containsKey(verification.permCity)) {
+        barangays = List<String>.from(barangaysData[verification.permCity]);
       }
     });
   }
@@ -106,7 +110,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   bool _canContinue() {
     return (verification.firstName?.isNotEmpty ?? false) &&
         (verification.lastName?.isNotEmpty ?? false) &&
-        verification.permRegion != null &&
+        verification.permCity != null &&
+        verification.permBarangay != null &&
         verification.email != null &&
         verification.email!.isNotEmpty &&
         verification.mobileNumber != null &&
@@ -291,70 +296,66 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     // Address Section
                     _buildSectionHeader(
                       icon: Icons.location_on_outlined,
-                      title: 'Permanent Address',
+                      title: 'Address in Agusan del Sur',
                       subtitle: 'Based on your government ID',
                     ),
                     const SizedBox(height: 16),
 
+                    // Location Info Card
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_city, color: Colors.green.shade700, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Agusan del Sur, CARAGA Region',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.green.shade900,
+                                  ),
+                                ),
+                                Text(
+                                  'Select your municipality and barangay',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     _buildDropdown(
-                      'Region',
-                      regions,
-                      verification.permRegion,
-                      Icons.map_outlined,
+                      'Municipality',
+                      municipalities,
+                      verification.permCity,
+                      Icons.location_city,
                       (v) {
                         setState(() {
-                          verification.permRegion = v;
-                          if (v == 'Region VIII (Caraga)') {
-                            provinces = caragaData.keys.toList();
-                          } else {
-                            provinces = [];
-                          }
-                          verification.permProvince = null;
-                          verification.permCity = null;
+                          verification.permCity = v;
+                          barangays = v != null && barangaysData.containsKey(v)
+                              ? List<String>.from(barangaysData[v])
+                              : [];
                           verification.permBarangay = null;
-                          municipalities = [];
-                          barangays = [];
                         });
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    if (verification.permRegion == 'Region VIII (Caraga)') ...[
-                      _buildDropdown(
-                        'Province',
-                        provinces,
-                        verification.permProvince,
-                        Icons.terrain,
-                        (v) {
-                          setState(() {
-                            verification.permProvince = v;
-                            municipalities = v != null ? caragaData[v].keys.toList() : [];
-                            verification.permCity = null;
-                            barangays = [];
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    if (municipalities.isNotEmpty) ...[
-                      _buildDropdown(
-                        'Municipality',
-                        municipalities,
-                        verification.permCity,
-                        Icons.location_city,
-                        (v) {
-                          setState(() {
-                            verification.permCity = v;
-                            barangays = v != null
-                                ? List<String>.from(caragaData[verification.permProvince][v])
-                                : [];
-                            verification.permBarangay = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
 
                     if (barangays.isNotEmpty) ...[
                       _buildDropdown(
@@ -713,9 +714,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   children: [
                     Icon(icon, size: 18, color: Colors.grey.shade600),
                     const SizedBox(width: 12),
-                    Text(
-                      item,
-                      style: GoogleFonts.poppins(fontSize: 14),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
