@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
-
+import 'dart:convert';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/selfie_screen.dart';
 
@@ -21,8 +21,7 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _frontImage;
   File? _backImage;
-  Uint8List? _frontImageBytes;
-  Uint8List? _backImageBytes;
+
   String? _selectedIdType;
 
   final List<Map<String, String>> idTypes = [
@@ -44,66 +43,71 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
     _selectedIdType = widget.verification.idType;
     
     if (widget.verification.idFrontPhoto != null) {
-      _frontImage = File(widget.verification.idFrontPhoto!);
-    }
-    if (widget.verification.idBackPhoto != null) {
-      _backImage = File(widget.verification.idBackPhoto!);
-    }
+  if (!kIsWeb) {
+    _frontImage = File(widget.verification.idFrontPhoto!);
+  }
+}
+if (widget.verification.idBackPhoto != null) {
+  if (!kIsWeb) {
+    _backImage = File(widget.verification.idBackPhoto!);
+  }
+}
+
   }
 
   // Camera Take
   Future<void> _pickImage(bool isFront) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85,
-      );
+  try {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
 
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          if (isFront) {
-            _frontImageBytes = bytes;
-            if (!kIsWeb) _frontImage = File(image.path);
-            widget.verification.idFrontPhoto = image.path;
-          } else {
-            _backImageBytes = bytes;
-            if (!kIsWeb) _backImage = File(image.path);
-            widget.verification.idBackPhoto = image.path;
-          }
-        });
-      }
-    } catch (e) {
-      _showError("Failed to capture image");
+    if (image != null) {
+      setState(() {
+        if (isFront) {
+          _frontImage = File(image.path);
+          widget.verification.idFrontFile = _frontImage;
+          widget.verification.idFrontPhoto = image.path;
+
+        } else {
+          _backImage = File(image.path);
+          widget.verification.idBackFile = _backImage;
+          widget.verification.idBackPhoto = image.path;
+
+        }
+      });
     }
+  } catch (e) {
+    _showError("Failed to capture image");
   }
+}
+
 
   // Pick from Gallery
   Future<void> _pickFromGallery(bool isFront) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
+  try {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
 
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          if (isFront) {
-            _frontImageBytes = bytes;
-            if (!kIsWeb) _frontImage = File(image.path);
-            widget.verification.idFrontPhoto = image.path;
-          } else {
-            _backImageBytes = bytes;
-            if (!kIsWeb) _backImage = File(image.path);
-            widget.verification.idBackPhoto = image.path;
-          }
-        });
-      }
-    } catch (e) {
-      _showError("Failed to pick from gallery");
+    if (image != null) {
+      setState(() {
+        if (isFront) {
+          _frontImage = File(image.path);
+          widget.verification.idFrontFile = _frontImage;
+        } else {
+          _backImage = File(image.path);
+          widget.verification.idBackFile = _backImage;
+        }
+      });
     }
+  } catch (e) {
+    _showError("Failed to pick from gallery");
   }
+}
+
 
   // Bottom sheet selector
   void _showImageSourceOptions(bool isFront) {
@@ -236,15 +240,15 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
 
   void _continue() {
     if (_selectedIdType == null) {
-      _showError("Please select an ID type");
-      return;
-    }
+  _showError("Please select an ID type");
+  return;
+}
 
-    if ((kIsWeb && (_frontImageBytes == null || _backImageBytes == null)) ||
-        (!kIsWeb && (_frontImage == null || _backImage == null))) {
-      _showError("Please upload front and back images of the ID");
-      return;
-    }
+
+    if (_frontImage == null || _backImage == null) {
+  _showError("Please upload front and back images of the ID");
+  return;
+}
 
     // Save selection to model
     widget.verification.idType = _selectedIdType;
@@ -257,9 +261,10 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canContinue = _selectedIdType != null && 
-      (kIsWeb ? (_frontImageBytes != null && _backImageBytes != null) 
-              : (_frontImage != null && _backImage != null));
+    final canContinue =
+    _selectedIdType != null &&
+    _frontImage != null &&
+    _backImage != null;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -631,8 +636,8 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
 
   Widget _buildUploadSection(String title, bool isFront) {
     final image = isFront ? _frontImage : _backImage;
-    final imageBytes = isFront ? _frontImageBytes : _backImageBytes;
-    final hasImage = kIsWeb ? imageBytes != null : image != null;
+    final hasImage = image != null;
+
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,20 +669,14 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: kIsWeb
-                            ? Image.memory(
-                                imageBytes!,
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.file(
-                                image!,
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                        child: Image.file(
+                          image!,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
+
                       Positioned(
                         top: 8,
                         right: 8,

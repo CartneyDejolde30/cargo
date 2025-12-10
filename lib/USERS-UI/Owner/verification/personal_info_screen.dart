@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/id_upload_screen.dart';
 
@@ -14,6 +14,9 @@ class PersonalInfoScreen extends StatefulWidget {
 
   @override
   State<PersonalInfoScreen> createState() => _PersonalInfoScreenState();
+
+
+  
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
@@ -52,11 +55,24 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Map<String, dynamic> barangaysData = {};
   List<String> barangays = [];
 
+Future<void> _loadUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  print("USER ID FROM PREFS = ${prefs.getString("user_id")}");
+
+  setState(() {
+    verification.userId = int.tryParse(prefs.getString("user_id") ?? "0");
+  });
+}
+
+
   @override
   void initState() {
     super.initState();
 
     verification = widget.existingData ?? UserVerification();
+
+    _loadUserId();
+
 
     _firstNameController.text = verification.firstName ?? '';
     _lastNameController.text = verification.lastName ?? '';
@@ -148,29 +164,33 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     );
   }
 
-  void _submit() {
-    verification.firstName = _firstNameController.text;
-    verification.lastName = _lastNameController.text;
-    verification.email = _emailController.text;
-    verification.mobileNumber = _mobileController.text;
+  void _submit() async {
+  final prefs = await SharedPreferences.getInstance();
+  verification.userId = int.tryParse(prefs.getString("user_id") ?? "0");
 
-    if (!_isValidEmail(verification.email!)) {
-      _showError("Please enter a valid email address");
-      return;
-    }
+  verification.firstName = _firstNameController.text;
+  verification.lastName = _lastNameController.text;
+  verification.email = _emailController.text;
+  verification.mobileNumber = _mobileController.text;
 
-    if (!_isValidPhone(verification.mobileNumber!)) {
-      _showError("Mobile number must be exactly 11 digits");
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IDUploadScreen(verification: verification),
-      ),
-    );
+  if (!_isValidEmail(verification.email!)) {
+    _showError("Please enter a valid email address");
+    return;
   }
+
+  if (!_isValidPhone(verification.mobileNumber!)) {
+    _showError("Mobile number must be exactly 11 digits");
+    return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => IDUploadScreen(verification: verification),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

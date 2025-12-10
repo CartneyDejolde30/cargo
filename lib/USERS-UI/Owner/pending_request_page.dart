@@ -10,7 +10,7 @@ class PendingRequestsPage extends StatelessWidget {
 
   Future<List<dynamic>> fetchPendingRequests() async {
   final url = Uri.parse(
-    "http://192.168.1.11/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
+    "http://10.96.221.180/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
   );
 
   try {
@@ -68,7 +68,7 @@ void rejectBooking(String bookingId, BuildContext context) {
             Navigator.pop(context); // Close dialog
 
             final url = Uri.parse(
-              "http://192.168.1.11/carGOAdmin/api/reject_request.php",
+              "http://10.96.221.180/carGOAdmin/api/reject_request.php",
             );
 
             final response = await http.post(url, body: {
@@ -102,7 +102,7 @@ void rejectBooking(String bookingId, BuildContext context) {
 
 
 Future<void> approveBooking(String bookingId, BuildContext context) async {
-  final url = Uri.parse("http://192.168.1.11/carGOAdmin/api/approve_request.php");
+  final url = Uri.parse("http://10.96.221.180/carGOAdmin/api/approve_request.php");
 
   final response = await http.post(url, body: {
     "booking_id": bookingId,

@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-
+import 'dart:convert';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/services/verification_service.dart';
 
@@ -45,16 +45,17 @@ class _SelfieScreenState extends State<SelfieScreen> {
       );
 
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          if (kIsWeb) {
-            _webImageBytes = bytes;
-          } else {
-            _selfieImage = File(image.path);
-          }
-          widget.verification.selfiePhoto = image.path;
-        });
-      }
+  final bytes = await image.readAsBytes();
+  setState(() {
+    if (kIsWeb) {
+      _webImageBytes = bytes;
+    } else {
+      _selfieImage = File(image.path);
+    }
+    widget.verification.selfiePhoto = base64Encode(bytes);
+  });
+}
+
     } catch (_) {
       _showError("Camera error. Please try again");
     }
@@ -70,16 +71,18 @@ class _SelfieScreenState extends State<SelfieScreen> {
       );
 
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          if (kIsWeb) {
-            _webImageBytes = bytes;
-          } else {
-            _selfieImage = File(image.path);
-          }
-          widget.verification.selfiePhoto = image.path;
-        });
-      }
+  final bytes = await image.readAsBytes();
+  setState(() {
+    if (kIsWeb) {
+      _webImageBytes = bytes;
+      widget.verification.selfiePhoto = base64Encode(bytes);
+    } else {
+      _selfieImage = File(image.path);
+      widget.verification.selfieFile = File(image.path);
+    }
+  });
+}
+
     } catch (_) {
       _showError("Failed to access gallery");
     }
@@ -198,6 +201,9 @@ class _SelfieScreenState extends State<SelfieScreen> {
   bool _hasImage() => kIsWeb ? _webImageBytes != null : _selfieImage != null;
 
 Future<void> _submitVerification() async {
+  print("🟦 DEBUG USER ID: ${widget.verification.userId}");
+
+
   if (!_hasImage()) {
     _showError("Please upload a selfie first");
     return;

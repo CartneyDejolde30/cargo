@@ -417,7 +417,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.15,
+            childAspectRatio: 80,
             children: const [
               ModernStatCard(
                 icon: Icons.account_balance_wallet_outlined,

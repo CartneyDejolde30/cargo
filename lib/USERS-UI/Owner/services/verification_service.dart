@@ -1,131 +1,101 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
+
+import '../models/user_verification.dart';
 
 class VerificationService {
-  // IP Configuration
-  static const String _localIP = "192.168.1.11"; // Your computer's IP for mobile
-  
-  // Automatically chooses correct URL based on platform
-  static const String baseUrl = kIsWeb 
-      ? "http://localhost/carGOAdmin"           // For web debugging
-      : "http://$_localIP/carGOAdmin";          // For mobile app
+  static const String baseUrl =
+      "http://10.96.221.180/carGOAdmin/api/submit_verification.php";
 
-  static Future<Map<String, dynamic>> submitVerification(UserVerification data) async {
+  static Future<Map<String, dynamic>> submitVerification(
+      UserVerification user) async {
     try {
-      var uri = Uri.parse("$baseUrl/submit_verification.php");
-      var request = http.MultipartRequest("POST", uri);
+      var uri = Uri.parse(baseUrl);
+      var request = http.MultipartRequest('POST', uri);
 
-      print("🔗 Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}");
-      print("🔗 Connecting to: $uri");
-
-      // Add form fields
-      request.fields['user_id'] = data.userId.toString();
-      request.fields['first_name'] = data.firstName ?? '';
-      request.fields['last_name'] = data.lastName ?? '';
-      request.fields['email'] = data.email ?? '';
-      request.fields['mobile'] = data.mobileNumber ?? '';
-      request.fields['gender'] = data.gender ?? '';
-      request.fields['dob'] = data.dateOfBirth?.toIso8601String().substring(0, 10) ?? '';
-      request.fields['region'] = data.permRegion ?? 'Region XIII (Caraga)';
-      request.fields['province'] = data.permProvince ?? 'Agusan del Sur';
-      request.fields['municipality'] = data.permCity ?? '';
-      request.fields['barangay'] = data.permBarangay ?? '';
-      request.fields['id_type'] = data.idType ?? '';
-
-      print("📋 User: ${data.firstName} ${data.lastName}");
-
-      // Handle file uploads
-      if (kIsWeb) {
-        // Web: Show warning but continue (for testing UI/flow)
-        print("⚠️ Running on WEB - File upload functionality limited");
-        print("⚠️ For full testing, please use mobile device/emulator");
-        
-        // You could still send dummy data or skip file validation on web
-        return {
-          "success": false,
-          "message": "Web upload not supported. Please test on mobile device."
-        };
-      } else {
-        // Mobile: Add actual files
-        if (data.idFrontPhoto == null || data.idBackPhoto == null || data.selfiePhoto == null) {
-          print("❌ Missing required photos");
-          return {
-            "success": false,
-            "message": "All photos are required"
-          };
-        }
-
-        request.files.add(await http.MultipartFile.fromPath(
-          'id_front_photo',
-          data.idFrontPhoto!,
-        ));
-        request.files.add(await http.MultipartFile.fromPath(
-          'id_back_photo',
-          data.idBackPhoto!,
-        ));
-        request.files.add(await http.MultipartFile.fromPath(
-          'selfie_photo',
-          data.selfiePhoto!,
-        ));
-        
-        print("✅ All photos attached");
+      // ---- FORMAT DOB ----
+      String formattedDOB = "";
+      if (user.dateOfBirth != null) {
+        formattedDOB =
+            "${user.dateOfBirth!.year}-${user.dateOfBirth!.month.toString().padLeft(2, '0')}-${user.dateOfBirth!.day.toString().padLeft(2, '0')}";
       }
 
-      print("📤 Sending request...");
-      
-      final response = await request.send().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Connection timeout');
-        },
-      );
-      
-      final responseBody = await response.stream.bytesToString();
-      
-      print("📥 Status: ${response.statusCode}");
-      print("📥 Response: $responseBody");
+      // ---- TEXT FIELDS ----
+      request.fields.addAll({
+        "user_id": user.userId.toString(),
+        "first_name": user.firstName ?? "",
+        "last_name": user.lastName ?? "",
+        "suffix": user.suffix ?? "",
+        "nationality": user.nationality ?? "",
+        "gender": user.gender ?? "",
+        "email": user.email ?? "",
+        "mobile_number": user.mobileNumber ?? "",
+        "id_type": user.idType ?? "",
+        "date_of_birth": formattedDOB,
 
-      if (response.statusCode == 200) {
-        try {
-          return json.decode(responseBody) as Map<String, dynamic>;
-        } catch (e) {
-          print("❌ JSON Parse Error: $e");
-          return {
-            "success": false,
-            "message": "Invalid server response"
-          };
-        }
-      } else {
-        return {
-          "success": false,
-          "message": "Server error (${response.statusCode})"
-        };
+        "permRegion": user.permRegion ?? "",
+        "permProvince": user.permProvince ?? "",
+        "permCity": user.permCity ?? "",
+        "permBarangay": user.permBarangay ?? "",
+        "permZipCode": user.permZipCode ?? "",
+        "permAddressLine": user.permAddressLine ?? "",
+
+        "presRegion": user.presRegion ?? "",
+        "presProvince": user.presProvince ?? "",
+        "presCity": user.presCity ?? "",
+        "presBarangay": user.presBarangay ?? "",
+        "presZipCode": user.presZipCode ?? "",
+        "presAddressLine": user.presAddressLine ?? "",
+      });
+
+      // ---- FILE UPLOADS (MOBILE) ----
+      if (user.idFrontFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'id_front',
+          user.idFrontFile!.path,
+        ));
       }
-    } catch (e, stackTrace) {
-      print("❌ Exception: $e");
-      print("❌ Stack: $stackTrace");
+
+      if (user.idBackFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'id_back',
+          user.idBackFile!.path,
+        ));
+      }
+
+      if (user.selfieFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'selfie',
+          user.selfieFile!.path,
+        ));
+      }
+
+      // ---- BASE64 UPLOADS (WEB) ----
+      if (user.idFrontFile == null && user.idFrontPhoto != null) {
+        request.fields['id_front_base64'] = user.idFrontPhoto!;
+      }
+      if (user.idBackFile == null && user.idBackPhoto != null) {
+        request.fields['id_back_base64'] = user.idBackPhoto!;
+      }
+      if (user.selfieFile == null && user.selfiePhoto != null) {
+        request.fields['selfie_base64'] = user.selfiePhoto!;
+      }
+
+      // ---- SEND ----
+      var response = await request.send();
+      var result = await http.Response.fromStream(response);
+
+      print("📩 SERVER RESPONSE: ${result.body}");
+
+      return json.decode(result.body);
+
+    } catch (e) {
+      print("❌ ERROR in submitVerification: $e");
       return {
         "success": false,
-        "message": "Connection failed: ${e.toString()}"
+        "message": "Something went wrong. Try again."
       };
     }
-  }
-
-  static Future<Map<String, dynamic>?> getVerificationStatus(int userId) async {
-    try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/get_verification_status.php"),
-        body: {"user_id": userId.toString()},
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      }
-    } catch (e) {
-      print("❌ Error getting status: $e");
-    }
-    return null;
   }
 }
