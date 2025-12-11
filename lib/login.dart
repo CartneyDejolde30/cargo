@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     setState(() => _isLoading = true);
     _saveCredentials();
 
-    final url = Uri.parse("http://10.96.221.180/carGOAdmin/login.php");
+    final url = Uri.parse("http://192.168.1.11/carGOAdmin/login.php");
 
     try {
       final response = await http.post(

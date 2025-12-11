@@ -6,10 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
+import '../Reporting/submit_review_screen.dart';  // ⭐ ADDED
 import 'bookings/booking_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Renter/host/host_profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
 
 class CarDetailScreen extends StatefulWidget {
   final int carId;
@@ -42,7 +44,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -175,15 +177,28 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     );
   }
 
-  
-
-  
-
+  // ⭐ NEW METHOD ADDED
+  Future<bool> _checkIfUserBookedCar(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("${baseUrl}api/check_user_booking.php?user_id=$userId&car_id=${widget.carId}"),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['has_booked'] == true;
+      }
+      return false;
+    } catch (e) {
+      print("❌ Error checking booking: $e");
+      return false;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _checkVerificationStatus(); // ✅ ADD THIS LINE
+    _checkVerificationStatus();
     fetchCarDetails();
   }
 
@@ -255,7 +270,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           ),
                         ),
                       ),
-                      // Back Button
+                      // Back Button (LEFT)
                       Positioned(
                         top: 16,
                         left: 16,
@@ -275,6 +290,40 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               ],
                             ),
                             child: const Icon(Icons.arrow_back, size: 24),
+                          ),
+                        ),
+                      ),
+                      // Report Button (RIGHT)
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ReportScreen(
+                                  reportType: 'car',
+                                  reportedId: widget.carId.toString(),
+                                  reportedName: widget.carName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(Icons.flag, size: 24, color: Colors.red.shade600),
                           ),
                         ),
                       ),
@@ -611,7 +660,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => HostProfileScreen(
-                                  ownerId: carData?["owner_id"].toString() ?? "",  // ✅ This should work now
+                                  ownerId: carData?["owner_id"].toString() ?? "",
                                   ownerName: ownerName,
                                   ownerImage: carData?["owner_image"] ?? "",
                                 ),
@@ -659,7 +708,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Reviews Section
+                  // ⭐ UPDATED REVIEWS SECTION
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -673,8 +722,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           ),
                         ),
                         if (reviews.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
+                          TextButton(
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -692,6 +741,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               style: GoogleFonts.poppins(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w500,
+                                fontSize: 14,
                               ),
                             ),
                           ),
@@ -701,6 +751,81 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
                   const SizedBox(height: 12),
 
+                  // ⭐ NEW: "Leave a Review" button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        // Check if user has completed booking for this car
+                        final userData = await _getUserData();
+                        final userId = userData['userId'];
+                        
+                        if (userId == null || userId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please login to leave a review'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        // Check if user has booked this car
+                        final hasBooked = await _checkIfUserBookedCar(userId);
+                        
+                        if (!hasBooked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You need to complete a booking for this car first'),
+                              backgroundColor: Colors.orange,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        // Navigate to review screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SubmitReviewScreen(
+                              bookingId: '', // Not tied to specific booking
+                              carId: widget.carId.toString(),
+                              carName: widget.carName,
+                              carImage: widget.carImage,
+                              ownerId: carData?["owner_id"].toString() ?? "",
+                              ownerName: carData?["owner_name"] ?? "Unknown",
+                              ownerImage: carData?["owner_image"] ?? "",
+                            ),
+                          ),
+                        ).then((result) {
+                          if (result == true) {
+                            fetchCarDetails(); // Refresh to show new review
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.rate_review, size: 20, color: Colors.black),
+                      label: Text(
+                        'Leave a Review',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.black, width: 1.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Continue with existing reviews display...
                   reviews.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -754,99 +879,97 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                 child: SafeArea(
                   top: false,
                   child: ElevatedButton(
-    onPressed: isCheckingVerification 
-        ? null 
-        : (isVerified 
-            ? () async {
-                // ✅ VERIFIED - Allow booking
-                final userData = await _getUserData();  
+                    onPressed: isCheckingVerification 
+                        ? null 
+                        : (isVerified 
+                            ? () async {
+                                final userData = await _getUserData();  
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BookingScreen(
-                      carId: widget.carId,
-                      carName: widget.carName,
-                      carImage: widget.carImage,
-                      pricePerDay: price,
-                      location: location,
-                      ownerId: carData?["owner_id"].toString() ?? "",
-                      userId: userData['userId'],                
-                      userFullName: userData['fullName'],         
-                      userEmail: userData['email'],               
-                      userMunicipality: userData['municipality'], 
-                      ownerLatitude: double.tryParse(carData?["latitude"]?.toString() ?? ""),
-                      ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),     
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BookingScreen(
+                                      carId: widget.carId,
+                                      carName: widget.carName,
+                                      carImage: widget.carImage,
+                                      pricePerDay: price,
+                                      location: location,
+                                      ownerId: carData?["owner_id"].toString() ?? "",
+                                      userId: userData['userId'],                
+                                      userFullName: userData['fullName'],         
+                                      userEmail: userData['email'],               
+                                      userMunicipality: userData['municipality'], 
+                                      ownerLatitude: double.tryParse(carData?["latitude"]?.toString() ?? ""),
+                                      ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),     
+                                    ),
+                                  ),
+                                );
+                              }
+                            : () {
+                                _showVerificationRequiredDialog();
+                              }
+                        ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isCheckingVerification 
+                          ? Colors.grey.shade400
+                          : (isVerified ? Colors.black : Colors.grey.shade600),
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            if (isCheckingVerification)
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            else if (!isVerified)
+                              const Icon(Icons.lock, size: 20, color: Colors.white),
+                            
+                            if (isCheckingVerification || !isVerified)
+                              const SizedBox(width: 8),
+                            
+                            Text(
+                              isCheckingVerification 
+                                  ? "Checking..."
+                                  : (isVerified ? "Book Car" : "Verification Required"),
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isVerified && !isCheckingVerification)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "₱$price/day",
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                );
-              }
-            : () {
-                // ❌ NOT VERIFIED - Show dialog
-                _showVerificationRequiredDialog();
-              }
-        ),
-    style: ElevatedButton.styleFrom(
-      backgroundColor: isCheckingVerification 
-          ? Colors.grey.shade400
-          : (isVerified ? Colors.black : Colors.grey.shade600),
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 0,
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            if (isCheckingVerification)
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            else if (!isVerified)
-              Icon(Icons.lock, size: 20, color: Colors.white),
-            
-            if (isCheckingVerification || !isVerified)
-              const SizedBox(width: 8),
-            
-            Text(
-              isCheckingVerification 
-                  ? "Checking..."
-                  : (isVerified ? "Book Car" : "Verification Required"),
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        if (isVerified && !isCheckingVerification)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              "₱$price/day",
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-      ],
-    ),
-  ),
                 ),
               ),
             ),
@@ -856,7 +979,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     );
   }
 
-  // Get feature icon based on feature name
   IconData _getFeatureIcon(String featureName) {
     final featureIcons = {
       'AUX input': Icons.audiotrack,
@@ -989,105 +1111,107 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
         ],
       ),
     );
-  }void _showVerificationRequiredDialog() {
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(12),
+  }
+
+  void _showVerificationRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.verified_user, color: Colors.orange.shade700, size: 28),
             ),
-            child: Icon(Icons.verified_user, color: Colors.orange.shade700, size: 28),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Verification Required',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Verification Required',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            verificationMessage.isEmpty
-                ? 'You need to verify your account before booking a car.'
-                : verificationMessage,
-            style: GoogleFonts.poppins(fontSize: 14, height: 1.5),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              verificationMessage.isEmpty
+                  ? 'You need to verify your account before booking a car.'
+                  : verificationMessage,
+              style: GoogleFonts.poppins(fontSize: 14, height: 1.5),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Verification takes 24-48 hours',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.blue.shade900,
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Verification takes 24-48 hours',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.blue.shade900,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PersonalInfoScreen(),
                 ),
-              ],
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Get Verified',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(
-            'Cancel',
-            style: GoogleFonts.poppins(color: Colors.grey.shade600),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(ctx);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PersonalInfoScreen(),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Get Verified',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 }
 
 class FullscreenImageViewer extends StatelessWidget {
@@ -1115,4 +1239,3 @@ class FullscreenImageViewer extends StatelessWidget {
     );
   }
 }
-

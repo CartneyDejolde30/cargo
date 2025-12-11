@@ -15,7 +15,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> with SingleTickerProviderStateMixin {
-  final String apiUrl = "http://10.96.221.180/carGOAdmin/update.php";
+  final String apiUrl = "http://192.168.1.11/carGOAdmin/update.php";
 
   final nameController = TextEditingController();
   final phoneController = TextEditingController();

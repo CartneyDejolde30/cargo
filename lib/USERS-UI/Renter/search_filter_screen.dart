@@ -6,7 +6,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class SearchFilterScreen extends StatefulWidget {
-  const SearchFilterScreen({super.key});
+  final Map<String, dynamic>? currentFilters;
+  
+  const SearchFilterScreen({
+    super.key,
+    this.currentFilters,
+  });
 
   @override
   State<SearchFilterScreen> createState() => _SearchFilterScreenState();
@@ -20,6 +25,23 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   bool _isLoadingLocation = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Load existing filters if provided
+    if (widget.currentFilters != null) {
+      _locationController.text = widget.currentFilters!['location'] ?? '';
+      _selectedDeliveryMethod = widget.currentFilters!['deliveryMethod'] ?? '';
+      _selectedVehicleType = widget.currentFilters!['vehicleType'] ?? '';
+      if (widget.currentFilters!['minPrice'] != null) {
+        _priceRange = RangeValues(
+          widget.currentFilters!['minPrice'],
+          widget.currentFilters!['maxPrice'],
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _locationController.dispose();
     super.dispose();
@@ -29,7 +51,6 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      // Check permission
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
@@ -41,15 +62,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         throw Exception('Location permission denied');
       }
 
-      // Get current position
       Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
 
-
-      // Get address from coordinates
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -67,7 +85,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Location set to: ${_locationController.text}'),
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.black,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -78,13 +96,98 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Unable to get location: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red.shade900,
           ),
         );
       }
     } finally {
       setState(() => _isLoadingLocation = false);
     }
+  }
+
+  void _showVehicleTypeModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Select Vehicle Type',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.black),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildVehicleTypeOption('Car', Icons.directions_car),
+            _buildVehicleTypeOption('Motorcycle', Icons.two_wheeler),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVehicleTypeOption(String type, IconData icon) {
+    bool isSelected = _selectedVehicleType == type;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedVehicleType = type;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey.shade300,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.black,
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                type,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: Colors.white),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showDeliveryMethodModal() {
@@ -107,11 +210,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, color: Colors.black),
                 ),
               ],
             ),
@@ -128,6 +232,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   Widget _buildDeliveryOption(String option) {
+    bool isSelected = _selectedDeliveryMethod == option;
     return InkWell(
       onTap: () {
         setState(() {
@@ -149,14 +254,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                 option,
                 style: GoogleFonts.poppins(
                   fontSize: 15,
-                  fontWeight: _selectedDeliveryMethod == option
-                      ? FontWeight.w600
-                      : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: Colors.black,
                 ),
               ),
             ),
-            if (_selectedDeliveryMethod == option)
-              const Icon(Icons.check, color: Colors.green),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: Colors.black),
           ],
         ),
       ),
@@ -188,7 +292,6 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   void _search() {
-    // Return search parameters to previous screen
     Map<String, dynamic> searchParams = {
       'location': _locationController.text,
       'deliveryMethod': _selectedDeliveryMethod,
@@ -206,7 +309,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Container(
@@ -248,8 +351,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                         'Pickup Location',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       _isLoadingLocation
@@ -259,7 +362,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.green.shade600,
+                                  Colors.black,
                                 ),
                               ),
                             )
@@ -267,14 +370,14 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               onPressed: _useCurrentLocation,
                               icon: Icon(
                                 Icons.my_location,
-                                color: Colors.green.shade600,
+                                color: Colors.black,
                                 size: 18,
                               ),
                               label: Text(
                                 'Cars Near Me',
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
-                                  color: Colors.green.shade600,
+                                  color: Colors.black,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -298,7 +401,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                         children: [
                           Icon(
                             Icons.location_on,
-                            color: Colors.green.shade600,
+                            color: Colors.black,
                             size: 24,
                           ),
                           const SizedBox(width: 12),
@@ -310,10 +413,70 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: _locationController.text.isEmpty
-                                    ? Colors.grey
+                                    ? Colors.grey.shade600
                                     : Colors.black,
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Vehicle Type Section
+                  Text(
+                    'Vehicle Type',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: _showVehicleTypeModal,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _selectedVehicleType == 'Car' 
+                                    ? Icons.directions_car 
+                                    : _selectedVehicleType == 'Motorcycle'
+                                    ? Icons.two_wheeler
+                                    : Icons.category,
+                                color: Colors.black,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _selectedVehicleType.isEmpty
+                                    ? 'Choose vehicle type'
+                                    : _selectedVehicleType,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: _selectedVehicleType.isEmpty
+                                      ? Colors.grey.shade600
+                                      : Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.black,
                           ),
                         ],
                       ),
@@ -326,8 +489,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                     'Price Range',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -348,6 +511,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: Colors.black,
                               ),
                             ),
                             Text(
@@ -355,6 +519,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: Colors.black,
                               ),
                             ),
                           ],
@@ -364,7 +529,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           min: 0,
                           max: 2000,
                           divisions: 40,
-                          activeColor: Colors.green.shade600,
+                          activeColor: Colors.black,
                           inactiveColor: Colors.grey.shade300,
                           onChanged: (RangeValues values) {
                             setState(() {
@@ -377,42 +542,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Vehicle Type Section
-                  Text(
-                    'Type',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildVehicleTypeButton(
-                          'Car',
-                          Icons.directions_car,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildVehicleTypeButton(
-                          'Motorcycle',
-                          Icons.two_wheeler,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Delivery Method Section
                   Text(
                     'Delivery Method',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -439,14 +575,14 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: _selectedDeliveryMethod.isEmpty
-                                    ? Colors.grey
+                                    ? Colors.grey.shade600
                                     : Colors.black,
                               ),
                             ),
                           ),
                           Icon(
                             Icons.keyboard_arrow_down,
-                            color: Colors.green.shade600,
+                            color: Colors.black,
                           ),
                         ],
                       ),
@@ -469,17 +605,21 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextButton(
+                  child: OutlinedButton(
                     onPressed: _clearAll,
-                    style: TextButton.styleFrom(
+                    style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(color: Colors.black, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Text(
                       'Clear All',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.green.shade600,
+                        color: Colors.black,
                       ),
                     ),
                   ),
@@ -490,7 +630,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   child: ElevatedButton(
                     onPressed: _search,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade700,
+                      backgroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -502,7 +642,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                       children: [
                         Icon(
                           Icons.search,
-                          color: Colors.green.shade600,
+                          color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -525,48 +665,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       ),
     );
   }
-
-  Widget _buildVehicleTypeButton(String type, IconData icon) {
-    bool isSelected = _selectedVehicleType == type;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedVehicleType = isSelected ? '' : type;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.black : Colors.grey.shade300,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.black,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              type,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-// Location Picker Screen
+// Location Picker Screen (continued with black & white theme)
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key});
 
@@ -582,7 +683,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isLoadingLocation = false;
   bool _showMunicipalitiesList = false;
   
-  // Default location (Manila, Philippines)
   LatLng _currentPosition = LatLng(14.5995, 120.9842);
   List<Marker> _markers = [];
   List<CircleMarker> _circles = [];
@@ -590,7 +690,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   final String _mapTilerApiKey = 'YGJxmPnRtlTHI1endzDH';
   String _selectedAddress = '';
   
-  // Municipalities of Agusan del Sur with coordinates
   final Map<String, LatLng> _agusanMunicipalities = {
     'Bayugan': LatLng(8.7167, 125.7500),
     'Bunawan': LatLng(8.1667, 125.9667),
@@ -613,7 +712,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     super.initState();
     _addMarker(_currentPosition);
     _requestLocationPermission();
-    // Get current location on init
     _getCurrentLocation();
   }
 
@@ -625,7 +723,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   Future<void> _requestLocationPermission() async {
     var permission = await Geolocator.checkPermission();
-
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       await Geolocator.requestPermission();
@@ -634,24 +731,18 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
-
     try {
       Position pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
-
-
       LatLng newPos = LatLng(pos.latitude, pos.longitude);
-
       await _updateAddressFromCoordinates(newPos);
-
       setState(() {
         _currentPosition = newPos;
         _addMarker(newPos);
       });
-
       _mapController.move(newPos, 15);
     } catch (e) {
       if (mounted) {
@@ -660,29 +751,23 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         );
       }
     }
-
     setState(() => _isLoadingLocation = false);
   }
 
   Future<void> _searchAddress(String address) async {
     if (address.trim().isEmpty) return;
-
     setState(() => _showMunicipalitiesList = false);
-
     try {
       var locations = await locationFromAddress(address);
-
       if (locations.isNotEmpty) {
         var loc = locations.first;
         LatLng newPos = LatLng(loc.latitude, loc.longitude);
-
         setState(() {
           _currentPosition = newPos;
           _selectedAddress = address;
           _searchController.text = address;
           _addMarker(newPos);
         });
-
         _mapController.move(newPos, 15);
       }
     } catch (_) {
@@ -698,7 +783,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     if (_agusanMunicipalities.containsKey(municipality)) {
       LatLng coordinates = _agusanMunicipalities[municipality]!;
       String fullAddress = '$municipality, Agusan del Sur, Philippines';
-      
       setState(() {
         _showMunicipalitiesList = false;
         _currentPosition = coordinates;
@@ -706,13 +790,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         _searchController.text = fullAddress;
         _addMarker(coordinates);
       });
-
       _mapController.move(coordinates, 13);
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Location set to $municipality'),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.black,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -722,12 +804,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   Future<void> _updateAddressFromCoordinates(LatLng pos) async {
     try {
       var places = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-
       if (places.isNotEmpty) {
         var p = places.first;
         String formatted =
             "${p.street ?? ""}, ${p.locality ?? ""}, ${p.administrativeArea ?? ""}".trim();
-
         setState(() {
           _searchController.text = formatted;
           _selectedAddress = formatted;
@@ -742,7 +822,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         point: pos,
         width: 40,
         height: 40,
-        child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+        child: const Icon(Icons.location_pin, color: Colors.black, size: 40),
       ),
     ];
     _updateCircle(pos);
@@ -752,9 +832,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     _circles = [
       CircleMarker(
         point: pos,
-        radius: _radius * 1000, // Convert km to meters
-        color: Colors.green.withAlpha((0.05 * 255).round()),
-        borderColor: Colors.green,
+        radius: _radius * 1000,
+        color: Colors.black.withAlpha((0.05 * 255).round()),
+        borderColor: Colors.black,
         borderStrokeWidth: 2,
         useRadiusInMeter: true,
       ),
@@ -768,7 +848,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       );
       return;
     }
-    
     Navigator.pop(context, _selectedAddress);
   }
 
@@ -778,7 +857,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Container(
@@ -821,23 +900,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   decoration: InputDecoration(
                     prefixIcon: Icon(
                       Icons.location_on,
-                      color: Colors.green.shade600,
+                      color: Colors.black,
                     ),
                     suffixIcon: _showMunicipalitiesList
                         ? IconButton(
-                            icon: Icon(
-                              Icons.close,
-                              color: Colors.green.shade600,
-                            ),
+                            icon: Icon(Icons.close, color: Colors.black),
                             onPressed: () {
                               setState(() => _showMunicipalitiesList = false);
                             },
                           )
                         : IconButton(
-                            icon: Icon(
-                              Icons.search,
-                              color: Colors.green.shade600,
-                            ),
+                            icon: Icon(Icons.search, color: Colors.black),
                             onPressed: () {
                               setState(() => _showMunicipalitiesList = false);
                               _searchAddress(_searchController.text);
@@ -848,7 +921,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     hintText: 'Select Location',
                     hintStyle: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.grey,
+                      color: Colors.grey.shade600,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -861,7 +934,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                 ),
                 
-                // Municipalities List
                 if (_showMunicipalitiesList)
                   Container(
                     margin: const EdgeInsets.only(top: 8),
@@ -871,7 +943,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       border: Border.all(color: Colors.grey.shade300),
                       boxShadow: [
                         BoxShadow(
-                           color: Colors.black.withAlpha((0.1 * 255).round()),
+                          color: Colors.black.withAlpha((0.1 * 255).round()),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -901,7 +973,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 children: [
                                   Icon(
                                     Icons.location_city,
-                                    color: Colors.green.shade600,
+                                    color: Colors.black,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
@@ -914,6 +986,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
+                                            color: Colors.black,
                                           ),
                                         ),
                                         Text(
@@ -940,7 +1013,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   'Radius',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
                 Slider(
@@ -949,7 +1023,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   max: 100,
                   divisions: 20,
                   label: '${_radius.round()} km',
-                  activeColor: Colors.green.shade600,
+                  activeColor: Colors.black,
                   inactiveColor: Colors.grey.shade300,
                   onChanged: (value) {
                     setState(() {
@@ -981,7 +1055,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         _currentPosition = point;
                         _addMarker(point);
                       });
-
                       await _updateAddressFromCoordinates(point);
                     },
                   ),
@@ -999,18 +1072,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   right: 16,
                   child: FloatingActionButton(
                     onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                    backgroundColor: Colors.white,
+                    backgroundColor: Colors.black,
                     child: _isLoadingLocation
                         ? const SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
+                              color: Colors.white,
                             ),
                           )
                         : Icon(
                             Icons.my_location,
-                            color: Colors.green.shade600,
+                            color: Colors.white,
                           ),
                   ),
                 ),
@@ -1030,7 +1104,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: ElevatedButton(
                 onPressed: _continue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade700,
+                  backgroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1042,7 +1116,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.green.shade600,
+                    color: Colors.white,
                   ),
                 ),
               ),

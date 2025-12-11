@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'booking_detail_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';  // ⭐ FIXED PATH
 
 class BookingCardWidget extends StatelessWidget {
   final Map<String, dynamic> booking;
   final String status;
+  final VoidCallback? onReviewSubmitted;  // ⭐ ADDED: Callback for refresh
 
   const BookingCardWidget({
     super.key,
     required this.booking,
     required this.status,
+    this.onReviewSubmitted,  // ⭐ ADDED
   });
-
 
   String _getStatusText() {
     switch (status) {
@@ -36,9 +39,9 @@ class BookingCardWidget extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-             color: Colors.black.withAlpha((0.04 * 255).round()),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -46,7 +49,7 @@ class BookingCardWidget extends StatelessWidget {
         children: [
           // Car image and basic info
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -57,13 +60,13 @@ class BookingCardWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: AssetImage(booking['carImage']),
-                      fit: BoxFit.cover,
-                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _buildCarImage(booking['carImage']),
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 // Car details
                 Expanded(
                   child: Column(
@@ -85,13 +88,13 @@ class BookingCardWidget extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: status == 'active' 
-                                  ? Colors.black 
+                              color: status == 'active'
+                                  ? Colors.black
                                   : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
                               border: status != 'active'
@@ -111,7 +114,7 @@ class BookingCardWidget extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
@@ -119,7 +122,7 @@ class BookingCardWidget extends StatelessWidget {
                             size: 14,
                             color: Colors.grey.shade600,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               booking['location'],
@@ -133,7 +136,7 @@ class BookingCardWidget extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Booking ID: ${booking['bookingId']}',
                         style: GoogleFonts.poppins(
@@ -153,7 +156,7 @@ class BookingCardWidget extends StatelessWidget {
 
           // Rental period
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Expanded(
@@ -163,7 +166,7 @@ class BookingCardWidget extends StatelessWidget {
                     booking['pickupTime'],
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: 40,
                   child: Icon(
                     Icons.arrow_forward,
@@ -187,7 +190,7 @@ class BookingCardWidget extends StatelessWidget {
 
           // Price and action button
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -201,7 +204,7 @@ class BookingCardWidget extends StatelessWidget {
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       '₱${booking['totalPrice']}',
                       style: GoogleFonts.poppins(
@@ -221,6 +224,44 @@ class BookingCardWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildCarImage(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade200,
+            child: const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+          );
+        },
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade200,
+            child: const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+          );
+        },
+      );
+    }
+  }
+
   Widget _buildDateInfo(String label, String date, String time) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +274,7 @@ class BookingCardWidget extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           date,
           style: GoogleFonts.poppins(
@@ -242,7 +283,7 @@ class BookingCardWidget extends StatelessWidget {
             color: Colors.black,
           ),
         ),
-        SizedBox(height: 2),
+        const SizedBox(height: 2),
         Row(
           children: [
             Icon(
@@ -250,7 +291,7 @@ class BookingCardWidget extends StatelessWidget {
               size: 12,
               color: Colors.grey.shade500,
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
               time,
               style: GoogleFonts.poppins(
@@ -269,11 +310,19 @@ class BookingCardWidget extends StatelessWidget {
       case 'active':
         return ElevatedButton(
           onPressed: () {
-            print('View active booking');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BookingDetailScreen(
+                  booking: booking,
+                  status: status,
+                ),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -288,14 +337,23 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
         );
+
       case 'pending':
         return ElevatedButton(
           onPressed: () {
-            print('Complete payment');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BookingDetailScreen(
+                  booking: booking,
+                  status: status,
+                ),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.grey.shade800,
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -310,14 +368,23 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
         );
+
       case 'upcoming':
         return OutlinedButton(
           onPressed: () {
-            print('View upcoming booking');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BookingDetailScreen(
+                  booking: booking,
+                  status: status,
+                ),
+              ),
+            );
           },
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.black),
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            side: const BorderSide(color: Colors.black),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -331,29 +398,85 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
         );
+
       case 'past':
-        return OutlinedButton(
-          onPressed: () {
-            print('Book again');
-          },
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.grey.shade300),
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          child: Text(
-            'Book Again',
-            style: GoogleFonts.poppins(
-              color: Colors.black,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
+        final hasReviewed = booking['has_reviewed'] ?? false;
+
+        return hasReviewed
+            ? OutlinedButton(
+                onPressed: null, // Disabled button
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade300),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Reviewed',
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubmitReviewScreen(
+                        bookingId: booking['bookingId'] ?? '',
+                        carId: booking['carId']?.toString() ?? '',
+                        carName: booking['carName'] ?? '',
+                        carImage: booking['carImage'] ?? '',
+                        ownerId: booking['ownerId']?.toString() ?? '',
+                        ownerName: booking['ownerName'] ?? '',
+                        ownerImage: booking['ownerImage'] ?? '',
+                      ),
+                    ),
+                  ).then((result) {
+                    // ⭐ FIXED: Call the callback instead of setState
+                    if (result == true && onReviewSubmitted != null) {
+                      onReviewSubmitted!();
+                    }
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, size: 16, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Rate & Review',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
       default:
-        return SizedBox.shrink();
+        return const SizedBox.shrink();
     }
   }
 }

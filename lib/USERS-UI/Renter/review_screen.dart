@@ -41,7 +41,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   Future<void> _fetchReviews() async {
     final url = Uri.parse(
-        "http://10.96.221.180/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
+        "http://192.168.1.11/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
 
     final response = await http.get(url);
 

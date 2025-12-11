@@ -65,7 +65,7 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
     });
 
     final url = Uri.parse(
-        "http://10.96.221.180/carGOAdmin/get_notification.php?user_id=${widget.userId}");
+        "http://192.168.1.11/carGOAdmin/get_notification.php?user_id=${widget.userId}");
 
     try {
       final response = await http.get(url).timeout(

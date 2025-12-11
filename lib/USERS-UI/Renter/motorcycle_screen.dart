@@ -2,84 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'car_detail_screen.dart';
 
-import 'motorcycle_screen.dart';
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MotorcycleScreen extends StatefulWidget {
+  const MotorcycleScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MotorcycleScreen> createState() => _MotorcycleScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _MotorcycleScreenState extends State<MotorcycleScreen> {
   int _selectedNavIndex = 0;
-  String _selectedVehicleType = 'car';
-
   bool _isLoading = true;
-  List<Map<String, dynamic>> _cars = [];
-
-  // Cache to avoid repeated HEAD requests for the same image
+  List<Map<String, dynamic>> _motorcycles = [];
   final Map<String, String> _resolvedImageCache = {};
 
-Future<void> saveFcmToken() async {
-  String? token = await FirebaseMessaging.instance.getToken();
-
-  if (token == null) return;
-
-  // Get user id (assuming you stored it in SharedPreferences)
-  final prefs = await SharedPreferences.getInstance();
-  final userId = prefs.getString("user_id");
-
-  if (userId == null) return;
-
-  final url = Uri.parse("http://192.168.1.11/carGOAdmin/api/save_fcm_token.php");
-
-  await http.post(url, body: {
-    "user_id": userId,
-    "fcm_token": token,
-  });
-
-  print("🔥 FCM Token saved: $token");
-}
-
-
   @override
-void initState() {
-  super.initState();
-  fetchCars();
-  saveFcmToken();  // <-- ADD THIS
+  void initState() {
+    super.initState();
+    fetchMotorcycles();
+  }
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (mounted) VerifyPopup.showIfNotVerified(context);
-  });
-}
-
-  /// Synchronous formatter (keeps behavior for quick usage).
-  /// Accepts nullable input and always returns a non-null URL string.
   String formatImage(String? rawPath) {
     final path = rawPath?.toString().trim() ?? '';
     if (path.isEmpty) return "https://via.placeholder.com/300";
-
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
-
     final cleanPath = path.replaceFirst("uploads/", "");
     return "http://192.168.1.11/carGOAdmin/uploads/$cleanPath";
   }
 
-  /// Async resolver that checks whether an image URL exists (via HEAD).
-  /// Returns a working URL or placeholder and caches the result.
   Future<String> resolveImageUrlCached(String? rawPath) async {
     const placeholder = "https://via.placeholder.com/400x250?text=No+Image";
-
     final path = rawPath?.toString().trim() ?? '';
     if (path.isEmpty) return placeholder;
 
@@ -99,17 +57,14 @@ void initState() {
         _resolvedImageCache[candidate] = candidate;
         return candidate;
       }
-    } catch (_) {
-      // ignore network errors, fall through to placeholder
-    }
+    } catch (_) {}
 
     _resolvedImageCache[candidate] = placeholder;
     return placeholder;
   }
 
-
-  Future<void> fetchCars() async {
-    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_cars.php";
+  Future<void> fetchMotorcycles() async {
+    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_motorcycles.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -119,12 +74,12 @@ void initState() {
 
         if (decoded['status'] == 'success') {
           setState(() {
-            _cars = List<Map<String, dynamic>>.from(decoded['cars']);
+            _motorcycles = List<Map<String, dynamic>>.from(decoded['motorcycles']);
           });
         }
       }
     } catch (e) {
-      print("❌ Error fetching cars: $e");
+      print("❌ Error fetching motorcycles: $e");
     }
 
     if (mounted) setState(() => _isLoading = false);
@@ -135,6 +90,7 @@ void initState() {
 
     switch (index) {
       case 0:
+        Navigator.pop(context); // Back to home (cars)
         break;
       case 1:
         Navigator.push(
@@ -142,24 +98,19 @@ void initState() {
           MaterialPageRoute(builder: (_) => const CarListScreen()),
         );
         break;
-      case 2:
-        break;
       case 3:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ChatListScreen()),
         );
         break;
-      case 4:
-        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get best cars (first 4) and newly listed (last 3)
-    final bestCars = _cars.take(4).toList();
-    final newlyListed = _cars.length > 3 ? _cars.skip(_cars.length - 3).toList() : _cars;
+    final bestMotorcycles = _motorcycles.take(4).toList();
+    final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -206,7 +157,7 @@ void initState() {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "Search vehicle near you...",
+                            "Search motorcycle near you...",
                             style: GoogleFonts.poppins(
                               color: Colors.grey,
                               fontSize: 14,
@@ -219,44 +170,37 @@ void initState() {
                 ),
                 const SizedBox(height: 20),
 
-                // Vehicle Type Toggle
-                 Container(
-  padding: const EdgeInsets.all(4),
-  decoration: BoxDecoration(
-    color: Colors.grey.shade100,
-    borderRadius: BorderRadius.circular(25),
-  ),
-  child: Row(
-    children: [
-      Expanded(
-        child: _buildToggleButton(
-          "Car",
-          _selectedVehicleType == 'car',
-          () => setState(() => _selectedVehicleType = 'car'),
-        ),
-      ),
-      Expanded(
-        child: _buildToggleButton(
-          "Motorcycle",
-          _selectedVehicleType == 'motorcycle',
-          () {
-            // Navigate to motorcycle screen
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const MotorcycleScreen(),
-              ),
-            );
-          },
-        ),
-      ),
-    ],
-  ),
-),
+                // Enhanced Vehicle Type Toggle
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildToggleButton(
+                          "Car",
+                          false,
+                          () => Navigator.pop(context),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildToggleButton(
+                          "Motorcycle",
+                          true,
+                          () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 20),
 
-                // Best Cars Section
-                _buildSectionHeader("Best Cars", "View All"),
+                // Best Motorcycles Section
+                _buildSectionHeader("Best Motorcycles", "View All"),
                 const SizedBox(height: 8),
                 Text(
                   "Available",
@@ -266,8 +210,37 @@ void initState() {
 
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _cars.isEmpty
-                        ? const Center(child: Text("No cars available"))
+                    : _motorcycles.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.two_wheeler,
+                                    size: 80,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    "No motorcycles available yet",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Check back soon for new listings!",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
                         : GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -277,22 +250,20 @@ void initState() {
                               mainAxisSpacing: 15,
                               childAspectRatio: 0.72,
                             ),
-                            itemCount: bestCars.length,
+                            itemCount: bestMotorcycles.length,
                             itemBuilder: (context, index) {
-                              final car = bestCars[index];
-
-                              // normalize location safely
-                              final rawLocation = (car['location'] ?? '').toString().trim();
+                              final motorcycle = bestMotorcycles[index];
+                              final rawLocation = (motorcycle['location'] ?? '').toString().trim();
                               final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
 
-                              return _buildCarCard(
-                                carId: int.tryParse(car['id'].toString()) ?? 0,
-                                image: formatImage(car['image'] ?? ''),
-                                name: "${car['brand']} ${car['model']}",
-                                rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+                              return _buildMotorcycleCard(
+                                motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
+                                image: formatImage(motorcycle['image'] ?? ''),
+                                name: "${motorcycle['brand']} ${motorcycle['model']}",
+                                rating: double.tryParse(motorcycle['rating'].toString()) ?? 5.0,
                                 location: locationText,
-                                seats: int.tryParse(car['seat'].toString()) ?? 4,
-                                price: car['price'].toString(),
+                                type: motorcycle['type'] ?? "Standard",
+                                price: motorcycle['price'].toString(),
                               );
                             },
                           ),
@@ -300,38 +271,34 @@ void initState() {
                 const SizedBox(height: 32),
 
                 // Newly Listed Section
-                _buildSectionHeader("Newly Listed", "See more", color: Colors.green),
-                const SizedBox(height: 12),
+                if (_motorcycles.isNotEmpty) ...[
+                  _buildSectionHeader("Newly Listed", "See more", color: Colors.green),
+                  const SizedBox(height: 12),
 
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : newlyListed.isEmpty
-                        ? const Center(child: Text("No new listings"))
-                        : SizedBox(
-                            height: 160,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: newlyListed.length,
-                              itemBuilder: (context, index) {
-                                final car = newlyListed[index];
+                  SizedBox(
+                    height: 160,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: newlyListed.length,
+                      itemBuilder: (context, index) {
+                        final motorcycle = newlyListed[index];
+                        final rawLocation = (motorcycle['location'] ?? '').toString().trim();
+                        final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
 
-                                final rawLocation = (car['location'] ?? '').toString().trim();
-                                final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
-
-                                return _buildNewlyListedCard(
-                                  carId: int.tryParse(car['id'].toString()) ?? 0,
-                                  image: formatImage(car['image'] ?? ''),
-                                  name: "${car['brand']} ${car['model']}",
-                                  year: car['car_year'] ?? "",
-                                  location: locationText,
-                                  seats: int.tryParse(car['seat'].toString()) ?? 4,
-                                  transmission: car['transmission'] ?? "Automatic",
-                                  price: car['price'].toString(),
-                                  hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
-                                );
-                              },
-                            ),
-                          ),
+                        return _buildNewlyListedCard(
+                          motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
+                          image: formatImage(motorcycle['image'] ?? ''),
+                          name: "${motorcycle['brand']} ${motorcycle['model']}",
+                          year: motorcycle['year'] ?? "",
+                          location: locationText,
+                          type: motorcycle['type'] ?? "Standard",
+                          price: motorcycle['price'].toString(),
+                          engineSize: motorcycle['engine_size'] ?? "150cc",
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -345,26 +312,26 @@ void initState() {
   }
 
   Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: selected ? Colors.black : Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            color: selected ? Colors.white : Colors.black87,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? Colors.black : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: selected ? Colors.white : Colors.black87,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildSectionHeader(String title, String action, {Color color = Colors.grey}) {
     return Row(
@@ -392,13 +359,13 @@ void initState() {
     );
   }
 
-  Widget _buildCarCard({
-    required int carId,
+  Widget _buildMotorcycleCard({
+    required int motorcycleId,
     required String image,
     required String name,
     required double rating,
     required String location,
-    required int seats,
+    required String type,
     required String price,
   }) {
     return GestureDetector(
@@ -407,7 +374,7 @@ void initState() {
           context,
           MaterialPageRoute(
             builder: (_) => CarDetailScreen(
-              carId: carId,
+              carId: motorcycleId,
               carName: name,
               carImage: image,
               price: price,
@@ -426,7 +393,6 @@ void initState() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image — now resolved via FutureBuilder to avoid 404 noise
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: FutureBuilder<String>(
@@ -449,13 +415,12 @@ void initState() {
                     errorBuilder: (_, __, ___) => Container(
                       height: 110,
                       color: Colors.grey.shade200,
-                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                      child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
                     ),
                   );
                 },
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -481,10 +446,10 @@ void initState() {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.event_seat, size: 14, color: Colors.grey),
+                      const Icon(Icons.category, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
-                        "$seats Seats",
+                        type,
                         style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
                       ),
                     ],
@@ -507,15 +472,14 @@ void initState() {
   }
 
   Widget _buildNewlyListedCard({
-    required int carId,
+    required int motorcycleId,
     required String image,
     required String name,
     required String year,
     required String location,
-    required int seats,
-    required String transmission,
+    required String type,
     required String price,
-    bool hasUnlimitedMileage = false,
+    required String engineSize,
   }) {
     return GestureDetector(
       onTap: () {
@@ -523,7 +487,7 @@ void initState() {
           context,
           MaterialPageRoute(
             builder: (_) => CarDetailScreen(
-              carId: carId,
+              carId: motorcycleId,
               carName: name,
               carImage: image,
               price: price,
@@ -549,66 +513,39 @@ void initState() {
         ),
         child: Row(
           children: [
-            // Image
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                  child: FutureBuilder<String>(
-                    future: resolveImageUrlCached(image),
-                    builder: (context, snap) {
-                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                      return Image.network(
-                        imageUrl,
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+              child: FutureBuilder<String>(
+                future: resolveImageUrlCached(image),
+                builder: (context, snap) {
+                  final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
+                  return Image.network(
+                    imageUrl,
+                    height: 160,
+                    width: 140,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
                         height: 160,
                         width: 140,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            height: 160,
-                            width: 140,
-                            color: Colors.grey.shade200,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 160,
-                          width: 140,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                        ),
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       );
                     },
-                  ),
-                ),
-                if (hasUnlimitedMileage)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        "Unlimited Mileage",
-                        style: GoogleFonts.poppins(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      width: 140,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.two_wheeler, size: 40, color: Colors.grey),
                     ),
-                  ),
-              ],
+                  );
+                },
+              ),
             ),
-
-            // Details
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -656,10 +593,10 @@ void initState() {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.event_seat, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.category, size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
-                          "$seats-seater",
+                          type,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             color: Colors.grey.shade600,
@@ -670,7 +607,7 @@ void initState() {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            transmission,
+                            engineSize,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               color: Colors.grey.shade600,
