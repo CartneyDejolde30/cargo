@@ -670,7 +670,7 @@ if (widget.verification.idBackPhoto != null) {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.file(
-                          image!,
+                          image,
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,

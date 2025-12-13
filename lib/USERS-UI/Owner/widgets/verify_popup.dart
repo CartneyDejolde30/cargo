@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../Owner/verification/personal_info_screen.dart';
 
 class VerifyPopup {
   static Future<void> showIfNotVerified(BuildContext context) async {
-    final box = GetStorage();
-    final bool isVerified = box.read('isVerified') ?? false;
+    // Get user ID from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
 
-    if (isVerified) return;
+    if (userId == null || userId.isEmpty) {
+      print("❌ No user ID found - skipping verification popup");
+      return; // Don't show popup if not logged in
+    }
 
+    // Check verification status from database
+    final isVerified = await _checkVerificationFromDatabase(userId);
+    
+    print("🔍 Verification check result: $isVerified");
+
+    if (isVerified) {
+      print("✅ User is verified - popup will NOT show");
+      return; // User is verified, don't show popup
+    }
+
+    print("⚠️ User is NOT verified - showing popup");
+
+    // Show popup if not verified
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -23,7 +42,6 @@ class VerifyPopup {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                
                 /// Close Button
                 Align(
                   alignment: Alignment.topLeft,
@@ -138,6 +156,31 @@ class VerifyPopup {
         ),
       ),
     );
+  }
+
+  /// Check verification status from database
+  static Future<bool> _checkVerificationFromDatabase(String userId) async {
+    const String baseUrl = "http://192.168.1.11/carGOAdmin/";
+    
+    try {
+      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
+      print("📡 Checking verification: $url");
+      
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      
+      print("📥 Response status: ${response.statusCode}");
+      print("📥 Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['is_verified'] == true;
+      }
+      
+      return false;
+    } catch (e) {
+      print("❌ Error checking verification: $e");
+      return false; // On error, assume not verified (safer)
+    }
   }
 
   /// Reusable step text widget
