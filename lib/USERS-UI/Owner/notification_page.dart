@@ -65,7 +65,7 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
     });
 
     final url = Uri.parse(
-        "http://192.168.1.11/carGOAdmin/get_notification.php?user_id=${widget.userId}");
+        "http://10.96.221.180/carGOAdmin/get_notification.php?user_id=${widget.userId}");
 
     try {
       final response = await http.get(url).timeout(
@@ -154,7 +154,7 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
   Future<void> archive(int id) async {
     try {
       await http.post(
-        Uri.parse("http://192.168.1.11/carGOAdmin/archive_notification.php"),
+        Uri.parse("http://10.96.221.180/carGOAdmin/archive_notification.php"),
         body: {"id": id.toString()},
       ).timeout(const Duration(seconds: 10));
 
@@ -200,7 +200,7 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
   Future<void> markAllRead() async {
     try {
       await http.post(
-        Uri.parse("http://192.168.1.11/carGOAdmin/update_all.php"),
+        Uri.parse("http://10.96.221.180/carGOAdmin/update_all.php"),
         body: {"user_id": widget.userId.toString()},
       ).timeout(const Duration(seconds: 10));
       

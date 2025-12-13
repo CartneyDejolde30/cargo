@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
@@ -33,7 +32,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     if (path.isEmpty) return "https://via.placeholder.com/300";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     final cleanPath = path.replaceFirst("uploads/", "");
-    return "http://192.168.1.11/carGOAdmin/uploads/$cleanPath";
+    return "http://10.96.221.180/carGOAdmin/uploads/$cleanPath";
   }
 
   Future<String> resolveImageUrlCached(String? rawPath) async {
@@ -46,7 +45,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = "http://192.168.1.11/carGOAdmin/uploads/$clean";
+      candidate = "http://10.96.221.180/carGOAdmin/uploads/$clean";
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -64,7 +63,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_motorcycles.php";
+    final String apiUrl = "http://10.96.221.180/carGOAdmin/api/get_motorcycles.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));

@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'host_cars_screen.dart';
 import 'host_reviews_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';  // ⭐ ADDED
-import 'package:shared_preferences/shared_preferences.dart';  // ⭐ ADDED
+import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';  
+import 'package:shared_preferences/shared_preferences.dart';  
 
 class HostProfileScreen extends StatefulWidget {
   final String ownerId;
@@ -31,7 +31,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   int totalReviews = 0;
   double averageRating = 0.0;
 
-  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
+  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
 
   @override
   void initState() {

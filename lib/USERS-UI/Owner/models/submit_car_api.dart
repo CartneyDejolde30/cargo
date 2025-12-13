@@ -10,7 +10,7 @@ Future<bool> submitCarListing({
   required File? crFile,
   required List<File> extraPhotos,
 }) async {
-  final url = Uri.parse("http://192.168.1.11/carGOAdmin/cars_api.php");
+  final url = Uri.parse("http://10.96.221.180/carGOAdmin/cars_api.php");
 
   final request = http.MultipartRequest("POST", url);
 
