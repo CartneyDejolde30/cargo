@@ -84,7 +84,7 @@ class VerifyPopup {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.black,
-                          borderRadius: BorderRadius.circular(😎,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Just takes 2 mins!',
@@ -171,10 +171,10 @@ class VerifyPopup {
 
   /// Check verification status from database
   static Future<bool> _checkVerificationFromDatabase(String userId) async {
-    const String baseUrl = "http://10.96.221.180.1.11/carGOAdmin/";
+    const String baseUrl = "http://10.96.221.180/carGOAdmin/";
     
     try {
-      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
+      final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");
       print("📡 Checking verification: $url");
       
       final response = await http.get(url).timeout(const Duration(seconds: 10));
@@ -208,4 +208,4 @@ class VerifyPopup {
       ),
     );
   }
-}
+} 
