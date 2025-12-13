@@ -6,7 +6,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Owner/verification/personal_info_screen.dart';
 
 class VerifyPopup {
-  static Future<void> showIfNotVerified(BuildContext context) async {
+  /// Main method to show verification popup
+  /// Set showForRentersOnly to true to only show on renters.dart
+  static Future<void> showIfNotVerified(
+    BuildContext context, {
+    bool showForRentersOnly = false,
+  }) async {
+    // Skip if this should only show for renters and we're not calling from renters
+    if (!showForRentersOnly) {
+      print("⏭️ Verification popup disabled for this screen");
+      return;
+    }
+
     // Get user ID from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
@@ -73,7 +84,7 @@ class VerifyPopup {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.black,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(😎,
                         ),
                         child: Text(
                           'Just takes 2 mins!',
@@ -160,10 +171,10 @@ class VerifyPopup {
 
   /// Check verification status from database
   static Future<bool> _checkVerificationFromDatabase(String userId) async {
-    const String baseUrl = "http://192.168.1.11/carGOAdmin/";
+    const String baseUrl = "http://10.96.221.180.1.11/carGOAdmin/";
     
     try {
-      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
+      final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");
       print("📡 Checking verification: $url");
       
       final response = await http.get(url).timeout(const Duration(seconds: 10));
