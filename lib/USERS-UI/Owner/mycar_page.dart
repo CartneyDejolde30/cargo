@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'car_listing/car_details.dart';
 import 'models/car_listing.dart';
 import 'car_listing/vehicle_type_selection_screen.dart';
+import 'verification/personal_info_screen.dart';
 
 class MyCarPage extends StatefulWidget {
   final int ownerId;
@@ -226,11 +227,11 @@ class _MyCarPageState extends State<MyCarPage> {
     }
   }
 
-  /* ---------------- SHOW NOT VERIFIED MESSAGE ---------------- */
+  /* ---------------- SHOW NOT VERIFIED MESSAGE & NAVIGATE ---------------- */
   void showNotVerifiedDialog() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         content: Column(
@@ -270,12 +271,44 @@ class _MyCarPageState extends State<MyCarPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              "OK",
+              "Cancel",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Close dialog
+              
+              // Navigate to PersonalInfoScreen
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PersonalInfoScreen(),
+                ),
+              );
+              
+              // Refresh verification status when returning
+              if (result == true || mounted) {
+                checkVerificationStatus();
+              }
+            },
+            child: Text(
+              "Get Verified",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
           ),
