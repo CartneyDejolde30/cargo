@@ -75,7 +75,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     }
 
     try {
-      final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");
+      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'car_listing/car_details.dart';
 import 'models/car_listing.dart';
 import 'car_listing/vehicle_type_selection_screen.dart';
@@ -18,18 +19,55 @@ class MyCarPage extends StatefulWidget {
 
 class _MyCarPageState extends State<MyCarPage> {
   final String apiUrl = "http://10.96.221.180/carGOAdmin/cars_api.php";
+  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
 
   List<Map<String, dynamic>> cars = [];
   List<Map<String, dynamic>> filteredCars = [];
 
   bool isLoading = true;
+  bool isVerified = false; // Track verification status
+  bool isCheckingVerification = true; // Track if still checking
   String searchQuery = "";
   String selectedFilter = "All";
 
   @override
   void initState() {
     super.initState();
+    checkVerificationStatus();
     fetchCars();
+  }
+
+  /* ---------------- CHECK VERIFICATION STATUS ---------------- */
+  Future<void> checkVerificationStatus() async {
+    setState(() => isCheckingVerification = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+
+      if (userId == null || userId.isEmpty) {
+        setState(() {
+          isVerified = false;
+          isCheckingVerification = false;
+        });
+        return;
+      }
+
+      final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        setState(() {
+          isVerified = result['is_verified'] == true;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error checking verification: $e");
+      setState(() => isVerified = false);
+    }
+
+    setState(() => isCheckingVerification = false);
   }
 
   /* ---------------- FETCH DATA ---------------- */
@@ -188,6 +226,64 @@ class _MyCarPageState extends State<MyCarPage> {
     }
   }
 
+  /* ---------------- SHOW NOT VERIFIED MESSAGE ---------------- */
+  void showNotVerifiedDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.verified_user_outlined,
+                size: 48,
+                color: Colors.orange.shade600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Verification Required",
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "You need to be verified before you can add cars to your listing.",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "OK",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /* ---------------- COLOR BASED ON STATUS ---------------- */
   Color getStatusColor(String status) {
     final normalized = status.trim().toLowerCase();
@@ -225,29 +321,44 @@ class _MyCarPageState extends State<MyCarPage> {
           )
         ],
       ),
-floatingActionButton: FloatingActionButton.extended(
-  backgroundColor: Colors.black,
-  onPressed: () async {
-    // Navigate to VehicleTypeSelectionScreen first
-    final result = await Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => VehicleTypeSelectionScreen(ownerId: widget.ownerId),
-        transitionsBuilder: (_, animation, __, child) =>
-            FadeTransition(opacity: animation, child: child),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: isVerified ? Colors.black : Colors.grey.shade400,
+        onPressed: isCheckingVerification
+            ? null
+            : () async {
+                if (!isVerified) {
+                  showNotVerifiedDialog();
+                  return;
+                }
+
+                // Navigate to VehicleTypeSelectionScreen
+                final result = await Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => VehicleTypeSelectionScreen(ownerId: widget.ownerId),
+                    transitionsBuilder: (_, animation, __, child) =>
+                        FadeTransition(opacity: animation, child: child),
+                  ),
+                );
+
+                // If the user completed adding a car, refresh the list
+                if (result == true) {
+                  fetchCars();
+                  checkVerificationStatus(); // Re-check verification status
+                }
+              },
+        icon: Icon(
+          Icons.add,
+          color: isVerified ? Colors.white : Colors.grey.shade600,
+        ),
+        label: Text(
+          isVerified ? "Add Car" : "Verify First",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: isVerified ? Colors.white : Colors.grey.shade600,
+          ),
+        ),
       ),
-    );
-
-    // If the user completed adding a car, refresh the list
-    if (result == true) fetchCars();
-  },
-  icon: const Icon(Icons.add, color: Colors.white),
-  label: Text(
-    "Add Car",
-    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-  ),
-),
-
       body: Column(
         children: [
           // Search bar
@@ -308,7 +419,6 @@ floatingActionButton: FloatingActionButton.extended(
                         itemCount: filteredCars.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
                           childAspectRatio: .65,

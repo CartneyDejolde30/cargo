@@ -204,7 +204,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       final url = Uri.parse(
-        "http://10.96.221.180/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+        "http://10.96.221.180/carGOAdmin/api/check_user_verification.php?user_id=${widget.userId}"
       );
       
       final response = await http.get(url);

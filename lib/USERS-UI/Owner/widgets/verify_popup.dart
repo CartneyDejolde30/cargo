@@ -174,7 +174,7 @@ class VerifyPopup {
     const String baseUrl = "http://10.96.221.180.1.11/carGOAdmin/";
     
     try {
-      final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");
+      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
       print("📡 Checking verification: $url");
       
       final response = await http.get(url).timeout(const Duration(seconds: 10));
