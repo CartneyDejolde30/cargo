@@ -25,7 +25,7 @@ class MapRouteScreen extends StatefulWidget {
 }
 
 class _MapRouteScreenState extends State<MapRouteScreen> {
-  static const String _apiKey = 'YGJxmPnRtlTHI1endzDH';
+  static const String _mapTilerKey = 'YGJxmPnRtlTHI1endzDH';
   
   final MapController _mapController = MapController();
   Position? _currentPosition;
@@ -40,7 +40,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     _initializeLocation();
   }
 
-  // Initialize location and fetch route
   Future<void> _initializeLocation() async {
     await _getCurrentLocation();
     if (_currentPosition != null) {
@@ -48,7 +47,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     }
   }
 
-  // Get user's current location
   Future<void> _getCurrentLocation() async {
     try {
       final permission = await _checkLocationPermission();
@@ -70,7 +68,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     }
   }
 
-  // Check and request location permission
   Future<bool> _checkLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     
@@ -91,24 +88,41 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     return true;
   }
 
-  // Fetch route from MapTiler API
+  // Using OSRM (Open Source Routing Machine) - FREE routing service
   Future<void> _fetchRoute() async {
     if (_currentPosition == null) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final url = _buildApiUrl();
-      final response = await http.get(url);
+      // OSRM API - Free routing service
+      // Format: /route/v1/{profile}/{coordinates}
+      final url = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${_currentPosition!.longitude},${_currentPosition!.latitude};'
+        '${widget.destinationLng},${widget.destinationLat}'
+        '?overview=full&geometries=geojson'
+      );
+
+      print('Fetching route from: $url');
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout');
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         _parseRouteResponse(response.body);
       } else {
-        throw Exception('Failed to fetch route: ${response.statusCode}');
+        throw Exception('API error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      _showErrorSnackBar('Failed to load route');
       print('Route fetch error: $e');
+      _showErrorSnackBar('Failed to load route: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -116,94 +130,72 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     }
   }
 
-  // Build MapTiler Directions API URL
-  Uri _buildApiUrl() {
-    return Uri.parse(
-      'https://api.maptiler.com/directions/'
-      '${_currentPosition!.longitude},${_currentPosition!.latitude};'
-      '${widget.destinationLng},${widget.destinationLat}'
-      '.json?key=$_apiKey',
-    );
+  void _parseRouteResponse(String responseBody) {
+    try {
+      final data = json.decode(responseBody);
+      
+      print('Parsed data keys: ${data.keys}');
+
+      if (data['code'] != 'Ok') {
+        _showErrorSnackBar('Route not found: ${data['message'] ?? 'Unknown error'}');
+        return;
+      }
+
+      if (data['routes'] == null || (data['routes'] as List).isEmpty) {
+        _showErrorSnackBar('No route found');
+        return;
+      }
+
+      final route = data['routes'][0];
+      
+      // Extract geometry (GeoJSON format)
+      if (route['geometry'] != null) {
+        final geometry = route['geometry'];
+        
+        if (geometry['coordinates'] != null) {
+          final coords = geometry['coordinates'] as List;
+          setState(() {
+            _routeCoordinates = coords
+                .map((coord) => LatLng(coord[1] as double, coord[0] as double))
+                .toList();
+          });
+          print('Route coordinates extracted: ${_routeCoordinates.length} points');
+        }
+      }
+
+      // Extract distance (already in meters)
+      if (route['distance'] != null) {
+        final distanceMeters = (route['distance'] as num).toDouble();
+        final km = (distanceMeters / 1000).toStringAsFixed(1);
+        setState(() {
+          _distance = '$km km';
+        });
+      }
+
+      // Extract duration (already in seconds)
+      if (route['duration'] != null) {
+        final durationSeconds = (route['duration'] as num).toDouble();
+        final minutes = (durationSeconds / 60).round();
+        setState(() {
+          _duration = '$minutes min';
+        });
+      }
+
+      // Fit map after data is loaded
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fitMapToRoute();
+      });
+    } catch (e) {
+      print('Parse error: $e');
+      _showErrorSnackBar('Failed to parse route data');
+    }
   }
 
-  // Parse route response from API
-  void _parseRouteResponse(String responseBody) {
-    final data = json.decode(responseBody);
-    
-    if (data['routes'] == null || (data['routes'] as List).isEmpty) {
-      _showErrorSnackBar('No route found');
+  void _fitMapToRoute() {
+    if (_currentPosition == null || _routeCoordinates.isEmpty) {
+      print('Cannot fit map: position or coordinates missing');
       return;
     }
-
-    final route = data['routes'][0];
-    
-    // Extract geometry
-    if (route['geometry'] != null) {
-      _routeCoordinates = _decodeGeometry(route['geometry']);
-    }
-
-    // Extract distance (convert meters to km)
-    if (route['distance'] != null) {
-      final km = (route['distance'] / 1000).toStringAsFixed(1);
-      _distance = '$km km';
-    }
-
-    // Extract duration (convert seconds to minutes)
-    if (route['duration'] != null) {
-      final minutes = (route['duration'] / 60).round();
-      _duration = '$minutes min';
-    }
-
-    _fitMapToRoute();
-  }
-
-  // Decode geometry (supports both GeoJSON and encoded polyline)
-  List<LatLng> _decodeGeometry(dynamic geometry) {
-    if (geometry is Map && geometry['coordinates'] != null) {
-      return (geometry['coordinates'] as List)
-          .map((coord) => LatLng(coord[1], coord[0]))
-          .toList();
-    } else if (geometry is String) {
-      return _decodePolyline(geometry);
-    }
-    return [];
-  }
-
-  // Decode polyline string
-  List<LatLng> _decodePolyline(String encoded) {
-    final points = <LatLng>[];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int shift = 0, result = 0;
-      int b;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      points.add(LatLng(lat / 1e5, lng / 1e5));
-    }
-    return points;
-  }
-
-  // Fit map to show entire route
-  void _fitMapToRoute() {
-    if (_currentPosition == null || _routeCoordinates.isEmpty) return;
 
     final allPoints = [
       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
@@ -228,15 +220,19 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       LatLng(maxLat + padding, maxLng + padding),
     );
 
-    _mapController.fitCamera(
-      CameraFit.bounds(
-        bounds: bounds,
-        padding: const EdgeInsets.all(50),
-      ),
-    );
+    try {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(50),
+        ),
+      );
+      print('Map fitted to route');
+    } catch (e) {
+      print('Error fitting map: $e');
+    }
   }
 
-  // Show error snackbar
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -246,6 +242,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -264,7 +261,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build map widget
   Widget _buildMap() {
     return FlutterMap(
       mapController: _mapController,
@@ -276,7 +272,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=$_apiKey',
+          urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=$_mapTilerKey',
           userAgentPackageName: 'com.yourcompany.app',
         ),
         if (_routeCoordinates.isNotEmpty) _buildRouteLine(),
@@ -285,7 +281,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build route polyline
   Widget _buildRouteLine() {
     return PolylineLayer(
       polylines: [
@@ -300,7 +295,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build markers
   Widget _buildMarkers() {
     return MarkerLayer(
       markers: [
@@ -321,7 +315,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build individual marker
   Marker _buildMarker(LatLng position, Color color, IconData icon, String label) {
     return Marker(
       point: position,
@@ -351,7 +344,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build top bar
   Widget _buildTopBar() {
     return Positioned(
       top: 0,
@@ -414,7 +406,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build loading indicator
   Widget _buildLoadingIndicator() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 80,
@@ -460,7 +451,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build bottom info card
   Widget _buildBottomCard() {
     return Positioned(
       bottom: 0,
@@ -563,7 +553,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     );
   }
 
-  // Build info item
   Widget _buildInfoItem(IconData icon, String label, String value, Color color) {
     return Column(
       children: [
