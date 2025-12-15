@@ -31,7 +31,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   int totalReviews = 0;
   double averageRating = 0.0;
 
-  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
+  final String baseUrl = "http://172.24.58.180/carGOAdmin/";
 
   @override
   void initState() {

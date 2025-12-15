@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'booking_card_widget.dart';
 import 'booking_empty_state_widget.dart';
-import 'temp_booking_data.dart';
 import 'booking_tabs_widget.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
+
+import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
+import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -13,95 +16,120 @@ class MyBookingsScreen extends StatefulWidget {
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
 }
 
-class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  int _currentTabIndex = 0;
-  int _selectedNavIndex = 1; // Bookings tab is index 1
+class _MyBookingsScreenState extends State<MyBookingsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
+  int _currentTabIndex = 0;
+  int _selectedNavIndex = 1;
+
+  late Future<List<Booking>> _bookingFuture;
+
+  // 🔴 Replace with actual logged-in user id
+  final String userId = "USER_ID_HERE";
+
+  // =========================
+  // LIFECYCLE
+  // =========================
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-    });
+    _tabController.addListener(_onTabChanged);
+
+    _bookingFuture = BookingService.getMyBookings(userId);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _getBookingsForTab() {
-    switch (_currentTabIndex) {
-      case 0:
-        return TempBookingData.activeBookings;
-      case 1:
-        return TempBookingData.pendingBookings;
-      case 2:
-        return TempBookingData.upcomingBookings;
-      case 3:
-        return TempBookingData.pastBookings;
-      default:
-        return [];
+  void _onTabChanged() {
+    if (_currentTabIndex != _tabController.index) {
+      setState(() {
+        _currentTabIndex = _tabController.index;
+      });
     }
   }
 
-  void _handleNavigation(int index) {
-    setState(() => _selectedNavIndex = index);
-    // Navigation is handled by BottomNavBar widget
+  // =========================
+  // FILTERING LOGIC
+  // =========================
+  List<Booking> _filterBookings(List<Booking> all) {
+  final now = DateTime.now();
+
+  switch (_currentTabIndex) {
+    case 0: // Active (approved + started)
+      return all.where((b) {
+        if (b.status != 'approved') return false;
+        final pickup = DateTime.tryParse(b.pickupDate);
+        return pickup != null && !pickup.isAfter(now);
+      }).toList();
+
+    case 1: // Pending
+      return all.where((b) => b.status == 'pending').toList();
+
+    case 2: // Upcoming (approved but future)
+      return all.where((b) {
+        if (b.status != 'approved') return false;
+        final pickup = DateTime.tryParse(b.pickupDate);
+        return pickup != null && pickup.isAfter(now);
+      }).toList();
+
+    case 3: // Past
+      return all.where((b) =>
+          b.status == 'completed' ||
+          b.status == 'cancelled' ||
+          b.status == 'rejected').toList();
+
+    default:
+      return [];
+  }
+}
+
+
+  String _mapStatusForUI(String dbStatus) {
+    switch (dbStatus) {
+      case 'approved':
+        return 'active';
+      case 'pending':
+        return 'pending';
+      case 'completed':
+      case 'cancelled':
+      case 'rejected':
+        return 'past';
+      default:
+        return 'pending';
+    }
   }
 
+  // =========================
+  // BOTTOM NAV
+  // =========================
+  void _handleNavigation(int index) {
+    if (_selectedNavIndex != index) {
+      setState(() => _selectedNavIndex = index);
+    }
+  }
+
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
-    final bookings = _getBookingsForTab();
-
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'My Bookings',
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: false,
-      ),
+      appBar: _buildAppBar(),
       body: Column(
         children: [
           const SizedBox(height: 16),
           _buildTabBar(),
           const SizedBox(height: 16),
-          Expanded(
-            child: bookings.isEmpty
-                ? BookingEmptyStateWidget(
-                    onBrowseCars: () {
-                      // Navigate to home/car browse screen
-                      Navigator.pushNamed(context, '/renters');
-                    },
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100), // Added bottom padding for nav bar
-                    itemCount: bookings.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: BookingCardWidget(
-                          booking: bookings[index],
-                          status: _getStatusForTab(),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+          Expanded(child: _buildBookingBody()),
         ],
       ),
       bottomNavigationBar: BottomNavBar(
@@ -111,19 +139,67 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     );
   }
 
-  String _getStatusForTab() {
-    switch (_currentTabIndex) {
-      case 0:
-        return 'active';
-      case 1:
-        return 'pending';
-      case 2:
-        return 'upcoming';
-      case 3:
-        return 'past';
-      default:
-        return 'active';
-    }
+  // =========================
+  // WIDGETS
+  // =========================
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      title: Text(
+        'My Bookings',
+        style: GoogleFonts.poppins(
+          color: Colors.black,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      centerTitle: false,
+    );
+  }
+
+  Widget _buildBookingBody() {
+    return FutureBuilder<List<Booking>>(
+      future: _bookingFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return BookingEmptyStateWidget(
+            onBrowseCars: () {
+              Navigator.pushNamed(context, '/renters');
+            },
+          );
+        }
+
+        final bookings = _filterBookings(snapshot.data!);
+
+        if (bookings.isEmpty) {
+          return BookingEmptyStateWidget(
+            onBrowseCars: () {
+              Navigator.pushNamed(context, '/renters');
+            },
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: BookingCardWidget(
+                booking: bookings[index],
+                status: _mapStatusForUI(bookings[index].status),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildTabBar() {
@@ -132,15 +208,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       onTabChanged: (index) {
         _tabController.animateTo(index);
       },
-      // Optional: Add badge counts
-      badgeCounts: [
-        TempBookingData.activeBookings.length,
-        TempBookingData.pendingBookings.length,
-        TempBookingData.upcomingBookings.length,
-        TempBookingData.pastBookings.length,
-      ],
+      // Badge counts can be wired later with real data
+      badgeCounts: const [0, 0, 0, 0],
     );
   }
-
-
 }

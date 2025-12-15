@@ -23,7 +23,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
   bool loading = true;
   List<Map<String, dynamic>> cars = [];
 
-  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
+  final String baseUrl = "http://172.24.58.180/carGOAdmin/";
 
   @override
   void initState() {

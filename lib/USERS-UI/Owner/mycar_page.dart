@@ -19,8 +19,8 @@ class MyCarPage extends StatefulWidget {
 }
 
 class _MyCarPageState extends State<MyCarPage> {
-  final String apiUrl = "http://10.96.221.180/carGOAdmin/cars_api.php";
-  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
+  final String apiUrl = "http://172.24.58.180/carGOAdmin/cars_api.php";
+  final String baseUrl = "http://172.24.58.180/carGOAdmin/";
 
   List<Map<String, dynamic>> cars = [];
   List<Map<String, dynamic>> filteredCars = [];
@@ -462,7 +462,7 @@ class _MyCarPageState extends State<MyCarPage> {
                         ),
                         itemBuilder: (_, index) {
                           final car = filteredCars[index];
-                          final imageUrl = "http://10.96.221.180/carGOAdmin/${car['image']}";
+                          final imageUrl = "http://172.24.58.180/carGOAdmin/${car['image']}";
                           final status = car["status"] ?? "Unknown";
 
                           return FadeInUp(

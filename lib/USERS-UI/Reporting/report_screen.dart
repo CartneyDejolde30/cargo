@@ -24,7 +24,7 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController _detailsController = TextEditingController();
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.96.221.180/carGOAdmin/";
+  final String baseUrl = "http://172.24.58.180/carGOAdmin/";
 
   // Report reasons based on type
   Map<String, List<String>> reportReasons = {
