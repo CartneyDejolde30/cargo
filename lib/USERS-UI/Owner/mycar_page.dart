@@ -26,8 +26,9 @@ class _MyCarPageState extends State<MyCarPage> {
   List<Map<String, dynamic>> filteredCars = [];
 
   bool isLoading = true;
-  bool isVerified = false; // Track verification status
-  bool isCheckingVerification = true; // Track if still checking
+  bool isVerified = false;
+  bool canAddCar = false; // New flag for car addition permission
+  bool isCheckingVerification = true;
   String searchQuery = "";
   String selectedFilter = "All";
 
@@ -49,6 +50,7 @@ class _MyCarPageState extends State<MyCarPage> {
       if (userId == null || userId.isEmpty) {
         setState(() {
           isVerified = false;
+          canAddCar = false;
           isCheckingVerification = false;
         });
         return;
@@ -61,11 +63,15 @@ class _MyCarPageState extends State<MyCarPage> {
         final result = jsonDecode(response.body);
         setState(() {
           isVerified = result['is_verified'] == true;
+          canAddCar = result['can_add_car'] == true;
         });
       }
     } catch (e) {
       debugPrint("❌ Error checking verification: $e");
-      setState(() => isVerified = false);
+      setState(() {
+        isVerified = false;
+        canAddCar = false;
+      });
     }
 
     setState(() => isCheckingVerification = false);
@@ -289,9 +295,8 @@ class _MyCarPageState extends State<MyCarPage> {
               elevation: 0,
             ),
             onPressed: () async {
-              Navigator.pop(dialogContext); // Close dialog
+              Navigator.pop(dialogContext);
               
-              // Navigate to PersonalInfoScreen
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -299,7 +304,6 @@ class _MyCarPageState extends State<MyCarPage> {
                 ),
               );
               
-              // Refresh verification status when returning
               if (result == true || mounted) {
                 checkVerificationStatus();
               }
@@ -355,16 +359,17 @@ class _MyCarPageState extends State<MyCarPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: isVerified ? Colors.black : Colors.grey.shade400,
+        backgroundColor: canAddCar ? Colors.black : Colors.grey.shade400,
         onPressed: isCheckingVerification
             ? null
             : () async {
-                if (!isVerified) {
+                // Only show dialog if NOT verified
+                if (!canAddCar) {
                   showNotVerifiedDialog();
                   return;
                 }
 
-                // Navigate to VehicleTypeSelectionScreen
+                // User is verified, proceed to add car
                 final result = await Navigator.push(
                   context,
                   PageRouteBuilder(
@@ -374,21 +379,20 @@ class _MyCarPageState extends State<MyCarPage> {
                   ),
                 );
 
-                // If the user completed adding a car, refresh the list
                 if (result == true) {
                   fetchCars();
-                  checkVerificationStatus(); // Re-check verification status
+                  checkVerificationStatus();
                 }
               },
         icon: Icon(
           Icons.add,
-          color: isVerified ? Colors.white : Colors.grey.shade600,
+          color: canAddCar ? Colors.white : Colors.grey.shade600,
         ),
         label: Text(
-          isVerified ? "Add Car" : "Verify First",
+          canAddCar ? "Add Car" : "Verify First",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            color: isVerified ? Colors.white : Colors.grey.shade600,
+            color: canAddCar ? Colors.white : Colors.grey.shade600,
           ),
         ),
       ),

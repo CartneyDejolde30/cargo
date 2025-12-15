@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:convert';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/selfie_screen.dart';
 
