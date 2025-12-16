@@ -11,6 +11,8 @@
 
   class BookingScreen extends StatefulWidget {
     final int carId;
+   
+
     final String carName;
     final String carImage;
     final String pricePerDay;
@@ -31,6 +33,7 @@
     const BookingScreen({
       super.key,
       required this.carId,
+    
       required this.carName,
       required this.carImage,
       required this.pricePerDay,
@@ -1208,29 +1211,8 @@
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context); // Close dialog
-            // Navigate to GCash Payment Screen
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GCashPaymentScreen(
-                  carId: widget.carId,
-                  carName: widget.carName,
-                  carImage: widget.carImage,
-                  ownerId: widget.ownerId,
-                  userId: widget.userId ?? '',
-                  fullName: fullNameController.text.trim(),
-                  email: emailController.text.trim(),
-                  contact: contactController.text.trim(),
-                  pickupDate: pickupDate.toString().split(" ").first,
-                  returnDate: returnDate.toString().split(" ").first,
-                  pickupTime: pickupTime.format(context),
-                  returnTime: returnTime.format(context),
-                  rentalPeriod: selectedPeriod,
-                  needsDelivery: needsDelivery,
-                  totalAmount: priceBreakdown!.totalAmount,
-                ),
-              ),
-            );
+            _processPayment();// Navigate to GCash Payment Screen
+            
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
@@ -1322,54 +1304,67 @@
     
   }
 
-  Future<void> _submitBookingToServer() async {
-    final url = Uri.parse("http://172.24.58.180/carGOAdmin/api/create_booking.php");
+Future<void> _submitBookingToServer() async {
+  final url = Uri.parse("http://172.24.58.180/carGOAdmin/api/create_booking.php");
 
-    try {
-      final response = await http.post(url, body: {
-        "car_id": widget.carId.toString(),
-        "owner_id": widget.ownerId.toString(),
-        "user_id": widget.userId ?? "",
-        "full_name": fullNameController.text.trim(),
-        "email": emailController.text.trim(),
-        "contact": contactController.text.trim(),
+  try {
+    final response = await http.post(url, body: {
+      "car_id": widget.carId.toString(),
+      "owner_id": widget.ownerId.toString(),
+      "user_id": widget.userId ?? "",
+      "full_name": fullNameController.text.trim(),
+      "email": emailController.text.trim(),
+      "contact": contactController.text.trim(),
+      "pickup_date": DateFormat('yyyy-MM-dd').format(pickupDate!),
+      "return_date": DateFormat('yyyy-MM-dd').format(returnDate!),
+      "pickup_time": pickupTime.format(context),
+      "return_time": returnTime.format(context),
+      "rental_period": selectedPeriod,
+      "needs_delivery": needsDelivery ? "1" : "0",
+      "total_amount": priceBreakdown!.totalAmount.toString(),
+      "payment_method": "gcash",
+    });
 
-        "pickup_date": pickupDate.toString().split(" ").first,
-        "return_date": returnDate.toString().split(" ").first,
-        "pickup_time": pickupTime.format(context),
-        "return_time": returnTime.format(context),
+    final data = jsonDecode(response.body);
 
-        "rental_period": selectedPeriod,
-        "needs_delivery": needsDelivery ? "1" : "0",
-        "total_amount": priceBreakdown!.totalAmount.toString(),
-      });
+    if (data["success"] == true) {
+      final bookingId = data["booking_id"];
 
-      print("📌 RAW RESPONSE: ${response.body}");
+      Navigator.pop(context); // close loading
 
-      dynamic data;
-
-      // Protect against invalid JSON so dialog will close
-      try {
-        data = jsonDecode(response.body);
-      } catch (e) {
-        Navigator.pop(context);
-        _showError("Invalid server response");
-        return;
-      }
-
-      if (data["success"] == true) {
-        Navigator.pop(context);
-        _showSuccessDialog();
-      } else {
-        Navigator.pop(context);
-        _showError(data["message"] ?? "Booking failed");
-      }
-
-    } catch (e) {
-      Navigator.pop(context); // ENSURES LOADING CLOSES
-      _showError("Server error: $e");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GCashPaymentScreen(
+            bookingId: bookingId,
+            carId: widget.carId,
+            carName: widget.carName,
+            carImage: widget.carImage,
+            ownerId: widget.ownerId,
+            userId: widget.userId ?? '',
+            fullName: fullNameController.text.trim(),
+            email: emailController.text.trim(),
+            contact: contactController.text.trim(),
+            pickupDate: pickupDate.toString().split(" ").first,
+            returnDate: returnDate.toString().split(" ").first,
+            pickupTime: pickupTime.format(context),
+            returnTime: returnTime.format(context),
+            rentalPeriod: selectedPeriod,
+            needsDelivery: needsDelivery,
+            totalAmount: priceBreakdown!.totalAmount,
+          ),
+        ),
+      );
+    } else {
+      Navigator.pop(context);
+      _showError(data["message"] ?? "Booking failed");
     }
+  } catch (e) {
+    Navigator.pop(context);
+    _showError("Server error");
   }
+}
+
 
 
     void _showSuccessDialog() {

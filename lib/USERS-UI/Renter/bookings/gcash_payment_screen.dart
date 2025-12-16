@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 class GCashPaymentScreen extends StatefulWidget {
   final int carId;
+  final int bookingId;
   final String carName;
   final String carImage;
   final String ownerId;
@@ -25,6 +26,7 @@ class GCashPaymentScreen extends StatefulWidget {
   const GCashPaymentScreen({
     super.key,
     required this.carId,
+     required this.bookingId,
     required this.carName,
     required this.carImage,
     required this.ownerId,
@@ -155,6 +157,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
       final response = await http.post(
         url,
         body: {
+          "booking_id": widget.bookingId.toString(),
           "car_id": widget.carId.toString(),
           "owner_id": widget.ownerId,
           "user_id": widget.userId,
