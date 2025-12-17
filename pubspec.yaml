@@ -59,9 +59,9 @@ dependencies:
 
 
   #google acc
-  google_sign_in: ^7.2.0
+  google_sign_in: ^6.2.1
 
-
+  flutter_webrtc: ^0.9.48
 
   get: ^4.7.2
   get_storage: ^2.1.1
