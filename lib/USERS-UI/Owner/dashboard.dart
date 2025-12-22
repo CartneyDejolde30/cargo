@@ -4,11 +4,11 @@ import 'package:intl/intl.dart';
 
 // Services
 import './dashboard/dashboard_service.dart';
-import '../services/booking_service.dart';
+import '../Owner/dashboard/booking_service.dart';
 
 // Models
-import './dashboard/dashboard_stats.dart';
-import './dashboard/booking_model.dart';
+import './dashboard/dashboard_stats.dart'; // Only import DashboardStats from here
+import './dashboard/booking_model.dart'; // Import Booking from here
 
 // Widgets
 import './dashboard/dashboard_header.dart';
