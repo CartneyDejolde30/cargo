@@ -10,7 +10,7 @@ class BookingService {
   static Future<List<Booking>> getMyBookings(String userId) async {
     final response = await http.get(
       Uri.parse(
-        'http://172.24.58.180/carGOAdmin/api/get_my_bookings.php?user_id=$userId',
+        'http://192.168.1.11/carGOAdmin/api/get_my_bookings.php?user_id=$userId',
       ),
     );
 
@@ -31,7 +31,7 @@ class BookingService {
   }) async {
     final response = await http.post(
       Uri.parse(
-        'http://172.24.58.180/carGOAdmin/api/cancel_booking.php',
+        'http://192.168.1.11/carGOAdmin/api/cancel_booking.php',
       ),
       body: {
         'booking_id': bookingId.toString(),

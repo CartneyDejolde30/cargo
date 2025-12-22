@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Services
+import '../Owner/notification/notification_service.dart';
+
+// Pages
 import 'dashboard.dart';
 import 'mycar_page.dart';
 import 'notification_page.dart';
 import 'message_page.dart';
 import 'profile_page.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
+
+// Widgets
+import 'widgets/verify_popup.dart';
 
 class OwnerHomeScreen extends StatefulWidget {
   const OwnerHomeScreen({super.key});
@@ -16,6 +22,8 @@ class OwnerHomeScreen extends StatefulWidget {
 }
 
 class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
+  final NotificationService _notificationService = NotificationService();
+
   int _selectedIndex = 0;
   int _ownerId = 0;
   bool _loading = true;
@@ -36,14 +44,18 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   Future<void> _loadUserData() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString("user_id") ?? "0";
+      
+      // Get user ID
+      final userId = prefs.getString("user_id") ?? 
+                     prefs.getInt("user_id")?.toString() ?? 
+                     "0";
       
       setState(() {
         _ownerId = int.tryParse(userId) ?? 0;
         _loading = false;
       });
 
-      // Load notification and message counts
+      // Load badge counts
       await _loadBadgeCounts();
     } catch (e) {
       debugPrint("Error loading user data: $e");
@@ -52,18 +64,27 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   }
 
   Future<void> _loadBadgeCounts() async {
-    // TODO: Implement actual API calls to get counts
-    // For now using placeholder values
-    setState(() {
-      _unreadNotifications = 3; // Replace with actual count
-      _unreadMessages = 2; // Replace with actual count
-    });
+    try {
+      final counts = await _notificationService.fetchUnreadCounts(_ownerId.toString());
+      
+      setState(() {
+        _unreadNotifications = counts['notifications'] ?? 0;
+        _unreadMessages = counts['messages'] ?? 0;
+      });
+    } catch (e) {
+      debugPrint("Error loading badge counts: $e");
+    }
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+
+    // Refresh badge counts when navigating to notifications or messages
+    if (index == 2 || index == 3) {
+      _loadBadgeCounts();
+    }
   }
 
   @override
@@ -108,7 +129,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.1 * 255).round()),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),

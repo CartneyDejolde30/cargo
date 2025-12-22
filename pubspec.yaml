@@ -61,7 +61,10 @@ dependencies:
   #google acc
   google_sign_in: ^6.2.1
 
-  flutter_webrtc: ^0.9.48
+  flutter_webrtc:
+    git:
+      url: https://github.com/flutter-webrtc/flutter-webrtc.git
+      ref: main
 
   get: ^4.7.2
   get_storage: ^2.1.1

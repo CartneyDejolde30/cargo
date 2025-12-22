@@ -5,7 +5,7 @@ import '../models/user_verification.dart';
 
 class VerificationService {
   static const String baseUrl =
-      "http://172.24.58.180/carGOAdmin/api/submit_verification.php";
+      "http://192.168.1.11/carGOAdmin/api/submit_verification.php";
 
   static Future<Map<String, dynamic>> submitVerification(
       UserVerification user) async {

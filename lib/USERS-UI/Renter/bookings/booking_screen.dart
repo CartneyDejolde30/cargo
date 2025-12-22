@@ -208,7 +208,7 @@
 
       try {
         final url = Uri.parse(
-          "http://172.24.58.180/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+          "http://192.168.1.11/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
         );
         
         final response = await http.get(url);
@@ -1305,7 +1305,7 @@
   }
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://172.24.58.180/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse("http://192.168.1.11/carGOAdmin/api/create_booking.php");
 
   try {
     final response = await http.post(url, body: {
