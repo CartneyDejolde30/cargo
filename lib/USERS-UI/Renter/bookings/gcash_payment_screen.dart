@@ -150,7 +150,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     setState(() => isProcessing = true);
 
     final url = Uri.parse(
-      "http://172.24.58.180/carGOAdmin/api/submit_payment.php",
+      "http://192.168.1.11/carGOAdmin/api/submit_payment.php",
     );
 
     try {
