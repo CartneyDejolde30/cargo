@@ -8,7 +8,7 @@ class DashboardService {
   /* ---------------- FETCH DASHBOARD STATS ---------------- */
   Future<DashboardStats> fetchDashboardStats(String ownerId) async {
     try {
-      final url = Uri.parse("${ApiConstants.baseUrl}api/dashboard_stats.php?owner_id=$ownerId");
+      final url = Uri.parse("${ApiConstants.baseUrl}api/dashboard/dashboard_stats.php?owner_id=$ownerId");
       final response = await http.get(url).timeout(ApiConstants.apiTimeout);
 
       if (response.statusCode == 200) {

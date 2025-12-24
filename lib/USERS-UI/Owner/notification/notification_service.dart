@@ -31,7 +31,7 @@ class NotificationService {
   /* ---------------- FETCH UNREAD COUNT ---------------- */
   Future<Map<String, int>> fetchUnreadCounts(String userId) async {
     try {
-      final url = Uri.parse("${ApiConstants.baseUrl}api/unread_counts.php?user_id=$userId");
+      final url = Uri.parse("${ApiConstants.baseUrl}api/dashboard/unread_counts.php?user_id=$userId");
       final response = await http.get(url).timeout(ApiConstants.apiTimeout);
 
       if (response.statusCode == 200) {

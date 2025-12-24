@@ -91,7 +91,6 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     'Wagon',
   ];
 
-  // ADD THESE AFTER THE CAR LISTS
   final List<String> motorcycleBrands = [
     'Honda',
     'Yamaha',
@@ -203,6 +202,33 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     'Semi-Automatic',
   ];
 
+  // 🔧 ADD THIS HELPER METHOD
+  String? _getValidValue(String? currentValue, List<String> validValues) {
+    if (currentValue == null || currentValue.isEmpty) return null;
+    
+    // If the current value exists in valid values, return it
+    if (validValues.contains(currentValue)) {
+      return currentValue;
+    }
+    
+    // Try to map old values to new ones
+    final lowerValue = currentValue.toLowerCase();
+    
+    // Map transmission types
+    if (lowerValue.contains('auto') || lowerValue == 'a1' || lowerValue == 'at') {
+      return 'Automatic';
+    }
+    if (lowerValue.contains('manual') || lowerValue == 'm1' || lowerValue == 'mt') {
+      return 'Manual';
+    }
+    if (lowerValue.contains('semi')) {
+      return 'Semi-Automatic';
+    }
+    
+    // If no mapping found, return null (will show hint text)
+    return null;
+  }
+
 @override
 void initState() {
   super.initState();
@@ -215,19 +241,27 @@ void initState() {
 
   listing.photoUrls = List<String>.from(listing.photoUrls);
 
-  // ADD THIS - Handle different vehicle types
   final isMotorcycle = widget.vehicleType == 'motorcycle';
   
-  listing.year ??= years[0];
-  listing.brand ??= isMotorcycle ? motorcycleBrands[0] : brands[0];
-  listing.bodyStyle ??= isMotorcycle ? motorcycleBodyStyles[0] : bodyStyles[0];
-  listing.trim ??= isMotorcycle ? engineDisplacements[0] : 'N/A';
+  // 🔧 FIX: Validate all dropdown values
+  listing.year = _getValidValue(listing.year, years) ?? years[0];
+  
+  final brandsList = isMotorcycle ? motorcycleBrands : brands;
+  listing.brand = _getValidValue(listing.brand, brandsList) ?? brandsList[0];
+  
+  final bodyStylesList = isMotorcycle ? motorcycleBodyStyles : bodyStyles;
+  listing.bodyStyle = _getValidValue(listing.bodyStyle, bodyStylesList) ?? bodyStylesList[0];
+  
+  final trimsList = isMotorcycle ? engineDisplacements : ['N/A', 'Base', 'Sport', 'Luxury'];
+  listing.trim = _getValidValue(listing.trim, trimsList) ?? (isMotorcycle ? engineDisplacements[0] : 'N/A');
 
   if (listing.brand != null) {
     final models = isMotorcycle 
         ? (motorcycleModelsByBrand[listing.brand!] ?? [])
         : (modelsByBrand[listing.brand!] ?? []);
-    listing.model ??= models.isNotEmpty ? models[0] : null;
+    
+    // Validate model as well
+    listing.model = _getValidValue(listing.model, models) ?? (models.isNotEmpty ? models[0] : null);
   }
 
   _plateController.text = listing.plateNumber ?? '';
@@ -287,11 +321,11 @@ Widget build(BuildContext context) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isMotorcycle ? 'What is your motorcycle?' : 'What is your car?', // CHANGED
+                    isMotorcycle ? 'What is your motorcycle?' : 'What is your car?',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black, // CHANGED from grey[700]
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -300,13 +334,13 @@ Widget build(BuildContext context) {
                   }),
                   const SizedBox(height: 20),
                   _buildDropdown(
-                    isMotorcycle ? 'Motorcycle Brand' : 'Car Brand', // CHANGED
-                    brandsList, // CHANGED
+                    isMotorcycle ? 'Motorcycle Brand' : 'Car Brand',
+                    brandsList,
                     listing.brand,
                     (value) {
                       setState(() {
                         listing.brand = value;
-                        final models = modelsMap[value] ?? []; // CHANGED
+                        final models = modelsMap[value] ?? [];
                         listing.model = models.isNotEmpty ? models[0] : null;
                       });
                     }
@@ -315,27 +349,25 @@ Widget build(BuildContext context) {
                   _buildDropdown(
                     'Model',
                     listing.brand != null
-                        ? (modelsMap[listing.brand!] ?? ['Select brand first']) // CHANGED
+                        ? (modelsMap[listing.brand!] ?? ['Select brand first'])
                         : ['Select brand first'],
                     listing.model,
                     (value) => setState(() => listing.model = value),
                   ),
                   const SizedBox(height: 20),
-                  _buildDropdown('Body Style', bodyStylesList, listing.bodyStyle, (value) { // CHANGED
+                  _buildDropdown('Body Style', bodyStylesList, listing.bodyStyle, (value) {
                     setState(() => listing.bodyStyle = value);
                   }),
                   const SizedBox(height: 20),
                   
-                  // ADD THIS - Show different fields for motorcycle vs car
                   if (isMotorcycle) ...[
                     _buildDropdown('Engine Displacement', engineDisplacements, listing.trim, (value) {
                       setState(() => listing.trim = value);
                     }),
                     const SizedBox(height: 20),
                     _buildDropdown('Transmission', transmissionTypes, null, (value) {
-                      // You can add a transmission field to CarListing model if needed
                       setState(() {
-                        // listing.transmission = value;
+                        // You can add a transmission field to CarListing model if needed
                       });
                     }),
                   ] else ...[
@@ -351,13 +383,13 @@ Widget build(BuildContext context) {
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.black, size: 16), // CHANGED from green
+                          const Icon(Icons.check_circle, color: Colors.black, size: 16),
                           const SizedBox(width: 6),
                           Text(
                             'Plate number is unique.',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
-                              color: Colors.black87, // CHANGED from green[700]
+                              color: Colors.black87,
                             ),
                           ),
                         ],
@@ -365,7 +397,7 @@ Widget build(BuildContext context) {
                     ),
                   const SizedBox(height: 20),
                   _buildTextField(
-                    isMotorcycle ? 'Motorcycle Color' : 'Car Color', // CHANGED
+                    isMotorcycle ? 'Motorcycle Color' : 'Car Color',
                     _colorController
                   ),
                 ],
@@ -384,7 +416,7 @@ Widget build(BuildContext context) {
                           MaterialPageRoute(
                             builder: (context) => CarPreferencesScreen(
                               listing: listing,
-                              vehicleType: widget.vehicleType, // ADD THIS to pass vehicle type
+                              vehicleType: widget.vehicleType,
                             ),
                           ),
                         );
@@ -392,7 +424,7 @@ Widget build(BuildContext context) {
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
-                  disabledBackgroundColor: const Color(0xFFE0E0E0), // CHANGED
+                  disabledBackgroundColor: const Color(0xFFE0E0E0),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
@@ -401,7 +433,7 @@ Widget build(BuildContext context) {
                 child: Text(
                   'Continue',
                   style: GoogleFonts.poppins(
-                    color: _canContinue() ? Colors.white : Colors.grey[500], // CHANGED
+                    color: _canContinue() ? Colors.white : Colors.grey[500],
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -415,7 +447,11 @@ Widget build(BuildContext context) {
   );
 }
 
+// 🔧 IMPROVED: Added validation to prevent invalid values
 Widget _buildDropdown(String label, List<String> items, String? value, Function(String?) onChanged) {
+  // Validate that the value exists in items
+  final validValue = (value != null && items.contains(value)) ? value : null;
+  
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -423,17 +459,17 @@ Widget _buildDropdown(String label, List<String> items, String? value, Function(
       const SizedBox(height: 8),
       Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5), // CHANGED for better contrast
+          color: const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)), // ADD border
+          border: Border.all(color: const Color(0xFFE0E0E0)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: value,
+            value: validValue, // 🔧 Use validated value
             isExpanded: true,
             hint: Text('Select $label', style: GoogleFonts.poppins(color: Colors.black87)),
-            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black), // CHANGED from green
+            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
             items: items.map((item) {
               return DropdownMenuItem(
                 value: item,
@@ -459,16 +495,16 @@ Widget _buildTextField(String label, TextEditingController controller) {
         style: GoogleFonts.poppins(fontSize: 14, color: Colors.black),
         decoration: InputDecoration(
           filled: true,
-          fillColor: const Color(0xFFF5F5F5), // CHANGED
+          fillColor: const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)), // ADD border
-          ),
-          enabledBorder: OutlineInputBorder( // ADD this
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
           ),
-          focusedBorder: OutlineInputBorder( // ADD this
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          ),
+          focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.black, width: 2),
           ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
@@ -9,26 +10,37 @@ class UploadDocumentsScreen extends StatefulWidget {
   final CarListing listing;
   final String vehicleType;
 
-  const UploadDocumentsScreen({super.key, required this.listing, this.vehicleType = 'car',});
+  const UploadDocumentsScreen({
+    super.key,
+    required this.listing,
+    this.vehicleType = 'car',
+  });
 
   @override
   State<UploadDocumentsScreen> createState() => _UploadDocumentsScreenState();
 }
 
 class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
-  String? officialReceiptPath;
-  String? certificateOfRegistrationPath;
+  // CHANGED: Store File objects instead of just paths
+  File? officialReceiptFile;
+  File? certificateOfRegistrationFile;
 
   @override
   void initState() {
     super.initState();
-    // Restore stored documents if user comes back to this screen
-    officialReceiptPath = widget.listing.officialReceipt;
-    certificateOfRegistrationPath = widget.listing.certificateOfRegistration;
+    // Try to restore from paths if coming back (mobile only)
+    if (!kIsWeb) {
+      if (widget.listing.officialReceipt != null) {
+        officialReceiptFile = File(widget.listing.officialReceipt!);
+      }
+      if (widget.listing.certificateOfRegistration != null) {
+        certificateOfRegistrationFile = File(widget.listing.certificateOfRegistration!);
+      }
+    }
   }
 
   bool _canContinue() {
-    return officialReceiptPath != null && certificateOfRegistrationPath != null;
+    return officialReceiptFile != null && certificateOfRegistrationFile != null;
   }
 
   Future<void> _pickDocument(bool isOR) async {
@@ -36,19 +48,30 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
+      // FIXED: Properly convert XFile to File for both platforms
+      File imageFile;
+      if (kIsWeb) {
+        // Web: Create File from bytes
+        final bytes = await image.readAsBytes();
+        imageFile = File.fromRawPath(bytes);
+      } else {
+        // Mobile: Use path
+        imageFile = File(image.path);
+      }
+
       setState(() {
         if (isOR) {
-          officialReceiptPath = image.path;
-          widget.listing.officialReceipt = image.path; // Save to model
+          officialReceiptFile = imageFile;
+          widget.listing.officialReceipt = image.path; // Store path for reference
         } else {
-          certificateOfRegistrationPath = image.path;
-          widget.listing.certificateOfRegistration = image.path; // Save to model
+          certificateOfRegistrationFile = imageFile;
+          widget.listing.certificateOfRegistration = image.path;
         }
       });
     }
   }
 
-  Widget _buildUploadBox(String label, String? filePath, VoidCallback onTap) {
+  Widget _buildUploadBox(String label, File? file, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -56,12 +79,9 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
+          border: Border.all(color: Colors.white, width: 2),
         ),
-        child: filePath == null
+        child: file == null
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -92,12 +112,31 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      File(filePath),
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    child: kIsWeb
+                        ? Image.network(
+                            file.path, // On web, File.path is a blob URL
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          )
+                        : Image.file(
+                            file,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   Positioned(
                     top: 8,
@@ -114,10 +153,10 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       onPressed: () {
                         setState(() {
                           if (label == 'Official Receipt') {
-                            officialReceiptPath = null;
+                            officialReceiptFile = null;
                             widget.listing.officialReceipt = null;
                           } else {
-                            certificateOfRegistrationPath = null;
+                            certificateOfRegistrationFile = null;
                             widget.listing.certificateOfRegistration = null;
                           }
                         });
@@ -168,8 +207,6 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-
-                    // Official Receipt Upload
                     Text(
                       'Official Receipt',
                       style: GoogleFonts.poppins(
@@ -178,11 +215,12 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildUploadBox('Official Receipt', officialReceiptPath, () => _pickDocument(true)),
-
+                    _buildUploadBox(
+                      'Official Receipt',
+                      officialReceiptFile,
+                      () => _pickDocument(true),
+                    ),
                     const SizedBox(height: 24),
-
-                    // CR Upload
                     Text(
                       'Certificate of Registration',
                       style: GoogleFonts.poppins(
@@ -191,14 +229,15 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildUploadBox('Certificate of Registration', certificateOfRegistrationPath, () => _pickDocument(false)),
+                    _buildUploadBox(
+                      'Certificate of Registration',
+                      certificateOfRegistrationFile,
+                      () => _pickDocument(false),
+                    ),
                   ],
                 ),
               ),
             ),
-
-            // Continue Button
-            // Continue Button
             Padding(
               padding: const EdgeInsets.all(24),
               child: SizedBox(
@@ -211,7 +250,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                             MaterialPageRoute(
                               builder: (context) => CarPhotosDiagramScreen(
                                 listing: widget.listing,
-                                vehicleType: widget.vehicleType, // ADD THIS LINE
+                                vehicleType: widget.vehicleType,
                               ),
                             ),
                           );
@@ -221,7 +260,9 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                     backgroundColor: Colors.black,
                     disabledBackgroundColor: Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   child: Text(
                     'Continue',

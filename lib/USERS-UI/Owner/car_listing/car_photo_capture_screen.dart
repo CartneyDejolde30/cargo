@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // ADD THIS
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -83,12 +84,11 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
                         child: Text(
                           'Submit',
                           style: GoogleFonts.poppins(
-                            color: Colors.white, // remove 'const' here
+                            color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -158,10 +158,21 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
       padding: const EdgeInsets.all(24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          File(capturedImagePath!),
-          fit: BoxFit.cover,
-        ),
+        child: kIsWeb // FIXED: Added platform check
+            ? Image.network(
+                capturedImagePath!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  );
+                },
+              )
+            : Image.file(
+                File(capturedImagePath!),
+                fit: BoxFit.cover,
+              ),
       ),
     );
   }
