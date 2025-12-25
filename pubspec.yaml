@@ -61,6 +61,9 @@ dependencies:
   #google acc
   google_sign_in: ^6.2.1
 
+  #Facebook Acc
+  flutter_facebook_auth: ^6.0.4
+
   flutter_webrtc:
     git:
       url: https://github.com/flutter-webrtc/flutter-webrtc.git
