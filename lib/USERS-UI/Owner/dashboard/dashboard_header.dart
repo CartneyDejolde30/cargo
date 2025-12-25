@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String userName;
-  final int notificationCount;
-  final VoidCallback onNotificationTap;
 
   const DashboardHeader({
     super.key,
     required this.userName,
-    required this.notificationCount,
-    required this.onNotificationTap,
   });
 
   @override
@@ -34,13 +30,7 @@ class DashboardHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildLogo(),
-              _buildNotificationBell(),
-            ],
-          ),
+          _buildLogo(),
           const SizedBox(height: 32),
           _buildWelcomeText(),
         ],
@@ -70,58 +60,6 @@ class DashboardHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildNotificationBell() {
-    return GestureDetector(
-      onTap: onNotificationTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(
-              Icons.notifications_outlined,
-              color: Colors.white,
-              size: 24,
-            ),
-            if (notificationCount > 0)
-              Positioned(
-                right: -4,
-                top: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  child: Text(
-                    notificationCount > 9 ? '9+' : '$notificationCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 

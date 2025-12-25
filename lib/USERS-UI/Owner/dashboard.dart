@@ -7,8 +7,8 @@ import './dashboard/dashboard_service.dart';
 import '../Owner/dashboard/booking_service.dart';
 
 // Models
-import './dashboard/dashboard_stats.dart'; // Only import DashboardStats from here
-import './dashboard/booking_model.dart'; // Import Booking from here
+import './dashboard/dashboard_stats.dart';
+import './dashboard/booking_model.dart';
 
 // Widgets
 import './dashboard/dashboard_header.dart';
@@ -21,7 +21,6 @@ import './dashboard/upcoming_bookings_widget.dart';
 // Pages
 import 'pending_requests_page.dart';
 import 'active_booking_page.dart';
-import 'notification_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -120,28 +119,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     setState(() => upcomingBookings = bookings);
   }
 
-  void _openNotificationPage() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      int? userId = prefs.getInt("user_id") ?? 
-                    int.tryParse(prefs.getString("user_id") ?? "1") ?? 
-                    1;
-
-      if (mounted) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotificationPage(userId: userId),
-          ),
-        );
-        // Refresh notification count after returning
-        _fetchDashboardStats();
-      }
-    } catch (e) {
-      debugPrint("Error opening notification page: $e");
-    }
-  }
-
   String _formatCurrency(double amount) {
     final formatter = NumberFormat.currency(symbol: '₱', decimalDigits: 0);
     return formatter.format(amount);
@@ -163,19 +140,15 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  DashboardHeader(
-                    userName: userName,
-                    notificationCount: stats.unreadNotifications,
-                    onNotificationTap: _openNotificationPage,
-                  ),
+                  // Header (without notification icon)
+                  DashboardHeader(userName: userName),
                   
                   if (isLoading)
                     _buildLoadingIndicator()
                   else ...[
                     const SizedBox(height: 24),
                     
-                    // Quick Stats Grid
+                    // Quick Stats Grid (only Total Cars and Total Income)
                     _buildQuickStatsGrid(),
                     
                     const SizedBox(height: 24),
@@ -190,7 +163,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                     
                     const SizedBox(height: 24),
                     
-                    // Quick Actions
+                    // Quick Actions (has Pending Requests and Active Bookings)
                     _buildQuickActions(),
                     
                     const SizedBox(height: 24),
@@ -255,26 +228,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             value: _formatCurrency(stats.totalIncome),
             icon: Icons.account_balance_wallet_outlined,
             iconBackgroundColor: Colors.purple.shade50,
-          ),
-          StatCard(
-            title: "Active Bookings",
-            value: "${stats.activeBookings}",
-            icon: Icons.bookmark_outline,
-            iconBackgroundColor: Colors.blue.shade50,
-          ),
-          StatCard(
-            title: "Pending Requests",
-            value: "${stats.pendingRequests}",
-            icon: Icons.pending_actions_outlined,
-            iconBackgroundColor: Colors.orange.shade50,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PendingRequestsPage(ownerId: ownerId),
-                ),
-              );
-            },
           ),
         ],
       ),

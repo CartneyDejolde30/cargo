@@ -16,10 +16,10 @@ import '../Owner/mycar/car_filter_chips.dart';
 import '../Owner/mycar/car_stats_section.dart';
 import '../Owner/mycar/empty_car_state.dart';
 import '../Owner/mycar/car_shimmer.dart';
+import '../Owner/mycar/car_detail_page.dart'; // ADD THIS IMPORT
 
 // Dialogs
 import '../Owner/mycar/verification_dialog.dart';
-import '../Owner/mycar/delete_car_dialog.dart';
 
 class MyCarPage extends StatefulWidget {
   final int ownerId;
@@ -105,9 +105,6 @@ class _MyCarPageState extends State<MyCarPage> {
 
   /* ---------------- DELETE CAR ---------------- */
   Future<void> deleteCar(int id) async {
-    final confirm = await DeleteCarDialog.show(context);
-    if (confirm != true) return;
-
     final success = await _carService.deleteCar(id);
 
     if (success) {
@@ -134,6 +131,23 @@ class _MyCarPageState extends State<MyCarPage> {
           ),
         );
       }
+    }
+  }
+
+  /* ---------------- NAVIGATE TO EDIT SCREEN ---------------- */
+  Future<void> navigateToEditScreen(Map<String, dynamic> car) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CarDetailsScreen(
+          ownerId: widget.ownerId,
+          existingListing: CarListing.fromJson(car),
+        ),
+      ),
+    );
+
+    if (result == true) {
+      fetchCars();
     }
   }
 
@@ -178,17 +192,7 @@ class _MyCarPageState extends State<MyCarPage> {
     if (action == "delete") {
       deleteCar(int.parse(car["id"].toString()));
     } else if (action == "edit") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CarDetailsScreen(
-            ownerId: widget.ownerId,
-            existingListing: CarListing.fromJson(car),
-          ),
-        ),
-      ).then((result) {
-        if (result == true) fetchCars();
-      });
+      navigateToEditScreen(car);
     }
   }
 
@@ -343,18 +347,18 @@ class _MyCarPageState extends State<MyCarPage> {
           duration: Duration(milliseconds: 200 + (index * 50)),
           child: CarCard(
             car: car,
-            onTap: () async {
-              final result = await Navigator.push(
+            onTap: () {
+              // NOW NAVIGATES TO DETAIL VIEW INSTEAD OF EDIT SCREEN
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CarDetailsScreen(
-                    ownerId: widget.ownerId,
-                    existingListing: CarListing.fromJson(car),
+                  builder: (_) => CarDetailPage(
+                    car: car,
+                    onEdit: () => navigateToEditScreen(car),
+                    onDelete: () => deleteCar(int.parse(car["id"].toString())),
                   ),
                 ),
               );
-
-              if (result == true) fetchCars();
             },
             onMenuSelected: (action) => handleCarMenuAction(action, car),
           ),

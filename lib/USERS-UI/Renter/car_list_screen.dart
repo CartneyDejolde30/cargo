@@ -23,8 +23,13 @@ class _CarListScreenState extends State<CarListScreen> {
   String _selectedCategory = 'All';
   int _selectedNavIndex = 0;
 
-  List<Map<String, dynamic>> _cars = [];
+  List<Map<String, dynamic>> _allCars = [];
+  List<Map<String, dynamic>> _filteredCars = [];
   bool _loading = true;
+
+  // Active filters
+  Map<String, dynamic>? _activeFilters;
+  int _activeFilterCount = 0;
 
   final List<String> _categories = ['All', 'SUV', 'Sedan', 'Sport', 'Coupe', 'Luxury'];
 
@@ -50,7 +55,10 @@ class _CarListScreenState extends State<CarListScreen> {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['status'] == 'success') {
-          setState(() => _cars = List<Map<String, dynamic>>.from(data['cars']));
+          setState(() {
+            _allCars = List<Map<String, dynamic>>.from(data['cars']);
+            _applyFilters();
+          });
         }
       }
     } catch (e) {
@@ -58,6 +66,93 @@ class _CarListScreenState extends State<CarListScreen> {
     }
 
     setState(() => _loading = false);
+  }
+
+  void _applyFilters() {
+    List<Map<String, dynamic>> filtered = List.from(_allCars);
+
+    // Apply category filter
+    if (_selectedCategory != 'All') {
+      filtered = filtered.where((car) {
+        String carCategory = (car['category'] ?? '').toString().toLowerCase();
+        return carCategory == _selectedCategory.toLowerCase();
+      }).toList();
+    }
+
+    // Apply search filters if active
+    if (_activeFilters != null) {
+      // Location filter
+      if (_activeFilters!['location'] != null && 
+          _activeFilters!['location'].toString().isNotEmpty) {
+        String searchLocation = _activeFilters!['location'].toString().toLowerCase();
+        filtered = filtered.where((car) {
+          String carLocation = (car['location'] ?? '').toString().toLowerCase();
+          return carLocation.contains(searchLocation) || 
+                 searchLocation.contains(carLocation);
+        }).toList();
+      }
+
+      // Vehicle Type filter (map to category)
+      if (_activeFilters!['vehicleType'] != null && 
+          _activeFilters!['vehicleType'].toString().isNotEmpty) {
+        String vehicleType = _activeFilters!['vehicleType'].toString().toLowerCase();
+        filtered = filtered.where((car) {
+          // Map vehicle types: Car -> All categories, Motorcycle -> Sport
+          if (vehicleType == 'motorcycle') {
+            return (car['category'] ?? '').toString().toLowerCase() == 'sport';
+          }
+          return true; // Car includes all types
+        }).toList();
+      }
+
+      // Price Range filter
+      double minPrice = (_activeFilters!['minPrice'] ?? 0).toDouble();
+      double maxPrice = (_activeFilters!['maxPrice'] ?? 2000).toDouble();
+      
+      filtered = filtered.where((car) {
+        double carPrice = double.tryParse(car['price'].toString()) ?? 0;
+        return carPrice >= minPrice && carPrice <= maxPrice;
+      }).toList();
+    }
+
+    setState(() {
+      _filteredCars = filtered;
+      _calculateActiveFilters();
+    });
+  }
+
+  void _calculateActiveFilters() {
+    int count = 0;
+    if (_activeFilters != null) {
+      if (_activeFilters!['location'] != null && 
+          _activeFilters!['location'].toString().isNotEmpty) count++;
+      if (_activeFilters!['vehicleType'] != null && 
+          _activeFilters!['vehicleType'].toString().isNotEmpty) count++;
+      if (_activeFilters!['deliveryMethod'] != null && 
+          _activeFilters!['deliveryMethod'].toString().isNotEmpty) count++;
+      
+      double minPrice = (_activeFilters!['minPrice'] ?? 0).toDouble();
+      double maxPrice = (_activeFilters!['maxPrice'] ?? 2000).toDouble();
+      if (minPrice > 0 || maxPrice < 2000) count++;
+    }
+    _activeFilterCount = count;
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _activeFilters = null;
+      _activeFilterCount = 0;
+      _selectedCategory = 'All';
+      _applyFilters();
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('All filters cleared'),
+        backgroundColor: Colors.black,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _handleNavigation(int index) {
@@ -87,12 +182,16 @@ class _CarListScreenState extends State<CarListScreen> {
                         _buildSearchBar(),
                         const SizedBox(height: 20),
                         _buildCategoryFilter(),
+                        if (_activeFilterCount > 0) ...[
+                          const SizedBox(height: 16),
+                          _buildActiveFiltersChip(),
+                        ],
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Newly Listed",
+                              _filteredCars.isEmpty ? "No cars found" : "Available Cars (${_filteredCars.length})",
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -112,6 +211,62 @@ class _CarListScreenState extends State<CarListScreen> {
         currentIndex: _selectedNavIndex,
         onTap: _handleNavigation,
       ),
+    );
+  }
+
+  Widget _buildActiveFiltersChip() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.filter_list, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                '$_activeFilterCount ${_activeFilterCount == 1 ? 'Filter' : 'Filters'} Active',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: _clearAllFilters,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.clear, color: Colors.black, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Clear All',
+                  style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -151,12 +306,25 @@ class _CarListScreenState extends State<CarListScreen> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const SearchFilterScreen(),
+            builder: (_) => SearchFilterScreen(
+              currentFilters: _activeFilters,
+            ),
           ),
         );
 
         if (result != null && result is Map<String, dynamic>) {
-          print("Search parameters: $result");
+          setState(() {
+            _activeFilters = result;
+            _applyFilters();
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Filters applied - ${_filteredCars.length} cars found'),
+              backgroundColor: Colors.black,
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
       },
       child: Container(
@@ -174,14 +342,40 @@ class _CarListScreenState extends State<CarListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            const Icon(Icons.search, color: Colors.grey, size: 22),
+            Icon(
+              Icons.filter_list, 
+              color: _activeFilterCount > 0 ? Colors.black : Colors.grey, 
+              size: 22
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                "Search your dream car...",
-                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+                _activeFilterCount > 0 
+                    ? "$_activeFilterCount filter${_activeFilterCount > 1 ? 's' : ''} applied"
+                    : "Filter & search cars...",
+                style: GoogleFonts.poppins(
+                  color: _activeFilterCount > 0 ? Colors.black : Colors.grey, 
+                  fontSize: 14,
+                  fontWeight: _activeFilterCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ),
+            if (_activeFilterCount > 0)
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$_activeFilterCount',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -199,7 +393,12 @@ class _CarListScreenState extends State<CarListScreen> {
           final isSelected = _selectedCategory == category;
 
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = category),
+            onTap: () {
+              setState(() {
+                _selectedCategory = category;
+                _applyFilters();
+              });
+            },
             child: Container(
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -232,37 +431,90 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   Widget _buildCarGrid() {
-  return SliverToBoxAdapter(
-    child: GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.60, // same as HomeScreen
-      ),
-      itemCount: _cars.length,
-      itemBuilder: (context, index) {
-        final car = _cars[index];
-        return _buildCarCard(
-          carId: int.tryParse(car['id'].toString()) ?? 0,
-          name: "${car['brand']} ${car['model']}",
-          year: car['car_year'] ?? "",
-          rating: double.tryParse(car['rating'].toString()) ?? 5.0,
-          location: (car['location'] ?? '').isEmpty ? "Unknown" : car['location'],
-          price: car['price'].toString(),
-          seats: int.tryParse(car['seat'].toString()) ?? 4,
-          transmission: car['transmission'] ?? "Automatic",
-          image: getImageUrl(car['image']),
-          hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
-        );
-      },
-    ),
-  );
-}
+    if (_filteredCars.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 80,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No cars found',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try adjusting your filters',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              if (_activeFilterCount > 0) ...[
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _clearAllFilters,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Clear Filters',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
+    return SliverToBoxAdapter(
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.60,
+        ),
+        itemCount: _filteredCars.length,
+        itemBuilder: (context, index) {
+          final car = _filteredCars[index];
+          return _buildCarCard(
+            carId: int.tryParse(car['id'].toString()) ?? 0,
+            name: "${car['brand']} ${car['model']}",
+            year: car['car_year'] ?? "",
+            rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+            location: (car['location'] ?? '').isEmpty ? "Unknown" : car['location'],
+            price: car['price'].toString(),
+            seats: int.tryParse(car['seat'].toString()) ?? 4,
+            transmission: car['transmission'] ?? "Automatic",
+            image: getImageUrl(car['image']),
+            hasUnlimitedMileage: car['has_unlimited_mileage'] == 1,
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildCarCard({
     required int carId,
@@ -307,7 +559,6 @@ class _CarListScreenState extends State<CarListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with badge
             Stack(
               children: [
                 ClipRRect(
@@ -346,15 +597,12 @@ class _CarListScreenState extends State<CarListScreen> {
                   ),
               ],
             ),
-
-            // Car Details
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Price
                     Text(
                       "₱${price}",
                       style: GoogleFonts.poppins(
@@ -364,8 +612,6 @@ class _CarListScreenState extends State<CarListScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-
-                    // Car Name & Year
                     Text(
                       "$name $year",
                       style: GoogleFonts.poppins(
@@ -377,8 +623,6 @@ class _CarListScreenState extends State<CarListScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-
-                    // Location & Rating
                     Row(
                       children: [
                         Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
@@ -397,8 +641,6 @@ class _CarListScreenState extends State<CarListScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
-
-                    // Specs
                     Row(
                       children: [
                         Icon(Icons.event_seat, size: 12, color: Colors.grey.shade600),
