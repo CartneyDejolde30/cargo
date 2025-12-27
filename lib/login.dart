@@ -9,6 +9,7 @@ import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/Google/google_sign_in_service.dart';
+import 'package:flutter_application_1/Facebook/facebook_sign_in_service.dart';
 
 
 class CarGoApp extends StatelessWidget {
@@ -57,10 +58,12 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GoogleSignInService _googleSignInService = GoogleSignInService();
+  final FacebookSignInService _facebookSignInService = FacebookSignInService();
   
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isGoogleSigningIn = false;
+  bool _isFacebookSigningIn = false;
 
   @override
 void initState() {
@@ -284,7 +287,7 @@ Future<void> _setupNotifications() async {
     }
   }
 
-  // 🆕 SHOW ROLE SELECTION DIALOG
+  // 🆕 SHOW ROLE SELECTION DIALOG (Google)
   void _showRoleSelectionDialog(Map<String, dynamic> googleData) {
     String? selectedRole;
     String? selectedMunicipality;
@@ -396,6 +399,171 @@ Future<void> _setupNotifications() async {
     );
 
     setState(() => _isGoogleSigningIn = false);
+
+    if (result != null && result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created successfully!')),
+      );
+      _navigateToHome(role);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration failed. Please try again.')),
+      );
+    }
+  }
+
+  // 🆕 FACEBOOK SIGN-IN HANDLER
+  Future<void> _handleFacebookSignIn() async {
+    setState(() => _isFacebookSigningIn = true);
+
+    try {
+      final result = await _facebookSignInService.signInWithFacebook();
+
+      if (result == null) {
+        // User canceled
+        setState(() => _isFacebookSigningIn = false);
+        return;
+      }
+
+      if (result.containsKey('error')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Facebook Sign-In failed: ${result['error']}')),
+        );
+        setState(() => _isFacebookSigningIn = false);
+        return;
+      }
+
+      if (result['isNewUser'] == true) {
+        // New user - show role selection dialog
+        setState(() => _isFacebookSigningIn = false);
+        _showFacebookRoleSelectionDialog(result);
+      } else {
+        // Existing user - navigate to home
+        final userData = result['user'];
+        _navigateToHome(userData['role']);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-in error: $e')),
+      );
+    } finally {
+      setState(() => _isFacebookSigningIn = false);
+    }
+  }
+
+  // 🆕 SHOW ROLE SELECTION DIALOG (Facebook)
+  void _showFacebookRoleSelectionDialog(Map<String, dynamic> facebookData) {
+    String? selectedRole;
+    String? selectedMunicipality;
+
+    final municipalities = [
+      'Bayugan', 'Bunawan', 'Esperanza', 'La Paz', 'Loreto', 
+      'Prosperidad', 'Rosario', 'San Francisco', 'San Luis', 
+      'Santa Josefa', 'Sibagat', 'Talacogon', 'Trento', 'Veruela'
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Complete Your Profile'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Welcome ${facebookData['fullName']}!'),
+                    const SizedBox(height: 20),
+                    
+                    // Role selection
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'I am a',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Renter', child: Text('Renter')),
+                        DropdownMenuItem(value: 'Owner', child: Text('Owner')),
+                      ],
+                      onChanged: (value) {
+                        setDialogState(() => selectedRole = value);
+                      },
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Municipality selection
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Municipality',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: municipalities.map((municipality) {
+                        return DropdownMenuItem(
+                          value: municipality,
+                          child: Text(municipality),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setDialogState(() => selectedMunicipality = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _facebookSignInService.signOut();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: (selectedRole != null && selectedMunicipality != null)
+                      ? () async {
+                          Navigator.pop(context);
+                          await _completeFacebookRegistration(
+                            facebookData,
+                            selectedRole!,
+                            selectedMunicipality!,
+                          );
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                  ),
+                  child: const Text('Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 🆕 COMPLETE FACEBOOK REGISTRATION
+  Future<void> _completeFacebookRegistration(
+    Map<String, dynamic> facebookData,
+    String role,
+    String municipality,
+  ) async {
+    setState(() => _isFacebookSigningIn = true);
+
+    final result = await _facebookSignInService.registerFacebookUser(
+      email: facebookData['email'],
+      fullName: facebookData['fullName'],
+      role: role,
+      municipality: municipality,
+      photoUrl: facebookData['photoUrl'],
+      firebaseUid: facebookData['firebaseUid'],
+      facebookId: facebookData['facebookId'],
+    );
+
+    setState(() => _isFacebookSigningIn = false);
 
     if (result != null && result['success'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -637,16 +805,12 @@ Future<void> _setupNotifications() async {
               ),
               const SizedBox(height: 24),
 
-              // Facebook Login Button
+              // Facebook Login Button (UPDATED)
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Facebook login coming soon')),
-                    );
-                  },
+                  onPressed: _isFacebookSigningIn ? null : _handleFacebookSignIn,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black26, width: 1),
                     foregroundColor: Colors.black,
@@ -655,21 +819,27 @@ Future<void> _setupNotifications() async {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
-                      SizedBox(width: 12),
-                      Flexible(
-                        child: Text(
-                          'Continue with Facebook',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                          overflow: TextOverflow.ellipsis,
+                  child: _isFacebookSigningIn
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                            SizedBox(width: 12),
+                            Flexible(
+                              child: Text(
+                                'Continue with Facebook',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
