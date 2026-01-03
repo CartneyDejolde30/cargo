@@ -5,9 +5,11 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// Update your GCashPaymentScreen class constructor to include PayMongo fields:
+
 class GCashPaymentScreen extends StatefulWidget {
+  final String bookingId;
   final int carId;
-  final int bookingId;
   final String carName;
   final String carImage;
   final String ownerId;
@@ -22,11 +24,15 @@ class GCashPaymentScreen extends StatefulWidget {
   final String rentalPeriod;
   final bool needsDelivery;
   final double totalAmount;
+  
+  // PayMongo specific fields
+  final String? paymentIntentId;
+  final String? clientKey;
 
   const GCashPaymentScreen({
     super.key,
+    required this.bookingId,
     required this.carId,
-     required this.bookingId,
     required this.carName,
     required this.carImage,
     required this.ownerId,
@@ -41,11 +47,17 @@ class GCashPaymentScreen extends StatefulWidget {
     required this.rentalPeriod,
     required this.needsDelivery,
     required this.totalAmount,
+    this.paymentIntentId,
+    this.clientKey,
   });
 
   @override
   State<GCashPaymentScreen> createState() => _GCashPaymentScreenState();
 }
+
+// In your payment screen state, you can now use:
+// widget.paymentIntentId and widget.clientKey
+// to complete the PayMongo payment flow
 
 class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   final TextEditingController gcashNumberController = TextEditingController();

@@ -181,7 +181,7 @@ Future<void> _setupNotifications() async {
           await prefs.setString("address", data["address"] ?? "");
           await prefs.setString("profile_image", data["profile_image"] ?? "");
 
-          /// 🔥 FIX: Ensure user exists inside Firestore in correct format
+          ///  FIX: Ensure user exists inside Firestore in correct format
               final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
 
               if (!(await userRef.get()).exists) {
@@ -287,7 +287,7 @@ Future<void> _setupNotifications() async {
     }
   }
 
-  // 🆕 SHOW ROLE SELECTION DIALOG (Google)
+  //  SHOW ROLE SELECTION DIALOG (Google)
   void _showRoleSelectionDialog(Map<String, dynamic> googleData) {
     String? selectedRole;
     String? selectedMunicipality;
@@ -381,7 +381,7 @@ Future<void> _setupNotifications() async {
     );
   }
 
-  // 🆕 COMPLETE GOOGLE REGISTRATION
+  //  COMPLETE GOOGLE REGISTRATION
   Future<void> _completeGoogleRegistration(
     Map<String, dynamic> googleData,
     String role,
@@ -412,7 +412,7 @@ Future<void> _setupNotifications() async {
     }
   }
 
-  // 🆕 FACEBOOK SIGN-IN HANDLER
+  //  FACEBOOK SIGN-IN HANDLER
   Future<void> _handleFacebookSignIn() async {
     setState(() => _isFacebookSigningIn = true);
 
@@ -451,7 +451,7 @@ Future<void> _setupNotifications() async {
     }
   }
 
-  // 🆕 SHOW ROLE SELECTION DIALOG (Facebook)
+  //  SHOW ROLE SELECTION DIALOG (Facebook)
   void _showFacebookRoleSelectionDialog(Map<String, dynamic> facebookData) {
     String? selectedRole;
     String? selectedMunicipality;
@@ -577,7 +577,7 @@ Future<void> _setupNotifications() async {
     }
   }
 
-  // 🆕 NAVIGATE TO HOME BASED ON ROLE
+  //  NAVIGATE TO HOME BASED ON ROLE
   void _navigateToHome(String role) {
     if (role == "Renter") {
       Navigator.pushReplacement(
