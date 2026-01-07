@@ -693,7 +693,7 @@ Future<void> _checkVerificationOnInit() async {
                 _calculatePrice();
               });
             },
-            activeColor: Colors.black,
+            activeThumbColor: Colors.black,
           ),
         ],
       ),

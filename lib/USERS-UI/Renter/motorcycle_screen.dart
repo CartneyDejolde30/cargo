@@ -63,26 +63,30 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-    final String apiUrl = "http://192.168.1.11/carGOAdmin/api/get_motorcycles.php";
+  final String apiUrl = "http://192.168.1.11/carGOAdmin/get_motorcycles.php";
 
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
+  try {
+    final response = await http.get(Uri.parse(apiUrl));
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
 
-        if (decoded['status'] == 'success') {
-          setState(() {
-            _motorcycles = List<Map<String, dynamic>>.from(decoded['motorcycles']);
-          });
-        }
+      if (decoded['status'] == 'success') {
+        setState(() {
+          _motorcycles = List<Map<String, dynamic>>.from(decoded['motorcycles']);
+        });
+      } else {
+        print("❌ API Error: ${decoded['message'] ?? 'Unknown error'}");
       }
-    } catch (e) {
-      print("❌ Error fetching motorcycles: $e");
+    } else {
+      print("❌ HTTP Error: ${response.statusCode}");
     }
-
-    if (mounted) setState(() => _isLoading = false);
+  } catch (e) {
+    print("❌ Error fetching motorcycles: $e");
   }
+
+  if (mounted) setState(() => _isLoading = false);
+}
 
   void _handleNavigation(int index) {
     setState(() => _selectedNavIndex = index);

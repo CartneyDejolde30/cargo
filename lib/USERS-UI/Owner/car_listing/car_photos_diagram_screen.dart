@@ -21,12 +21,13 @@ class CarPhotosDiagramScreen extends StatefulWidget {
 }
 
 class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
-  // CHANGED: Store File objects instead of String paths
   List<File> capturedPhotos = [];
   File? mainCarPhoto;
 
   @override
   Widget build(BuildContext context) {
+    final isMoto = widget.vehicleType == 'motorcycle';
+    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -37,9 +38,7 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.vehicleType == 'motorcycle' 
-              ? "Take Motorcycle Photos" 
-              : "Take Car Photos",
+          isMoto ? "Take Motorcycle Photos" : "Take Car Photos",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -62,7 +61,10 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildUploadTile("Upload Main Car Photo", isMain: true),
+                  _buildUploadTile(
+                    isMoto ? "Upload Main Motorcycle Photo" : "Upload Main Car Photo", 
+                    isMain: true
+                  ),
                   const SizedBox(height: 20),
                   Text(
                     "Additional Required Photos:",
@@ -140,7 +142,7 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: kIsWeb
                     ? Image.network(
-                        imageFile.path, // On web, this is a blob URL
+                        imageFile.path,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
@@ -168,14 +170,11 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
 
     if (img == null) return;
 
-    // FIXED: Properly convert XFile to File for both platforms
     File imageFile;
     if (kIsWeb) {
-      // Web: Create File from bytes
       final bytes = await img.readAsBytes();
       imageFile = File.fromRawPath(bytes);
     } else {
-      // Mobile: Use path
       imageFile = File(img.path);
     }
 
@@ -193,6 +192,8 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
   }
 
   Future<void> _submitListing() async {
+    final isMoto = widget.vehicleType == 'motorcycle';
+    
     // Show loading dialog
     showDialog(
       context: context,
@@ -204,11 +205,8 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
     File? orFile;
     File? crFile;
 
-    // FIXED: Properly handle document files
     if (widget.listing.officialReceipt != null) {
       if (kIsWeb) {
-        // On web, we need to store the File object somewhere
-        // For now, skip if path-based (ideally update upload_documents_screen too)
         print("⚠️ Web: OR file handling needs update");
       } else {
         orFile = File(widget.listing.officialReceipt!);
@@ -223,13 +221,14 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
       }
     }
 
-    // Submit with File objects (works on both platforms now!)
-    final success = await submitCarListing(
+    // 🔧 FIX: Use submitVehicleListing with vehicleType parameter
+    final success = await submitVehicleListing(
       listing: widget.listing,
       mainPhoto: mainCarPhoto,
       orFile: orFile,
       crFile: crFile,
       extraPhotos: capturedPhotos,
+      vehicleType: widget.vehicleType, // ✅ CRITICAL: Pass vehicle type
     );
 
     if (!mounted) return;
@@ -237,7 +236,13 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Car uploaded successfully ✔")),
+        SnackBar(
+          content: Text(
+            isMoto
+                ? "Motorcycle uploaded successfully ✔"
+                : "Car uploaded successfully ✔"
+          ),
+        ),
       );
 
       await Future.delayed(const Duration(milliseconds: 300));

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
 
-class BookingDetailScreen extends StatelessWidget {
+class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
   final String status; // mapped UI status
 
@@ -13,11 +14,38 @@ class BookingDetailScreen extends StatelessWidget {
     required this.status,
   });
 
+  @override
+  State<BookingDetailScreen> createState() => _BookingDetailScreenState();
+}
+
+class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  String? userId;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  // 🆕 LOAD USER ID
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loadedUserId = prefs.getString('user_id');
+    
+    if (mounted) {
+      setState(() {
+        userId = loadedUserId;
+        _isLoading = false;
+      });
+    }
+  }
+
   // =========================
   // STATUS HELPERS
   // =========================
   String _getStatusText() {
-    switch (status) {
+    switch (widget.status) {
       case 'active':
         return 'Active';
       case 'pending':
@@ -27,12 +55,12 @@ class BookingDetailScreen extends StatelessWidget {
       case 'past':
         return 'Completed';
       default:
-        return status;
+        return widget.status;
     }
   }
 
   Color _getStatusColor() {
-    switch (status) {
+    switch (widget.status) {
       case 'active':
         return Colors.green;
       case 'pending':
@@ -51,6 +79,13 @@ class BookingDetailScreen extends StatelessWidget {
   // =========================
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(
@@ -80,7 +115,7 @@ class BookingDetailScreen extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.network(
-              booking.carImage,
+              widget.booking.carImage,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 color: Colors.grey.shade200,
@@ -123,7 +158,7 @@ class BookingDetailScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(
-          booking.carName,
+          widget.booking.carName,
           style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -131,7 +166,7 @@ class BookingDetailScreen extends StatelessWidget {
           Icon(Icons.receipt_long, size: 16, color: Colors.grey.shade600),
           const SizedBox(width: 6),
           Text(
-            'Booking ID: ${booking.bookingId}',
+            'Booking ID: ${widget.booking.bookingId}',
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
           ),
         ]),
@@ -163,8 +198,8 @@ class BookingDetailScreen extends StatelessWidget {
             Expanded(
               child: _dateCard(
                 'Pick Up',
-                booking.pickupDate,
-                booking.pickupTime,
+                widget.booking.pickupDate,
+                widget.booking.pickupTime,
                 Icons.arrow_circle_up,
                 Colors.green,
               ),
@@ -173,8 +208,8 @@ class BookingDetailScreen extends StatelessWidget {
             Expanded(
               child: _dateCard(
                 'Return',
-                booking.returnDate,
-                booking.returnTime,
+                widget.booking.returnDate,
+                widget.booking.returnTime,
                 Icons.arrow_circle_down,
                 Colors.orange,
               ),
@@ -203,7 +238,7 @@ class BookingDetailScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 4),
               Text(
-                booking.location,
+                widget.booking.location,
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
             ]),
@@ -231,13 +266,13 @@ class BookingDetailScreen extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(children: [
-            _paymentRow('Rental Fee', '₱${booking.totalPrice}'),
+            _paymentRow('Rental Fee', '₱${widget.booking.totalPrice}'),
             const Divider(height: 24),
             _paymentRow('Service Fee', '₱250', isSubtotal: true),
             const Divider(height: 24),
             _paymentRow(
               'Total Amount',
-              '₱${_calculateTotal(booking.totalPrice)}',
+              '₱${_calculateTotal(widget.booking.totalPrice)}',
               isTotal: true,
             ),
           ]),
@@ -299,10 +334,10 @@ class BookingDetailScreen extends StatelessWidget {
   }
 
   // =========================
-  // BUTTON LOGIC (UNCHANGED)
+  // BUTTON LOGIC
   // =========================
   Widget _buildBottomButton(BuildContext context) {
-    switch (status) {
+    switch (widget.status) {
       case 'active':
         return _twoButtons(
           context,
@@ -353,53 +388,91 @@ class BookingDetailScreen extends StatelessWidget {
   // DIALOGS
   // =========================
   void _showCancelDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Cancel Booking?'),
-      content: const Text(
-        'Are you sure you want to cancel this booking? This action cannot be undone.',
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User session expired. Please login again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cancel Booking?'),
+        content: const Text(
+          'Are you sure you want to cancel this booking? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // close dialog
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: Colors.black),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Cancelling booking...',
+                          style: GoogleFonts.poppins(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+
+              final success = await BookingService.cancelBooking(
+                bookingId: widget.booking.bookingId,
+                userId: userId!,
+              );
+
+              Navigator.pop(context); // close loading
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Booking cancelled successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+
+                Navigator.pop(context, true); // go back & refresh
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to cancel booking'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Cancel Booking'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('No'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            Navigator.pop(ctx); // close dialog
-
-            final success = await BookingService.cancelBooking(
-              bookingId: booking.bookingId,
-              userId: "USER_ID_HERE", // 🔴 replace with logged-in user id
-            );
-
-            if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Booking cancelled successfully'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-
-              Navigator.pop(context, true); // go back & refresh
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Failed to cancel booking'),
-                ),
-              );
-            }
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: const Text('Cancel Booking'),
-        ),
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   void _showPaymentOptions(BuildContext context) {
     showModalBottomSheet(
@@ -534,8 +607,21 @@ class BookingDetailScreen extends StatelessWidget {
   Widget _singleButton(String label, Color color, VoidCallback onTap) {
     return ElevatedButton(
       onPressed: onTap,
-      style: ElevatedButton.styleFrom(backgroundColor: color),
-      child: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
@@ -551,15 +637,40 @@ class BookingDetailScreen extends StatelessWidget {
       Expanded(
         child: OutlinedButton(
           onPressed: () => leftAction(context),
-          child: Text(leftLabel),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: leftColor),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            leftLabel,
+            style: GoogleFonts.poppins(
+              color: leftColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
       const SizedBox(width: 12),
       Expanded(
         child: ElevatedButton(
           onPressed: () {},
-          style: ElevatedButton.styleFrom(backgroundColor: rightColor),
-          child: Text(rightLabel),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: rightColor,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            rightLabel,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     ]);

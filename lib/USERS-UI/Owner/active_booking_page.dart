@@ -1,8 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dashboard/booking_service.dart';
 
-class ActiveBookingsPage extends StatelessWidget {
+class ActiveBookingsPage extends StatefulWidget {
   const ActiveBookingsPage({super.key});
+
+  @override
+  State<ActiveBookingsPage> createState() => _ActiveBookingsPageState();
+}
+
+class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
+  final BookingService _bookingService = BookingService();
+  
+  String? _ownerId;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _activeBookings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerIdAndFetchBookings();
+  }
+
+  Future<void> _loadOwnerIdAndFetchBookings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+
+      if (userId == null || userId.isEmpty) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showLoginRequiredDialog();
+        }
+        return;
+      }
+
+      setState(() => _ownerId = userId);
+
+      // Fetch active bookings
+      final bookings = await _bookingService.fetchActiveBookings(userId);
+      
+      if (mounted) {
+        setState(() {
+          _activeBookings = bookings;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading owner data: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('Please log in to view active bookings.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,51 +124,83 @@ class ActiveBookingsPage extends StatelessWidget {
                 ),
               ),
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.tune, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ),
-            ],
           ),
-          
 
-          
-          // Bookings List
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildModernBookingCard(context, index),
-                childCount: 3,
-              ),
-            ),
+          // Loading or Content
+          SliverToBoxAdapter(
+            child: _isLoading
+                ? Container(
+                    height: 400,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(color: Colors.black),
+                  )
+                : _activeBookings.isEmpty
+                    ? _buildEmptyState()
+                    : _buildBookingsList(),
           ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
         ],
       ),
     );
   }
 
+  Widget _buildEmptyState() {
+    return Container(
+      height: 400,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.event_busy, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            "No active bookings",
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Active rentals will appear here",
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildBookingsList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          ..._activeBookings.map((booking) => _buildModernBookingCard(booking)),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildModernBookingCard(BuildContext context, int index) {
+  Widget _buildModernBookingCard(Map<String, dynamic> booking) {
+    final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
+    final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ActiveBookingDetailsPage(bookingIndex: index),
+            builder: (_) => ActiveBookingDetailsPage(
+              booking: booking,
+              ownerId: _ownerId!,
+            ),
           ),
-        );
+        ).then((_) => _loadOwnerIdAndFetchBookings()); // Refresh on return
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
@@ -122,44 +227,26 @@ class ActiveBookingsPage extends StatelessWidget {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800',
-                        height: 220,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 220,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.grey.shade300, Colors.grey.shade200],
-                              ),
-                            ),
-                            child: const Icon(Icons.directions_car, size: 80, color: Colors.white),
-                          );
-                        },
-                      ),
-                      // Subtle gradient overlay
-                      Container(
+                  child: Image.network(
+                    booking['car_image'] ?? '',
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
                         height: 220,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.1),
-                            ],
+                            colors: [Colors.grey.shade300, Colors.grey.shade200],
                           ),
                         ),
-                      ),
-                    ],
+                        child: const Icon(Icons.directions_car, size: 80, color: Colors.white),
+                      );
+                    },
                   ),
                 ),
                 
-                // Modern Status Badge
+                // Status Badge
                 Positioned(
                   top: 16,
                   left: 16,
@@ -168,13 +255,6 @@ class ActiveBookingsPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -201,7 +281,7 @@ class ActiveBookingsPage extends StatelessWidget {
                   ),
                 ),
                 
-                // Modern Days Badge
+                // Days Badge
                 Positioned(
                   top: 16,
                   right: 16,
@@ -210,17 +290,6 @@ class ActiveBookingsPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -228,7 +297,7 @@ class ActiveBookingsPage extends StatelessWidget {
                         Icon(Icons.schedule, color: Colors.grey.shade700, size: 14),
                         const SizedBox(width: 6),
                         Text(
-                          '${2 - index} days left',
+                          '$daysRemaining days left',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -248,7 +317,7 @@ class ActiveBookingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Price with modern styling
+                  // Price
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -259,7 +328,7 @@ class ActiveBookingsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '₱3,500/day',
+                          '₱${booking['price_per_day']}/day',
                           style: GoogleFonts.outfit(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -281,196 +350,72 @@ class ActiveBookingsPage extends StatelessWidget {
                   
                   // Car Name
                   Text(
-                    'Honda City 2024',
+                    booking['car_full_name'] ?? 'Car',
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
-                      letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 12),
                   
-                  // Details Chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildModernChip(Icons.location_on_outlined, 'Midsayap', Colors.grey),
-                      _buildModernChip(Icons.event_seat_outlined, '5-seater', Colors.grey),
-                      _buildModernChip(Icons.settings_outlined, 'Manual', Colors.grey),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Renter & Trip Info Card
+                  // Renter & Trip Info
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Column(
                       children: [
-                        _buildModernInfoRow(Icons.person_outline, 'Renter', 'Jane Smith'),
+                        _buildInfoRow(Icons.person_outline, 'Renter', booking['renter_name'] ?? 'Unknown'),
                         const Divider(height: 24),
-                        _buildModernInfoRow(Icons.calendar_today_outlined, 'Started', 'Nov 10, 2025'),
+                        _buildInfoRow(Icons.calendar_today_outlined, 'Started', booking['pickup_date'] ?? ''),
                         const Divider(height: 24),
-                        _buildModernInfoRow(Icons.event_outlined, 'End Date', 'Nov ${12 + index}, 2025'),
-                        const Divider(height: 24),
-                        _buildModernInfoRow(Icons.check_circle_outline, 'Status', 'In Progress', 
-                          valueColor: Colors.black),
+                        _buildInfoRow(Icons.event_outlined, 'End Date', booking['return_date'] ?? ''),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   
-                  // Modern Progress Bar
+                  // Progress Bar
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Column(
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.timeline, size: 18, color: Colors.grey.shade700),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Trip Progress',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              'Trip Progress',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             Text(
-                              '${((index + 1) * 30).clamp(0, 100)}%',
+                              '${progress.toStringAsFixed(0)}%',
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Stack(
-                          children: [
-                            Container(
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: ((index + 1) * 0.3).clamp(0.0, 1.0),
-                              child: Container(
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ],
+                        LinearProgressIndicator(
+                          value: progress / 100,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Modern Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              _showContactDialog(context, 'Jane Smith');
-                            },
-                            icon: const Icon(Icons.phone_outlined, size: 20),
-                            label: Text(
-                              'Contact',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              foregroundColor: Colors.black,
-                              backgroundColor: Colors.white,
-                              side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            gradient: const LinearGradient(
-                              colors: [Colors.black, Colors.black87],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              _showEndTripDialog(context);
-                            },
-                            icon: const Icon(Icons.stop_circle_outlined, size: 20),
-                            label: Text(
-                              'End Trip',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 0,
-                              shadowColor: Colors.transparent,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -481,43 +426,10 @@ class ActiveBookingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildModernChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.grey.shade700),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: Colors.grey.shade700),
-        ),
+        Icon(icon, size: 18, color: Colors.grey.shade700),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -528,16 +440,13 @@ class ActiveBookingsPage extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
                 value,
                 style: GoogleFonts.outfit(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: valueColor ?? Colors.black87,
                 ),
               ),
             ],
@@ -546,625 +455,230 @@ class ActiveBookingsPage extends StatelessWidget {
       ],
     );
   }
+}
 
-  void _showContactDialog(BuildContext context, String renterName) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.phone_outlined, size: 32, color: Colors.blue.shade600),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Contact $renterName',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildContactOption(
-                context,
-                Icons.phone,
-                'Call',
-                '+63 912 345 6789',
-                Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildContactOption(
-                context,
-                Icons.message_outlined,
-                'Message',
-                'Send a message',
-                Colors.blue,
-              ),
-            ],
-          ),
-        ),
+// Details Page (keeping existing UI, just using real data)
+class ActiveBookingDetailsPage extends StatelessWidget {
+  final Map<String, dynamic> booking;
+  final String ownerId;
+
+  const ActiveBookingDetailsPage({
+    super.key,
+    required this.booking,
+    required this.ownerId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
+    final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
+    
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text('Booking Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
-    );
-  }
-
-  Widget _buildContactOption(BuildContext context, IconData icon, String title, String subtitle, Color color) {
-    return InkWell(
-      onTap: () => Navigator.pop(context),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+            // Car Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                booking['car_image'] ?? '',
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 200,
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.directions_car, size: 80),
+                ),
               ),
-              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 16),
-            Expanded(
+            const SizedBox(height: 20),
+            
+            // Car Name & Price
+            Text(
+              booking['car_full_name'] ?? 'Car',
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '₱${booking['total_amount']} Total',
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Progress Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Trip Progress',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${progress.toStringAsFixed(0)}%',
+                        style: GoogleFonts.outfit(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
+                  const SizedBox(height: 16),
+                  LinearProgressIndicator(
+                    value: progress / 100,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
+                    minHeight: 10,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStat('Days Left', '$daysRemaining'),
+                      _buildStat('Total Days', booking['rental_period'] ?? ''),
+                    ],
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+            const SizedBox(height: 24),
+            
+            // Renter Info
+            _buildSection('Renter Information', [
+              _buildDetailRow('Name', booking['renter_name'] ?? ''),
+              _buildDetailRow('Contact', booking['renter_contact'] ?? ''),
+              _buildDetailRow('Email', booking['renter_email'] ?? ''),
+            ]),
+            const SizedBox(height: 20),
+            
+            // Trip Details
+            _buildSection('Trip Details', [
+              _buildDetailRow('Start', booking['pickup_date'] ?? ''),
+              _buildDetailRow('End', booking['return_date'] ?? ''),
+              _buildDetailRow('Location', booking['location'] ?? ''),
+            ]),
+            const SizedBox(height: 30),
+            
+            // End Trip Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _showEndTripDialog(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'End Trip',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showEndTripDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.stop_circle_outlined, size: 32, color: Colors.red.shade600),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'End Trip?',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Are you sure you want to end this active trip? The renter will be notified.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.inter(
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Trip ended successfully',
-                              style: GoogleFonts.inter(),
-                            ),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade600,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'End Trip',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+  Widget _buildStat(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-      ),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
     );
   }
-}
 
-// ============= DETAILS PAGE =============
+  Widget _buildSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
 
-class ActiveBookingDetailsPage extends StatelessWidget {
-  final int bookingIndex;
-
-  const ActiveBookingDetailsPage({super.key, required this.bookingIndex});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // Modern Hero Image Header
-          SliverAppBar(
-            expandedHeight: 300,
-            floating: false,
-            pinned: true,
-            backgroundColor: Colors.white,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 18),
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.grey.shade300, Colors.grey.shade200],
-                          ),
-                        ),
-                        child: const Icon(Icons.directions_car, size: 100, color: Colors.white),
-                      );
-                    },
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.3),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 60,
-                    left: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Active',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Honda City 2024',
-                          style: GoogleFonts.outfit(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '₱3,500/day',
-                            style: GoogleFonts.outfit(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey.shade600,
             ),
           ),
-          
-          // Content
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Trip Progress Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.timeline, color: Colors.white, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Trip Progress',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${((bookingIndex + 1) * 30).clamp(0, 100)}%',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Stack(
-                            children: [
-                              Container(
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              FractionallySizedBox(
-                                widthFactor: ((bookingIndex + 1) * 0.3).clamp(0.0, 1.0),
-                                child: Container(
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildProgressStat('Days Left', '${2 - bookingIndex}'),
-                              Container(width: 1, height: 30, color: Colors.grey.shade300),
-                              _buildProgressStat('Total Days', '${2 + bookingIndex}'),
-                              Container(width: 1, height: 30, color: Colors.grey.shade300),
-                              _buildProgressStat('Revenue', '₱${(2 + bookingIndex) * 3500}'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Renter Information
-                    _buildModernSection(
-                      'Renter Information',
-                      Icons.person_outline,
-                      Colors.blue,
-                      [
-                        _buildDetailRow('Name', 'Jane Smith'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('Contact', '+63 912 345 6789'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('Email', 'janesmith@email.com'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('License No.', 'N01-12-345678'),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Trip Details
-                    _buildModernSection(
-                      'Trip Details',
-                      Icons.event_note_outlined,
-                      Colors.purple,
-                      [
-                        _buildDetailRow('Start Date', 'Nov 10, 2025 - 9:00 AM'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('End Date', 'Nov ${12 + bookingIndex}, 2025 - 6:00 PM'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('Duration', '${2 + bookingIndex} days'),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('Total Amount', '₱${(2 + bookingIndex) * 3500}', 
-                          valueColor: Colors.black, isBold: true),
-                        const SizedBox(height: 12),
-                        _buildDetailRow('Status', 'In Progress', 
-                          valueColor: Colors.black, isBold: true),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Location
-                    _buildModernSection(
-                      'Pickup & Return Location',
-                      Icons.location_on_outlined,
-                      Colors.red,
-                      [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.location_on, color: Colors.grey.shade700, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Midsayap, Cotabato, Philippines',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                _showContactDialog(context, 'Jane Smith');
-                              },
-                              icon: const Icon(Icons.phone_outlined, size: 22),
-                              label: Text(
-                                'Contact',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                foregroundColor: Colors.black,
-                                backgroundColor: Colors.white,
-                                side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [Colors.red.shade400, Colors.red.shade600],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.4),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                _showEndTripDialog(context);
-                              },
-                              icon: const Icon(Icons.stop_circle_outlined, size: 22),
-                              label: Text(
-                                'End Trip',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                                shadowColor: Colors.transparent,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                  ],
-                ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1173,306 +687,30 @@ class ActiveBookingDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressStat(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModernSection(String title, IconData icon, Color color, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 20, color: Colors.black),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: children,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, {Color? valueColor, bool isBold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-              color: valueColor ?? Colors.black87,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showContactDialog(BuildContext context, String renterName) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.phone_outlined, size: 32, color: Colors.blue.shade600),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Contact $renterName',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildContactOption(
-                context,
-                Icons.phone,
-                'Call',
-                '+63 912 345 6789',
-                Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildContactOption(
-                context,
-                Icons.message_outlined,
-                'Message',
-                'Send a message',
-                Colors.blue,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactOption(BuildContext context, IconData icon, String title, String subtitle, Color color) {
-    return InkWell(
-      onTap: () => Navigator.pop(context),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showEndTripDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.stop_circle_outlined, size: 32, color: Colors.red.shade600),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'End Trip?',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Are you sure you want to end this active trip? The renter will be notified.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.inter(
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Trip ended successfully',
-                              style: GoogleFonts.inter(),
-                            ),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade600,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'End Trip',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      builder: (_) => AlertDialog(
+        title: Text('End Trip?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(
+          'Mark this rental as completed?',
+          style: GoogleFonts.inter(),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // TODO: Call end_trip.php API
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('End Trip'),
+          ),
+        ],
       ),
     );
   }
