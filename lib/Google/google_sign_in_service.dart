@@ -20,12 +20,16 @@ class GoogleSignInService {
   // Your PHP backend URL - UPDATE THIS WITH YOUR ACTUAL IP
   static const String baseUrl = "http://192.168.1.11/carGOAdmin";
 
-  /// Sign in with Google
+  /// Sign in with Google - ALWAYS shows account picker
   Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
       print('🔵 Starting Google Sign-In...');
       
-      // Use signIn() method
+      // ✅ NEW: Sign out first to force account selection dialog
+      await _googleSignIn.signOut();
+      print('🔄 Cleared cached account - account picker will appear');
+      
+      // Use signIn() method - this will now show account picker
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) {
