@@ -13,154 +13,115 @@ class PaymentHistoryScreen extends StatefulWidget {
   State<PaymentHistoryScreen> createState() => _PaymentHistoryScreenState();
 }
 
-class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  
+class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   bool _isLoading = true;
-  List<Map<String, dynamic>> _allTransactions = [];
   List<Map<String, dynamic>> _payments = [];
-  List<Map<String, dynamic>> _refunds = [];
-  List<Map<String, dynamic>> _escrow = [];
+  String? _userId;
+  String _filterStatus = 'all'; // all, paid, pending, rejected, refunded
 
   final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
-    _loadPaymentHistory();
+    _loadUserIdAndPayments();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _loadUserIdAndPayments() async {
+    final prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getString('user_id');
+
+    if (_userId == null) {
+      setState(() => _isLoading = false);
+      _showError('Please login to view payment history');
+      return;
+    }
+
+    await _fetchPaymentHistory();
   }
 
-  Future<void> _loadPaymentHistory() async {
+  Future<void> _fetchPaymentHistory() async {
     setState(() => _isLoading = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-
-      if (userId == null || userId.isEmpty) {
-        throw Exception('User not logged in');
-      }
-
-      final response = await http.get(
-        Uri.parse('${baseUrl}api/get_user_payment_history.php?user_id=$userId'),
-      );
+      final url = Uri.parse("${baseUrl}api/payment/get_user_payments.php?user_id=$_userId");
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final result = jsonDecode(response.body);
 
-        if (data['success'] == true) {
+        if (result['success'] == true) {
           setState(() {
-            _allTransactions = List<Map<String, dynamic>>.from(data['transactions'] ?? []);
-            _payments = List<Map<String, dynamic>>.from(data['payments'] ?? []);
-            _refunds = List<Map<String, dynamic>>.from(data['refunds'] ?? []);
-            _escrow = List<Map<String, dynamic>>.from(data['escrow'] ?? []);
+            _payments = List<Map<String, dynamic>>.from(result['payments']);
+            _isLoading = false;
           });
         } else {
-          throw Exception(data['message'] ?? 'Failed to load payment history');
+          _showError(result['message'] ?? 'Failed to load payments');
+          setState(() => _isLoading = false);
         }
       } else {
-        throw Exception('Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error loading payment history: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
+        _showError('Server error: ${response.statusCode}');
         setState(() => _isLoading = false);
       }
-    }
-  }
-
-  String _formatCurrency(dynamic amount) {
-    final value = double.tryParse(amount.toString()) ?? 0.0;
-    return NumberFormat.currency(
-      locale: 'en_PH',
-      symbol: '₱',
-      decimalDigits: 2,
-    ).format(value);
-  }
-
-  String _formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return 'N/A';
-    
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy - hh:mm a').format(date);
     } catch (e) {
-      return dateString;
+      _showError('Network error: $e');
+      setState(() => _isLoading = false);
     }
+  }
+
+  List<Map<String, dynamic>> get _filteredPayments {
+    if (_filterStatus == 'all') return _payments;
+    return _payments.where((p) => p['payment_status'] == _filterStatus).toList();
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':
       case 'verified':
-      case 'completed':
-      case 'released':
-        return Colors.green.shade600;
+      case 'paid':
+        return Colors.green;
       case 'pending':
-      case 'processing':
-        return Colors.orange.shade600;
-      case 'failed':
+        return Colors.orange;
       case 'rejected':
-      case 'cancelled':
-        return Colors.red.shade600;
-      case 'held':
-      case 'escrow_held':
-        return Colors.blue.shade600;
+      case 'failed':
+        return Colors.red;
       case 'refunded':
-        return Colors.purple.shade600;
+        return Colors.blue;
       default:
-        return Colors.grey.shade600;
+        return Colors.grey;
     }
   }
 
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':
       case 'verified':
-      case 'completed':
+      case 'paid':
         return Icons.check_circle;
       case 'pending':
-      case 'processing':
-        return Icons.hourglass_empty;
-      case 'failed':
+        return Icons.schedule;
       case 'rejected':
+      case 'failed':
         return Icons.cancel;
-      case 'held':
-      case 'escrow_held':
-        return Icons.lock_clock;
       case 'refunded':
-        return Icons.undo;
-      case 'released':
-        return Icons.check_circle_outline;
+        return Icons.replay;
       default:
-        return Icons.info;
+        return Icons.help;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -177,126 +138,97 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
           ),
         ),
         centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.black,
-          indicatorWeight: 3,
-          labelStyle: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-          tabs: [
-            Tab(text: 'All (${_allTransactions.length})'),
-            Tab(text: 'Payments (${_payments.length})'),
-            Tab(text: 'Escrow (${_escrow.length})'),
-            Tab(text: 'Refunds (${_refunds.length})'),
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: Colors.black))
+          : Column(
+              children: [
+                _buildFilterChips(),
+                Expanded(
+                  child: _filteredPayments.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: _fetchPaymentHistory,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: _filteredPayments.length,
+                            itemBuilder: (context, index) {
+                              final payment = _filteredPayments[index];
+                              return _buildPaymentCard(payment);
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      color: Colors.white,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildFilterChip('all', 'All'),
+            const SizedBox(width: 8),
+            _buildFilterChip('verified', 'Paid'),
+            const SizedBox(width: 8),
+            _buildFilterChip('pending', 'Pending'),
+            const SizedBox(width: 8),
+            _buildFilterChip('rejected', 'Rejected'),
+            const SizedBox(width: 8),
+            _buildFilterChip('refunded', 'Refunded'),
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.black),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadPaymentHistory,
-              color: Colors.black,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildTransactionList(_allTransactions, 'all'),
-                  _buildTransactionList(_payments, 'payment'),
-                  _buildTransactionList(_escrow, 'escrow'),
-                  _buildTransactionList(_refunds, 'refund'),
-                ],
-              ),
-            ),
     );
   }
 
-  Widget _buildTransactionList(List<Map<String, dynamic>> transactions, String type) {
-    if (transactions.isEmpty) {
-      return _buildEmptyState(type);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: transactions.length,
-      itemBuilder: (context, index) {
-        final transaction = transactions[index];
-        return _buildTransactionCard(transaction);
-      },
-    );
-  }
-
-  Widget _buildEmptyState(String type) {
-    String message;
-    IconData icon;
-
-    switch (type) {
-      case 'payment':
-        message = 'No payment transactions yet';
-        icon = Icons.payment;
-        break;
-      case 'escrow':
-        message = 'No escrow transactions';
-        icon = Icons.account_balance;
-        break;
-      case 'refund':
-        message = 'No refunds issued';
-        icon = Icons.undo;
-        break;
-      default:
-        message = 'No transactions found';
-        icon = Icons.receipt_long;
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 80,
-            color: Colors.grey.shade300,
+  Widget _buildFilterChip(String value, String label) {
+    final isSelected = _filterStatus == value;
+    return GestureDetector(
+      onTap: () => setState(() => _filterStatus = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey.shade300,
           ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-            ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> transaction) {
-    final status = transaction['status'] ?? transaction['payment_status'] ?? 'pending';
-    final transactionType = transaction['transaction_type'] ?? 'payment';
-    final amount = transaction['amount'] ?? transaction['total_amount'] ?? '0';
-    final bookingId = transaction['booking_id']?.toString() ?? 'N/A';
-    final date = transaction['created_at'] ?? transaction['verified_at'] ?? '';
-    final paymentMethod = transaction['payment_method'] ?? 'N/A';
-    final reference = transaction['payment_reference'] ?? '';
+  Widget _buildPaymentCard(Map<String, dynamic> payment) {
+    final status = payment['payment_status'] ?? 'pending';
+    final amount = double.tryParse(payment['amount'].toString()) ?? 0;
+    final method = payment['payment_method'] ?? 'Unknown';
+    final reference = payment['payment_reference'] ?? 'N/A';
+    final bookingId = payment['booking_id'] ?? 0;
+    final date = payment['created_at'] ?? '';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -304,14 +236,22 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showTransactionDetails(transaction),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            if (status.toLowerCase() == 'verified' || status.toLowerCase() == 'paid') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReceiptViewerScreen(bookingId: bookingId),
+                ),
+              );
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -334,7 +274,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _getTransactionTypeLabel(transactionType),
+                              'Booking #$bookingId',
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -343,9 +283,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Booking #$bookingId',
+                              _formatDate(date),
                               style: GoogleFonts.poppins(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Colors.grey.shade600,
                               ),
                             ),
@@ -353,166 +293,67 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(status).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _formatStatus(status),
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _getStatusColor(status),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Amount
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
                     Text(
-                      'Amount',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    Text(
-                      _formatCurrency(amount),
+                      '₱${amount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: transactionType == 'refund'
-                            ? Colors.green.shade700
-                            : Colors.black,
+                        color: Colors.black,
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
-                // Payment Method
-                if (paymentMethod != 'N/A')
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Payment Method',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        Text(
-                          paymentMethod.toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Reference Number
-                if (reference.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Reference',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        Text(
-                          reference,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                            
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 8),
-
-                // Date
+                Divider(height: 1, color: Colors.grey.shade200),
+                const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 14,
-                      color: Colors.grey.shade400,
+                    Expanded(
+                      child: _buildInfoItem(
+                        'Status',
+                        status.toUpperCase(),
+                        _getStatusColor(status),
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatDate(date),
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
+                    Expanded(
+                      child: _buildInfoItem(
+                        'Method',
+                        method.toUpperCase(),
+                        Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
-
-                // View Receipt Button (if available)
-                if (status.toLowerCase() == 'verified' ||
-                    status.toLowerCase() == 'completed')
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ReceiptViewerScreen(
-                                bookingId: int.tryParse(bookingId) ?? 0,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.receipt_long, size: 18),
-                        label: Text(
-                          'View Receipt',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          side: BorderSide(color: Colors.grey.shade300),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                if (reference != 'N/A') ...[
+                  const SizedBox(height: 8),
+                  _buildInfoItem(
+                    'Reference',
+                    reference,
+                    Colors.grey.shade600,
+                  ),
+                ],
+                if (status.toLowerCase() == 'verified' || status.toLowerCase() == 'paid') ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Icon(
+                        Icons.receipt_long,
+                        size: 16,
+                        color: Colors.blue.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'View Receipt',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
+                    ],
                   ),
+                ],
               ],
             ),
           ),
@@ -521,100 +362,68 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
     );
   }
 
-  String _getTransactionTypeLabel(String type) {
-    switch (type.toLowerCase()) {
-      case 'payment':
-        return 'Payment';
-      case 'escrow_hold':
-        return 'Escrow Hold';
-      case 'escrow_release':
-        return 'Escrow Release';
-      case 'refund':
-        return 'Refund';
-      case 'payout':
-        return 'Payout';
-      default:
-        return type;
-    }
-  }
-
-  String _formatStatus(String status) {
-    return status.split('_').map((word) {
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-  }
-
-  void _showTransactionDetails(Map<String, dynamic> transaction) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Transaction Details',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ...transaction.entries.map((entry) {
-              if (entry.value == null || entry.value.toString().isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _formatKey(entry.key),
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        entry.value.toString(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-            const SizedBox(height: 20),
-          ],
+  Widget _buildInfoItem(String label, String value, Color valueColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: Colors.grey.shade600,
+          ),
         ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.payment,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No payments found',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your payment history will appear here',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatKey(String key) {
-    return key
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+    } catch (e) {
+      return dateString;
+    }
   }
 }

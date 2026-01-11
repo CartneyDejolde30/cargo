@@ -20,121 +20,78 @@ class ReceiptViewerScreen extends StatefulWidget {
 class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _receiptData;
-  String? _errorMessage;
+  String? _error;
 
   final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   @override
   void initState() {
     super.initState();
-    _loadReceipt();
+    _fetchReceipt();
   }
 
-  Future<void> _loadReceipt() async {
+  Future<void> _fetchReceipt() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _error = null;
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('${baseUrl}api/receipts/generate_receipt.php?booking_id=${widget.bookingId}'),
-      );
+      final url = Uri.parse("${baseUrl}api/receipts/get_receipt.php?booking_id=${widget.bookingId}");
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final result = jsonDecode(response.body);
 
-        if (data['success'] == true) {
+        if (result['success'] == true) {
           setState(() {
-            _receiptData = data;
+            _receiptData = result['receipt'];
+            _isLoading = false;
           });
         } else {
-          throw Exception(data['message'] ?? 'Failed to load receipt');
+          setState(() {
+            _error = result['message'] ?? 'Failed to load receipt';
+            _isLoading = false;
+          });
         }
       } else {
-        throw Exception('Server error: ${response.statusCode}');
+        setState(() {
+          _error = 'Server error: ${response.statusCode}';
+          _isLoading = false;
+        });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _error = 'Network error: $e';
+        _isLoading = false;
       });
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
-  }
-
-  String _formatCurrency(dynamic amount) {
-    final value = double.tryParse(amount.toString()) ?? 0.0;
-    return NumberFormat.currency(
-      locale: 'en_PH',
-      symbol: '₱',
-      decimalDigits: 2,
-    ).format(value);
   }
 
   Future<void> _downloadReceipt() async {
-    if (_receiptData == null || _receiptData!['receipt_url'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Receipt download not available'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    if (_receiptData == null) return;
 
     try {
-      final url = Uri.parse(_receiptData!['receipt_url']);
+      final receiptUrl = _receiptData!['receipt_url'];
+      final url = Uri.parse(receiptUrl);
+
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        throw Exception('Could not launch URL');
+        _showSnackBar('Cannot open receipt', isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to download: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar('Failed to download receipt', isError: true);
     }
   }
 
-  Future<void> _emailReceipt() async {
-    try {
-      final response = await http.post(
-        Uri.parse('${baseUrl}api/receipts/send_receipt_email.php'),
-        body: {
-          'booking_id': widget.bookingId.toString(),
-        },
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              data['success'] == true
-                  ? 'Receipt sent to your email!'
-                  : data['message'] ?? 'Failed to send email',
-            ),
-            backgroundColor: data['success'] == true ? Colors.green : Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
   @override
@@ -159,53 +116,20 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         centerTitle: true,
         actions: [
           if (!_isLoading && _receiptData != null)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.black),
-              onSelected: (value) {
-                if (value == 'download') {
-                  _downloadReceipt();
-                } else if (value == 'email') {
-                  _emailReceipt();
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'download',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.download, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Download PDF',
-                        style: GoogleFonts.poppins(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'email',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.email, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Email Receipt',
-                        style: GoogleFonts.poppins(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            IconButton(
+              icon: const Icon(Icons.download, color: Colors.black),
+              onPressed: _downloadReceipt,
             ),
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.black),
-            )
-          : _errorMessage != null
+          ? Center(child: CircularProgressIndicator(color: Colors.black))
+          : _error != null
               ? _buildErrorState()
-              : _buildReceiptContent(),
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildReceiptContent(),
+                ),
     );
   }
 
@@ -214,42 +138,32 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 80,
-            color: Colors.red.shade300,
-          ),
+          Icon(Icons.error_outline, size: 80, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
-            'Failed to Load Receipt',
+            'Failed to load receipt',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              _errorMessage ?? 'Unknown error occurred',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            _error ?? 'Unknown error',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade600,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _loadReceipt,
+            onPressed: _fetchReceipt,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
-            child: Text(
-              'Retry',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
+            child: Text('Retry', style: GoogleFonts.poppins()),
           ),
         ],
       ),
@@ -257,282 +171,269 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   }
 
   Widget _buildReceiptContent() {
-    // Mock receipt data structure - adjust based on your actual API response
-    final receiptNo = _receiptData?['receipt_no'] ?? 'RCP-000000';
-    final bookingId = '#BK-${widget.bookingId.toString().padLeft(4, '0')}';
-    final dateIssued = DateFormat('MMMM dd, yyyy hh:mm a').format(DateTime.now());
-    
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          
-          // Receipt Container
-          Container(
-            margin: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'CarGo',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PAYMENT RECEIPT',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey.shade400,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    if (_receiptData == null) return const SizedBox();
 
-                // Receipt Information
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Receipt Details
-                      _buildSectionTitle('Receipt Information'),
-                      const SizedBox(height: 16),
-                      _buildInfoRow('Receipt No:', receiptNo),
-                      _buildInfoRow('Booking ID:', bookingId),
-                      _buildInfoRow('Date Issued:', dateIssued),
-                      _buildInfoRow('Status:', 'PAID', valueColor: Colors.green.shade700),
+    final receiptNo = _receiptData!['receipt_no'] ?? 'N/A';
+    final bookingId = _receiptData!['booking_id'] ?? 'N/A';
+    final dateIssued = _receiptData!['created_at'] ?? '';
+    final status = _receiptData!['status'] ?? 'PAID';
 
-                      const SizedBox(height: 32),
+    // Renter info
+    final renterName = _receiptData!['renter_name'] ?? 'N/A';
+    final renterEmail = _receiptData!['renter_email'] ?? 'N/A';
+    final renterContact = _receiptData!['renter_contact'] ?? 'N/A';
 
-                      // Payment Summary
-                      _buildSectionTitle('Payment Summary'),
-                      const SizedBox(height: 16),
-                      
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildSummaryRow('Base Rental Fee', '₱5,000.00'),
-                            const SizedBox(height: 12),
-                            _buildSummaryRow('Service Fee', '₱250.00'),
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            const SizedBox(height: 12),
-                            _buildSummaryRow(
-                              'Total Amount',
-                              '₱5,250.00',
-                              isTotal: true,
-                            ),
-                          ],
-                        ),
-                      ),
+    // Rental details
+    final carName = _receiptData!['car_name'] ?? 'N/A';
+    final pickupDate = _receiptData!['pickup_date'] ?? '';
+    final returnDate = _receiptData!['return_date'] ?? '';
+    final duration = _receiptData!['duration'] ?? 'N/A';
 
-                      const SizedBox(height: 32),
+    // Payment details
+    final amount = double.tryParse(_receiptData!['amount'].toString()) ?? 0;
+    final paymentMethod = _receiptData!['payment_method'] ?? 'N/A';
+    final paymentReference = _receiptData!['payment_reference'] ?? 'N/A';
 
-                      // Payment Method
-                      _buildSectionTitle('Payment Details'),
-                      const SizedBox(height: 16),
-                      _buildInfoRow('Payment Method:', 'GCash'),
-                      _buildInfoRow('Reference:', '1234567890123'),
-
-                      const SizedBox(height: 32),
-
-                      // Footer Note
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  size: 20,
-                                  color: Colors.blue.shade700,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Important Notice',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue.shade900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'This is a computer-generated receipt and does not require a signature. Keep this receipt for your records.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: Colors.blue.shade900,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _emailReceipt,
-                    icon: const Icon(Icons.email_outlined, size: 18),
-                    label: Text(
-                      'Email',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: BorderSide(color: Colors.grey.shade300),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _downloadReceipt,
-                    icon: const Icon(Icons.download, size: 18),
-                    label: Text(
-                      'Download',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.black,
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: valueColor ?? Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: isTotal ? 15 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-            color: Colors.black87,
+        // Header Card
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'CarGo',
+                style: GoogleFonts.poppins(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'PAYMENT RECEIPT',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey.shade300,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: FontWeight.bold,
-            color: isTotal ? Colors.green.shade700 : Colors.black87,
+
+        const SizedBox(height: 20),
+
+        // Receipt Information
+        _buildSection(
+          title: 'Receipt Information',
+          children: [
+            _buildInfoRow('Receipt No', receiptNo),
+            _buildInfoRow('Booking ID', '#BK-$bookingId'),
+            _buildInfoRow('Date Issued', _formatDateTime(dateIssued)),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Renter Information
+        _buildSection(
+          title: 'Renter Information',
+          children: [
+            _buildInfoRow('Name', renterName),
+            _buildInfoRow('Email', renterEmail),
+            _buildInfoRow('Contact', renterContact),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Rental Details
+        _buildSection(
+          title: 'Rental Details',
+          children: [
+            _buildInfoRow('Vehicle', carName),
+            _buildInfoRow('Pickup Date', _formatDate(pickupDate)),
+            _buildInfoRow('Return Date', _formatDate(returnDate)),
+            _buildInfoRow('Duration', duration),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Payment Summary
+        _buildSection(
+          title: 'Payment Summary',
+          children: [
+            _buildInfoRow('Total Amount', '₱${amount.toStringAsFixed(2)}', isHighlighted: true),
+            _buildInfoRow('Payment Method', paymentMethod.toUpperCase()),
+            _buildInfoRow('Reference', paymentReference),
+          ],
+        ),
+
+        const SizedBox(height: 32),
+
+        // Footer
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Thank you for choosing CarGo!',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This is a computer-generated receipt and does not require a signature.',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Download Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _downloadReceipt,
+            icon: const Icon(Icons.download),
+            label: Text(
+              'Download Receipt',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isHighlighted = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
+                color: isHighlighted ? Colors.green.shade700 : Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('MMMM dd, yyyy').format(date);
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _formatDateTime(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('MMMM dd, yyyy hh:mm a').format(date);
+    } catch (e) {
+      return dateString;
+    }
   }
 }

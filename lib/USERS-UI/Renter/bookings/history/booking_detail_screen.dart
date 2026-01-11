@@ -1,12 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_status_tracker.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
-  final String status; // mapped UI status
+  final String status;
 
   const BookingDetailScreen({
     super.key,
@@ -21,29 +26,56 @@ class BookingDetailScreen extends StatefulWidget {
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   String? userId;
   bool _isLoading = true;
+  bool _isLoadingPayment = true;
+  Map<String, dynamic>? _paymentData;
+
+  final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
   @override
   void initState() {
     super.initState();
-    _loadUserId();
+    _loadUserIdAndPayment();
   }
 
-  // 🆕 LOAD USER ID
-  Future<void> _loadUserId() async {
+  Future<void> _loadUserIdAndPayment() async {
     final prefs = await SharedPreferences.getInstance();
     final loadedUserId = prefs.getString('user_id');
     
-    if (mounted) {
-      setState(() {
-        userId = loadedUserId;
-        _isLoading = false;
-      });
+    setState(() {
+      userId = loadedUserId;
+      _isLoading = false;
+    });
+
+    // Load payment information
+    await _fetchPaymentInfo();
+  }
+
+  Future<void> _fetchPaymentInfo() async {
+    setState(() => _isLoadingPayment = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('${baseUrl}api/payment/get_booking_payment.php?booking_id=${widget.booking.bookingId}'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['payment'] != null) {
+          setState(() {
+            _paymentData = data['payment'];
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching payment info: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingPayment = false);
+      }
     }
   }
 
-  // =========================
-  // STATUS HELPERS
-  // =========================
   String _getStatusText() {
     switch (widget.status) {
       case 'active':
@@ -74,9 +106,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
-  // =========================
-  // UI
-  // =========================
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -98,9 +127,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // APP BAR
-  // =========================
   SliverAppBar _buildAppBar(BuildContext context) {
     return SliverAppBar(
       expandedHeight: 300,
@@ -130,9 +156,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // MAIN CONTENT
-  // =========================
   Widget _buildContent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,6 +165,56 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         const SizedBox(height: 20),
         _locationCard(),
         const SizedBox(height: 20),
+        
+        // 🆕 PAYMENT STATUS SECTION
+        if (_paymentData != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: PaymentStatusTracker(
+              paymentData: _paymentData!,
+              onViewReceipt: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReceiptViewerScreen(
+                      bookingId: widget.booking.bookingId,
+                    ),
+                  ),
+                );
+              },
+              onRequestRefund: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RefundRequestScreen(
+                      bookingId: widget.booking.bookingId,
+                      bookingReference: '#BK-${widget.booking.bookingId}',
+                      totalAmount: double.tryParse(_paymentData!['amount'].toString()) ?? 0,
+                      cancellationDate: DateTime.now().toString(),
+                      paymentMethod: _paymentData!['payment_method'] ?? 'N/A',
+                      paymentReference: _paymentData!['payment_reference'] ?? 'N/A',
+                    ),
+                  ),
+                ).then((result) {
+                  if (result == true) {
+                    // Refresh payment info after refund request
+                    _fetchPaymentInfo();
+                  }
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+        ] else if (_isLoadingPayment) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.black),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+        
         _paymentDetails(),
         const SizedBox(height: 20),
         _helpSection(),
@@ -150,9 +223,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // SECTIONS
-  // =========================
   Widget _carInfo() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -254,7 +324,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(
-          'Payment Details',
+          'Payment Breakdown',
           style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
@@ -313,9 +383,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // BOTTOM BAR
-  // =========================
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -333,9 +400,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // BUTTON LOGIC
-  // =========================
   Widget _buildBottomButton(BuildContext context) {
     switch (widget.status) {
       case 'active':
@@ -373,9 +437,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
-  // =========================
-  // UTILITIES
-  // =========================
   String _calculateTotal(String fee) {
     final value = int.tryParse(fee.replaceAll(',', '')) ?? 0;
     return (value + 250).toString().replaceAllMapped(
@@ -384,9 +445,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // DIALOGS
-  // =========================
   void _showCancelDialog(BuildContext context) {
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -413,9 +471,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(ctx); // close dialog
+              Navigator.pop(ctx);
 
-              // Show loading
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -446,7 +503,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 userId: userId!,
               );
 
-              Navigator.pop(context); // close loading
+              Navigator.pop(context);
 
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -456,7 +513,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                 );
 
-                Navigator.pop(context, true); // go back & refresh
+                Navigator.pop(context, true);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -481,9 +538,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // =========================
-  // SMALL HELPERS
-  // =========================
   Widget _circleIcon(IconData icon) => Container(
         padding: const EdgeInsets.all(8),
         decoration:
