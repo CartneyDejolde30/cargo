@@ -67,7 +67,7 @@ class PendingRequestsPage extends StatelessWidget {
     // Uncomment this for real API calls
     /*
     final url = Uri.parse(
-      "http://192.168.1.11/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
+      "http://172.22.66.49/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
     );
 
     try {
@@ -247,7 +247,7 @@ class PendingRequestsPage extends StatelessWidget {
 
   void _handleApprove(BookingRequest request, BuildContext context) async {
     final url =
-        Uri.parse("http://192.168.1.11/carGOAdmin/api/approve_request.php");
+        Uri.parse("http://172.22.66.49/carGOAdmin/api/approve_request.php");
 
     try {
       // Show loading

@@ -6,9 +6,9 @@ import 'booking_card_widget.dart';
 import 'booking_empty_state_widget.dart';
 import 'booking_tabs_widget.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
-
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -24,16 +24,14 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   int _currentTabIndex = 0;
   int _selectedNavIndex = 1;
 
-  // 🔄 Changed from late Future to nullable
   Future<List<Booking>>? _bookingFuture;
   
-  // 🆕 User ID loaded from SharedPreferences
   String? userId;
   bool _isLoading = true;
 
-  // =========================
-  // LIFECYCLE
-  // =========================
+  // Tab labels - moved "Transactions" to the rightmost position
+  final List<String> _tabLabels = ['Active', 'Pending', 'Past', 'Transactions'];
+
   @override
   void initState() {
     super.initState();
@@ -41,18 +39,15 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
 
-    // 🆕 Load user ID first, then fetch bookings
     _loadUserIdAndFetchBookings();
   }
 
-  // 🆕 LOAD USER ID FROM SHAREDPREFERENCES
   Future<void> _loadUserIdAndFetchBookings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final loadedUserId = prefs.getString('user_id');
 
       if (loadedUserId == null || loadedUserId.isEmpty) {
-        // User not logged in - show error or redirect to login
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -62,7 +57,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         return;
       }
 
-      // User ID found - fetch bookings
       if (mounted) {
         setState(() {
           userId = loadedUserId;
@@ -80,7 +74,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // 🆕 SHOW LOGIN REQUIRED DIALOG
   void _showLoginRequiredDialog() {
     showDialog(
       context: context,
@@ -91,8 +84,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: Text('OK'),
           ),
@@ -116,9 +109,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // =========================
-  // FILTERING LOGIC
-  // =========================
   List<Booking> _filterBookings(List<Booking> all) {
     final now = DateTime.now();
 
@@ -133,32 +123,26 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       case 1: // Pending
         return all.where((b) => b.status == 'pending').toList();
 
-      case 2: // Upcoming (approved but future)
-        return all.where((b) {
-          if (b.status != 'approved') return false;
-          final pickup = _parseDate(b.pickupDate);
-          return pickup != null && pickup.isAfter(now);
-        }).toList();
-
-      case 3: // Past
+      case 2: // Past
         return all.where((b) =>
             b.status == 'completed' ||
             b.status == 'cancelled' ||
             b.status == 'rejected').toList();
+
+      case 3: // Transactions - This now shows the payment history screen
+        // This will be handled separately in the build method
+        return [];
 
       default:
         return [];
     }
   }
 
-  // 🆕 HELPER TO PARSE DATE STRING
   DateTime? _parseDate(String dateStr) {
     try {
-      // Handle formats like "Jan 05, 2026" or "2026-01-05"
       if (dateStr.contains('-')) {
         return DateTime.parse(dateStr);
       } else {
-        // Parse "Jan 05, 2026" format
         final parts = dateStr.split(' ');
         if (parts.length >= 3) {
           final monthMap = {
@@ -196,18 +180,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // =========================
-  // BOTTOM NAV
-  // =========================
   void _handleNavigation(int index) {
     if (_selectedNavIndex != index) {
       setState(() => _selectedNavIndex = index);
     }
   }
 
-  // =========================
-  // UI
-  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -228,9 +206,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     );
   }
 
-  // =========================
-  // WIDGETS
-  // =========================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
@@ -249,7 +224,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   }
 
   Widget _buildBookingBody() {
-    // 🆕 Show loading while fetching user ID
     if (_isLoading) {
       return Center(
         child: Column(
@@ -269,7 +243,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       );
     }
 
-    // 🆕 Show error if no user ID
     if (userId == null) {
       return Center(
         child: Column(
@@ -297,7 +270,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       );
     }
 
-    // 🆕 Now use the future
+    // If "Transactions" tab is selected (now index 3), show Payment History Screen
+    if (_currentTabIndex == 3) {
+      return PaymentHistoryScreen();
+    }
+
     return FutureBuilder<List<Booking>>(
       future: _bookingFuture,
       builder: (context, snapshot) {
@@ -379,7 +356,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                   booking: bookings[index],
                   status: _mapStatusForUI(bookings[index].status),
                   onReviewSubmitted: () {
-                    // Refresh bookings after review
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
                     });
@@ -399,7 +375,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       onTabChanged: (index) {
         _tabController.animateTo(index);
       },
-      // Badge counts can be wired later with real data
+      tabs: _tabLabels,
       badgeCounts: const [0, 0, 0, 0],
     );
   }

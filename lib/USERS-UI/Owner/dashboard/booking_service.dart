@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import './booking_model.dart';
 
 class BookingService {
-  static const String baseUrl = 'http://192.168.1.11/carGOAdmin/';
+  static const String baseUrl = 'http://172.22.66.49/carGOAdmin/';
   
   /* ---------------- FETCH RECENT BOOKINGS ---------------- */
   Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async {

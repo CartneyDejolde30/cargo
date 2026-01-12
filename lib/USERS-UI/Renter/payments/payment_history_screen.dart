@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'receipt_viewer_screen.dart';
+import 'refund_request_screen.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -16,8 +17,9 @@ class PaymentHistoryScreen extends StatefulWidget {
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _payments = [];
+  Map<String, dynamic>? _statistics;
   String? _userId;
-  String _filterStatus = 'all'; // all, paid, pending, rejected, refunded
+  String _filterStatus = 'all';
 
   final String baseUrl = "http://192.168.1.11/carGOAdmin/";
 
@@ -44,7 +46,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse("${baseUrl}api/payment/get_user_payments.php?user_id=$_userId");
+      final url = Uri.parse("${baseUrl}api/get_user_payment_history.php?user_id=$_userId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -53,6 +55,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         if (result['success'] == true) {
           setState(() {
             _payments = List<Map<String, dynamic>>.from(result['payments']);
+            _statistics = result['statistics'];
             _isLoading = false;
           });
         } else {
@@ -71,7 +74,26 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
   List<Map<String, dynamic>> get _filteredPayments {
     if (_filterStatus == 'all') return _payments;
-    return _payments.where((p) => p['payment_status'] == _filterStatus).toList();
+    
+    return _payments.where((p) {
+      final paymentStatus = p['payment_status']?.toString().toLowerCase() ?? '';
+      final escrowStatus = p['escrow_status']?.toString().toLowerCase() ?? '';
+      
+      switch (_filterStatus) {
+        case 'verified':
+          return paymentStatus == 'verified' || escrowStatus == 'held';
+        case 'pending':
+          return paymentStatus == 'pending';
+        case 'completed':
+          return escrowStatus == 'released_to_owner';
+        case 'rejected':
+          return paymentStatus == 'rejected' || paymentStatus == 'failed';
+        case 'refunded':
+          return escrowStatus == 'refunded';
+        default:
+          return true;
+      }
+    }).toList();
   }
 
   void _showError(String message) {
@@ -84,37 +106,37 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'verified':
-      case 'paid':
+  Color _getStatusColor(Map<String, dynamic> statusBadge) {
+    switch (statusBadge['color']?.toString().toLowerCase()) {
+      case 'green':
         return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'rejected':
-      case 'failed':
-        return Colors.red;
-      case 'refunded':
+      case 'blue':
         return Colors.blue;
+      case 'orange':
+        return Colors.orange;
+      case 'red':
+        return Colors.red;
+      case 'purple':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
   }
 
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'verified':
-      case 'paid':
+  IconData _getStatusIcon(Map<String, dynamic> statusBadge) {
+    switch (statusBadge['icon']?.toString()) {
+      case 'check_circle':
         return Icons.check_circle;
-      case 'pending':
+      case 'lock':
+        return Icons.lock;
+      case 'schedule':
         return Icons.schedule;
-      case 'rejected':
-      case 'failed':
+      case 'cancel':
         return Icons.cancel;
-      case 'refunded':
-        return Icons.replay;
+      case 'undo':
+        return Icons.undo;
       default:
-        return Icons.help;
+        return Icons.info;
     }
   }
 
@@ -122,45 +144,207 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+      appBar: _buildAppBar(),
+      body: _isLoading ? _buildLoadingState() : _buildContent(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        'Payment History',
+        style: GoogleFonts.poppins(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(
-          'Payment History',
+      ),
+      centerTitle: true,
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: Colors.black),
+          const SizedBox(height: 16),
+          Text(
+            'Loading payments...',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Column(
+      children: [
+        if (_statistics != null) _buildStatisticsCard(),
+        _buildFilterChips(),
+        Expanded(
+          child: _filteredPayments.isEmpty
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: _fetchPaymentHistory,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _filteredPayments.length,
+                    itemBuilder: (context, index) {
+                      return _buildPaymentCard(_filteredPayments[index]);
+                    },
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatisticsCard() {
+    final totalPaid = double.tryParse(_statistics!['total_paid']?.toString() ?? '0') ?? 0;
+    final totalPending = double.tryParse(_statistics!['total_pending']?.toString() ?? '0') ?? 0;
+    final verifiedCount = int.tryParse(_statistics!['verified_count']?.toString() ?? '0') ?? 0;
+    final pendingCount = int.tryParse(_statistics!['pending_count']?.toString() ?? '0') ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.black, Colors.grey.shade800],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment Overview',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Total Paid',
+                  _formatCurrency(totalPaid),
+                  Icons.payments,
+                  Colors.green,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.white.withOpacity(0.2),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Pending',
+                  _formatCurrency(totalPending),
+                  Icons.pending,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCountBadge('Verified', verifiedCount, Colors.green),
+              _buildCountBadge('Pending', pendingCount, Colors.orange),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
           style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        centerTitle: true,
+      ],
+    );
+  }
+
+  Widget _buildCountBadge(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.black))
-          : Column(
-              children: [
-                _buildFilterChips(),
-                Expanded(
-                  child: _filteredPayments.isEmpty
-                      ? _buildEmptyState()
-                      : RefreshIndicator(
-                          onRefresh: _fetchPaymentHistory,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(20),
-                            itemCount: _filteredPayments.length,
-                            itemBuilder: (context, index) {
-                              final payment = _filteredPayments[index];
-                              return _buildPaymentCard(payment);
-                            },
-                          ),
-                        ),
-                ),
-              ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            count.toString(),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -172,22 +356,24 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterChip('all', 'All'),
+            _buildFilterChip('all', 'All', Icons.list),
             const SizedBox(width: 8),
-            _buildFilterChip('verified', 'Paid'),
+            _buildFilterChip('verified', 'Paid', Icons.check_circle),
             const SizedBox(width: 8),
-            _buildFilterChip('pending', 'Pending'),
+            _buildFilterChip('pending', 'Pending', Icons.schedule),
             const SizedBox(width: 8),
-            _buildFilterChip('rejected', 'Rejected'),
+            _buildFilterChip('completed', 'Completed', Icons.done_all),
             const SizedBox(width: 8),
-            _buildFilterChip('refunded', 'Refunded'),
+            _buildFilterChip('rejected', 'Failed', Icons.cancel),
+            const SizedBox(width: 8),
+            _buildFilterChip('refunded', 'Refunded', Icons.undo),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(String value, String label) {
+  Widget _buildFilterChip(String value, String label, IconData icon) {
     final isSelected = _filterStatus == value;
     return GestureDetector(
       onTap: () => setState(() => _filterStatus = value),
@@ -200,189 +386,223 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             color: isSelected ? Colors.black : Colors.grey.shade300,
           ),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? Colors.white : Colors.grey.shade700,
-          ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildPaymentCard(Map<String, dynamic> payment) {
-    final status = payment['payment_status'] ?? 'pending';
-    final amount = double.tryParse(payment['amount'].toString()) ?? 0;
-    final method = payment['payment_method'] ?? 'Unknown';
-    final reference = payment['payment_reference'] ?? 'N/A';
+    final statusBadge = payment['status_badge'] as Map<String, dynamic>? ?? {};
     final bookingId = payment['booking_id'] ?? 0;
-    final date = payment['created_at'] ?? '';
+    final amount = double.tryParse(payment['amount'].toString()) ?? 0;
+    final hasReceipt = payment['has_receipt'] == true || payment['has_receipt'] == 1;
+    final canRefund = payment['can_request_refund'] == true || payment['can_request_refund'] == 1;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _getStatusColor(statusBadge).withOpacity(0.2),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            if (status.toLowerCase() == 'verified' || status.toLowerCase() == 'paid') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ReceiptViewerScreen(bookingId: bookingId),
-                ),
-              );
-            }
-          },
-          child: Padding(
+      child: Column(
+        children: [
+          // Header with status
+          Container(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            decoration: BoxDecoration(
+              color: _getStatusColor(statusBadge).withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(status).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            _getStatusIcon(status),
-                            color: _getStatusColor(status),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Booking #$bookingId',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatDate(date),
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '₱${amount.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Divider(height: 1, color: Colors.grey.shade200),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoItem(
-                        'Status',
-                        status.toUpperCase(),
-                        _getStatusColor(status),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildInfoItem(
-                        'Method',
-                        method.toUpperCase(),
-                        Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                if (reference != 'N/A') ...[
-                  const SizedBox(height: 8),
-                  _buildInfoItem(
-                    'Reference',
-                    reference,
-                    Colors.grey.shade600,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(statusBadge).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-                if (status.toLowerCase() == 'verified' || status.toLowerCase() == 'paid') ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  child: Icon(
+                    _getStatusIcon(statusBadge),
+                    color: _getStatusColor(statusBadge),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.receipt_long,
-                        size: 16,
-                        color: Colors.blue.shade700,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        'View Receipt',
+                        statusBadge['label']?.toString() ?? 'UNKNOWN',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _getStatusColor(statusBadge),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Booking #$bookingId',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+                Text(
+                  _formatCurrency(amount),
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
               ],
             ),
           ),
-        ),
+
+          // Car Details
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    payment['car_image'] ?? '',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 60,
+                      height: 60,
+                      color: Colors.grey.shade200,
+                      child: Icon(Icons.directions_car, color: Colors.grey.shade400),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        payment['car_full_name'] ?? 'N/A',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        payment['payment_date_formatted'] ?? '',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Divider
+          Divider(height: 1, color: Colors.grey.shade200),
+
+          // Action Buttons
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                if (hasReceipt)
+                  Expanded(
+                    child: _buildActionButton(
+                      'View Receipt',
+                      Icons.receipt_long,
+                      Colors.black,
+                      () => _viewReceipt(bookingId),
+                    ),
+                  ),
+                if (hasReceipt && canRefund) const SizedBox(width: 8),
+                if (canRefund)
+                  Expanded(
+                    child: _buildActionButton(
+                      'Request Refund',
+                      Icons.undo,
+                      Colors.red.shade600,
+                      () => _requestRefund(payment),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value, Color valueColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16),
+      label: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: valueColor,
-          ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
         ),
-      ],
+        elevation: 0,
+      ),
     );
   }
 
@@ -391,11 +611,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.payment,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
+          Icon(Icons.payment, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
             'No payments found',
@@ -407,7 +623,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your payment history will appear here',
+            _filterStatus == 'all'
+                ? 'Your payment history will appear here'
+                : 'No ${_filterStatus} payments',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -418,12 +636,40 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     );
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
-    } catch (e) {
-      return dateString;
-    }
+  void _viewReceipt(int bookingId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReceiptViewerScreen(bookingId: bookingId),
+      ),
+    );
+  }
+
+  void _requestRefund(Map<String, dynamic> payment) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RefundRequestScreen(
+          bookingId: payment['booking_id'],
+          bookingReference: '#BK-${payment['booking_id']}',
+          totalAmount: double.tryParse(payment['amount'].toString()) ?? 0,
+          cancellationDate: payment['payment_date'] ?? DateTime.now().toString(),
+          paymentMethod: payment['payment_method'] ?? 'N/A',
+          paymentReference: payment['payment_reference'] ?? 'N/A',
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        _fetchPaymentHistory();
+      }
+    });
+  }
+
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(
+      locale: 'en_PH',
+      symbol: '₱',
+      decimalDigits: 2,
+    ).format(amount);
   }
 }
