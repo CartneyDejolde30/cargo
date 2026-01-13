@@ -171,7 +171,7 @@ class VerifyPopup {
 
   /// Check verification status from database
   static Future<bool> _checkVerificationFromDatabase(String userId) async {
-    const String baseUrl = "http://172.22.66.49/carGOAdmin/";
+    const String baseUrl = "http://10.139.150.2/carGOAdmin/";
     
     try {
       final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");

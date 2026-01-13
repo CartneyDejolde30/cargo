@@ -121,7 +121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       await prefs.setString("fullname", json["user"]["fullname"]);
       await prefs.setString("phone", json["user"]["phone"]);
       await prefs.setString("address", json["user"]["address"]);
-      String baseURL = "http://172.22.66.49/carGOAdmin/uploads/";
+      String baseURL = "http://10.139.150.2/carGOAdmin/uploads/";
 
         await prefs.setString(
           "profile_image",
