@@ -889,6 +889,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => BookingScreen(
+                                      vehicleType: "car",
                                       carId: widget.carId,
                                       carName: widget.carName,
                                       carImage: widget.carImage,

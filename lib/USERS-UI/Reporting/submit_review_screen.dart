@@ -91,68 +91,70 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   }
 
   Future<void> _submitReviews() async {
-    final avgCarRating = _calculateAverageCarRating();
-    final avgOwnerRating = _calculateAverageOwnerRating();
+  final avgCarRating = _calculateAverageCarRating();
+  final avgOwnerRating = _calculateAverageOwnerRating();
 
-    if (avgCarRating == 0 || avgOwnerRating == 0) {
-      _showSnackBar('Please rate all categories', Colors.orange);
-      return;
-    }
+  if (avgCarRating == 0 || avgOwnerRating == 0) {
+    _showSnackBar('Please rate all categories', Colors.orange);
+    return;
+  }
 
-    if (_carReviewController.text.trim().isEmpty || 
-        _ownerReviewController.text.trim().isEmpty) {
-      _showSnackBar('Please write your reviews', Colors.orange);
-      return;
-    }
+  if (_carReviewController.text.trim().isEmpty ||
+      _ownerReviewController.text.trim().isEmpty) {
+    _showSnackBar('Please write your reviews', Colors.orange);
+    return;
+  }
 
-    setState(() => isSubmitting = true);
+  setState(() => isSubmitting = true);
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id') ?? '';
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
 
-      final url = Uri.parse("${baseUrl}api/submit_review.php");
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': userId,
-          'booking_id': widget.bookingId,
-          'car_id': widget.carId,
-          'owner_id': widget.ownerId,
-          'car_rating': avgCarRating.toStringAsFixed(1),
-          'owner_rating': avgOwnerRating.toStringAsFixed(1),
-          'car_review': _carReviewController.text.trim(),
-          'owner_review': _ownerReviewController.text.trim(),
-          'car_categories': carCategories,
-          'owner_categories': ownerCategories,
-        }),
+    final response = await http.post(
+      Uri.parse("${baseUrl}api/submit_review.php"),
+      body: {
+        'user_id': userId,
+        'booking_id': widget.bookingId,
+        'car_id': widget.carId,
+        'owner_id': widget.ownerId,
+        'car_rating': avgCarRating.toStringAsFixed(1),
+        'owner_rating': avgOwnerRating.toStringAsFixed(1),
+        'car_review': _carReviewController.text.trim(),
+        'owner_review': _ownerReviewController.text.trim(),
+        'car_categories': jsonEncode(carCategories),
+        'owner_categories': jsonEncode(ownerCategories),
+      },
+    );
+
+    final result = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && result['success'] == true) {
+      if (mounted) {
+        Navigator.pop(context, true);
+        _showSnackBar(
+          'Thank you for your review!',
+          Colors.green,
+          icon: Icons.check_circle,
+        );
+      }
+    } else {
+      _showSnackBar(
+        result['message'] ?? 'Invalid data',
+        Colors.red,
       );
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        
-        if (result['status'] == 'success') {
-          if (mounted) {
-            Navigator.pop(context, true);
-            _showSnackBar('Thank you for your review!', Colors.green, icon: Icons.check_circle);
-          }
-        } else {
-          throw Exception(result['message'] ?? 'Failed to submit review');
-        }
-      } else {
-        throw Exception('Server error');
-      }
-    } catch (e) {
-      if (mounted) {
-        _showSnackBar('Error: $e', Colors.red);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isSubmitting = false);
-      }
+    }
+  } catch (e) {
+    if (mounted) {
+      _showSnackBar('Error: $e', Colors.red);
+    }
+  } finally {
+    if (mounted) {
+      setState(() => isSubmitting = false);
     }
   }
+}
+
 
   void _showSnackBar(String message, Color color, {IconData? icon}) {
     ScaffoldMessenger.of(context).showSnackBar(

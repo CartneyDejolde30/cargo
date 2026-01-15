@@ -268,52 +268,52 @@ class BookingCardWidget extends StatelessWidget {
         );
 
       case 'past':
-        return ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SubmitReviewScreen(
-                  bookingId: booking.bookingId.toString(),
-                  carId: '',
-                  carName: booking.carName,
-                  carImage: booking.carImage,
-                  ownerId: '',
-                  ownerName: '',
-                  ownerImage: '',
-                ),
-              ),
-            ).then((result) {
-              if (result == true && onReviewSubmitted != null) {
-                onReviewSubmitted!();
-              }
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            elevation: 0,
+  return ElevatedButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubmitReviewScreen(
+            bookingId: booking.bookingId.toString(),
+            carId: booking.carId.toString(),
+            carName: booking.carName,
+            carImage: booking.carImage,
+            ownerId: booking.ownerId.toString(),
+            ownerName: booking.ownerName,
+            ownerImage: '',
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.star, size: 16, color: Colors.white),
-              const SizedBox(width: 6),
-              Text(
-                'Rate & Review',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        ),
+      ).then((result) {
+        if (result == true && onReviewSubmitted != null) {
+          onReviewSubmitted!();
+        }
+      });
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.black,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      elevation: 0,
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star, size: 16, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(
+          'Rate & Review',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
-        );
+        ),
+      ],
+    ),
+  );
+
 
       default:
         return const SizedBox.shrink();
