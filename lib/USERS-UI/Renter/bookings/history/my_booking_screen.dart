@@ -8,7 +8,6 @@ import 'booking_tabs_widget.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -35,13 +34,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   int _pastCount = 0;
 
   // Tab labels
-  final List<String> _tabLabels = ['Active', 'Pending', 'Past', 'Transactions'];
+  final List<String> _tabLabels = ['Active', 'Pending', 'Past'];
 
   @override
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
 
     _loadUserIdAndFetchBookings();
@@ -68,9 +67,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           _bookingFuture = BookingService.getMyBookings(userId!);
           _isLoading = false;
         });
-        
-        // Update badge counts after fetching bookings
-        _updateBadgeCounts();
       }
     } catch (e) {
       print('❌ Error loading user ID: $e');
@@ -82,38 +78,25 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  Future<void> _updateBadgeCounts() async {
-    if (userId == null) return;
+  // OPTIMIZED: Calculate badge counts from existing bookings data
+  void _updateBadgeCountsFromBookings(List<Booking> bookings) {
+    final now = DateTime.now();
     
-    try {
-      final bookings = await BookingService.getMyBookings(userId!);
-      final now = DateTime.now();
-      
-      if (mounted) {
-        setState(() {
-          // Active count: approved bookings that have started but not ended
-          _activeCount = bookings.where((b) {
-            if (b.status != 'approved') return false;
-            final pickup = _parseDate(b.pickupDate);
-            final returnDate = _parseDate(b.returnDate);
-            return pickup != null && returnDate != null && 
-                   !pickup.isAfter(now) && !returnDate.isBefore(now);
-          }).length;
-          
-          // Pending count: bookings with pending status
-          _pendingCount = bookings.where((b) => b.status == 'pending').length;
-          
-          // Past count: completed, cancelled, or rejected
-          _pastCount = bookings.where((b) =>
-            b.status == 'completed' ||
-            b.status == 'cancelled' ||
-            b.status == 'rejected'
-          ).length;
-        });
-      }
-    } catch (e) {
-      print('❌ Error updating badge counts: $e');
-    }
+    _activeCount = bookings.where((b) {
+      if (b.status != 'approved') return false;
+      final pickup = _parseDate(b.pickupDate);
+      final returnDate = _parseDate(b.returnDate);
+      return pickup != null && returnDate != null && 
+             !pickup.isAfter(now) && !returnDate.isBefore(now);
+    }).length;
+    
+    _pendingCount = bookings.where((b) => b.status == 'pending').length;
+    
+    _pastCount = bookings.where((b) =>
+      b.status == 'completed' ||
+      b.status == 'cancelled' ||
+      b.status == 'rejected'
+    ).length;
   }
 
   void _showLoginRequiredDialog() {
@@ -155,28 +138,24 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     final now = DateTime.now();
 
     switch (_currentTabIndex) {
-      case 0: // Active (approved bookings that have started but not ended)
+      case 0: // Active
         return all.where((b) {
           if (b.status != 'approved') return false;
           final pickup = _parseDate(b.pickupDate);
           final returnDate = _parseDate(b.returnDate);
-          // Must have started (pickup <= now) and not ended (return >= now)
           return pickup != null && returnDate != null && 
                  !pickup.isAfter(now) && !returnDate.isBefore(now);
         }).toList();
 
-      case 1: // Pending (awaiting approval)
+      case 1: // Pending
         return all.where((b) => b.status == 'pending').toList();
 
-      case 2: // Past (completed, cancelled, or rejected)
+      case 2: // Past
         return all.where((b) =>
           b.status == 'completed' ||
           b.status == 'cancelled' ||
           b.status == 'rejected'
         ).toList();
-
-      case 3: // Transactions - handled separately in build method
-        return [];
 
       default:
         return [];
@@ -315,11 +294,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       );
     }
 
-    // If "Transactions" tab is selected, show Payment History Screen
-    if (_currentTabIndex == 3) {
-      return PaymentHistoryScreen();
-    }
-
     return FutureBuilder<List<Booking>>(
       future: _bookingFuture,
       builder: (context, snapshot) {
@@ -356,7 +330,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
                     });
-                    _updateBadgeCounts();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -376,7 +349,17 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           );
         }
 
-        final bookings = _filterBookings(snapshot.data!);
+        // OPTIMIZED: Update badge counts from the fetched data
+        final allBookings = snapshot.data!;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _updateBadgeCountsFromBookings(allBookings);
+            });
+          }
+        });
+
+        final bookings = _filterBookings(allBookings);
 
         if (bookings.isEmpty) {
           return BookingEmptyStateWidget(
@@ -391,7 +374,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             setState(() {
               _bookingFuture = BookingService.getMyBookings(userId!);
             });
-            await _updateBadgeCounts();
           },
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
@@ -406,7 +388,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
                     });
-                    _updateBadgeCounts();
                   },
                 ),
               );
@@ -424,7 +405,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         _tabController.animateTo(index);
       },
       tabs: _tabLabels,
-      badgeCounts: [_activeCount, _pendingCount, _pastCount, 0],
+      badgeCounts: [_activeCount, _pendingCount, _pastCount],
     );
   }
 }

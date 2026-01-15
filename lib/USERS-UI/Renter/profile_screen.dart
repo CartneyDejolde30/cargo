@@ -5,6 +5,7 @@ import 'widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -49,8 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    
-
 
     setState(() {
       userName = prefs.getString("fullname") ?? "User";
@@ -63,21 +62,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   ImageProvider? _getProfileImage() {
-  if (profileImage.isEmpty) return null;
+    if (profileImage.isEmpty) return null;
 
-  // Clean URL
-  final url = profileImage.trim();
+    // Clean URL
+    final url = profileImage.trim();
 
-  print("FINAL PROFILE URL → $url");
+    print("FINAL PROFILE URL → $url");
 
-  // URL must begin with http or https
-  if (!url.startsWith("http")) {
-    return null;
+    // URL must begin with http or https
+    if (!url.startsWith("http")) {
+      return null;
+    }
+
+    return NetworkImage(url);
   }
-
-  return NetworkImage(url);
-}
-
 
   Future<void> logout() async {
     final confirm = await showDialog<bool>(
@@ -185,12 +183,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       showDialog(
         context: context,
         barrierDismissible: false,
-       builder: (context) => PopScope(
-            canPop: false,
-            child: Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Container(
+        builder: (context) => PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -482,6 +480,32 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                          );
+                        },
+                      ),
+                    ]),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Payment & Transactions',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuCard([
+                      _MenuItemData(
+                        icon: Icons.receipt_long_rounded,
+                        title: "Transaction History",
+                        subtitle: "View all your payment transactions",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PaymentHistoryScreen()),
                           );
                         },
                       ),
