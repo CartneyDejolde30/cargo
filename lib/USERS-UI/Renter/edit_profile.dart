@@ -15,7 +15,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> with SingleTickerProviderStateMixin {
-  final String apiUrl = "http://10.139.150.2/carGOAdmin/update.php";
+  final String apiUrl = "http://10.244.29.49/carGOAdmin/update.php";
 
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
@@ -274,7 +274,7 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
         await prefs.setString("fullname", updated["fullname"]);
         await prefs.setString("phone", updated["phone"] ?? "");
         await prefs.setString("address", updated["address"] ?? "");
-        String baseURL = "http://10.139.150.2/carGOAdmin/uploads/";
+        String baseURL = "http://10.244.29.49/carGOAdmin/uploads/";
         String img = updated["profile_image"] ?? "";
 
 
