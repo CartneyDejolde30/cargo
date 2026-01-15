@@ -29,7 +29,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   String? userId;
   bool _isLoading = true;
 
-  // Tab labels - moved "Transactions" to the rightmost position
+  // Badge counts for each tab
+  int _activeCount = 0;
+  int _pendingCount = 0;
+  int _pastCount = 0;
+
+  // Tab labels
   final List<String> _tabLabels = ['Active', 'Pending', 'Past', 'Transactions'];
 
   @override
@@ -63,6 +68,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           _bookingFuture = BookingService.getMyBookings(userId!);
           _isLoading = false;
         });
+        
+        // Update badge counts after fetching bookings
+        _updateBadgeCounts();
       }
     } catch (e) {
       print('❌ Error loading user ID: $e');
@@ -71,6 +79,40 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _updateBadgeCounts() async {
+    if (userId == null) return;
+    
+    try {
+      final bookings = await BookingService.getMyBookings(userId!);
+      final now = DateTime.now();
+      
+      if (mounted) {
+        setState(() {
+          // Active count: approved bookings that have started but not ended
+          _activeCount = bookings.where((b) {
+            if (b.status != 'approved') return false;
+            final pickup = _parseDate(b.pickupDate);
+            final returnDate = _parseDate(b.returnDate);
+            return pickup != null && returnDate != null && 
+                   !pickup.isAfter(now) && !returnDate.isBefore(now);
+          }).length;
+          
+          // Pending count: bookings with pending status
+          _pendingCount = bookings.where((b) => b.status == 'pending').length;
+          
+          // Past count: completed, cancelled, or rejected
+          _pastCount = bookings.where((b) =>
+            b.status == 'completed' ||
+            b.status == 'cancelled' ||
+            b.status == 'rejected'
+          ).length;
+        });
+      }
+    } catch (e) {
+      print('❌ Error updating badge counts: $e');
     }
   }
 
@@ -113,24 +155,27 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     final now = DateTime.now();
 
     switch (_currentTabIndex) {
-      case 0: // Active (approved + started)
+      case 0: // Active (approved bookings that have started but not ended)
         return all.where((b) {
           if (b.status != 'approved') return false;
           final pickup = _parseDate(b.pickupDate);
-          return pickup != null && !pickup.isAfter(now);
+          final returnDate = _parseDate(b.returnDate);
+          // Must have started (pickup <= now) and not ended (return >= now)
+          return pickup != null && returnDate != null && 
+                 !pickup.isAfter(now) && !returnDate.isBefore(now);
         }).toList();
 
-      case 1: // Pending
+      case 1: // Pending (awaiting approval)
         return all.where((b) => b.status == 'pending').toList();
 
-      case 2: // Past
+      case 2: // Past (completed, cancelled, or rejected)
         return all.where((b) =>
-            b.status == 'completed' ||
-            b.status == 'cancelled' ||
-            b.status == 'rejected').toList();
+          b.status == 'completed' ||
+          b.status == 'cancelled' ||
+          b.status == 'rejected'
+        ).toList();
 
-      case 3: // Transactions - This now shows the payment history screen
-        // This will be handled separately in the build method
+      case 3: // Transactions - handled separately in build method
         return [];
 
       default:
@@ -270,7 +315,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       );
     }
 
-    // If "Transactions" tab is selected (now index 3), show Payment History Screen
+    // If "Transactions" tab is selected, show Payment History Screen
     if (_currentTabIndex == 3) {
       return PaymentHistoryScreen();
     }
@@ -311,6 +356,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
                     });
+                    _updateBadgeCounts();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -345,6 +391,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             setState(() {
               _bookingFuture = BookingService.getMyBookings(userId!);
             });
+            await _updateBadgeCounts();
           },
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
@@ -359,6 +406,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
                     });
+                    _updateBadgeCounts();
                   },
                 ),
               );
@@ -376,7 +424,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         _tabController.animateTo(index);
       },
       tabs: _tabLabels,
-      badgeCounts: const [0, 0, 0, 0],
+      badgeCounts: [_activeCount, _pendingCount, _pastCount, 0],
     );
   }
 }
