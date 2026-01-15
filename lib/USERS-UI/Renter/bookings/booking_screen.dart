@@ -134,7 +134,7 @@ Future<void> _checkVerificationOnInit() async {
 
   try {
     final url = Uri.parse(
-      "http://10.139.150.2/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+      "http://10.244.29.49/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
     );
     
     print("📡 Calling API: $url");
@@ -1402,7 +1402,7 @@ Future<void> _checkVerificationOnInit() async {
 // Replace your _submitBookingToServer() method with this:
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.139.150.2/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse("http://10.244.29.49/carGOAdmin/api/create_booking.php");
 
   // Validate user_id
   if (widget.userId == null || widget.userId!.isEmpty) {
