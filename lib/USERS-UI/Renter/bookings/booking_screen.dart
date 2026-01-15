@@ -10,6 +10,7 @@ import 'gcash_payment_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final int carId;
+  final String vehicleType;
   final String carName;
   final String carImage;
   final String pricePerDay;
@@ -25,6 +26,7 @@ class BookingScreen extends StatefulWidget {
 
   const BookingScreen({
     super.key,
+    required this.vehicleType,
     required this.carId,
     required this.carName,
     required this.carImage,
@@ -1417,22 +1419,23 @@ Future<void> _submitBookingToServer() async {
     print("📤 Car ID: ${widget.carId}");
     print("📤 Owner ID: ${widget.ownerId}");
     
-    final requestBody = {
-      "user_id": widget.userId!.toString(),
-      "car_id": widget.carId.toString(),
-      "owner_id": widget.ownerId.toString(),
-      "full_name": fullNameController.text.trim(),
-      "email": emailController.text.trim(),
-      "contact": contactController.text.trim(),
-      "pickup_date": DateFormat('yyyy-MM-dd').format(pickupDate!),
-      "return_date": DateFormat('yyyy-MM-dd').format(returnDate!),
-      "pickup_time": pickupTime.format(context),
-      "return_time": returnTime.format(context),
-      "rental_period": selectedPeriod,
-      "needs_delivery": needsDelivery ? "1" : "0",
-      "total_amount": priceBreakdown!.totalAmount.toStringAsFixed(2),
-      "payment_method": "gcash",
-    };
+   final requestBody = {
+  "user_id": widget.userId!,
+  "vehicle_type": widget.vehicleType, // car OR motorcycle
+  "vehicle_id": widget.carId.toString(),
+  "full_name": fullNameController.text,
+  "email": emailController.text,
+  "contact": contactController.text,
+  "pickup_date": DateFormat('yyyy-MM-dd').format(pickupDate!),
+  "return_date": DateFormat('yyyy-MM-dd').format(returnDate!),
+  "pickup_time": pickupTime.format(context),
+  "return_time": returnTime.format(context),
+  "rental_period": selectedPeriod,
+  "needs_delivery": needsDelivery ? "1" : "0",
+  "total_amount": priceBreakdown!.totalAmount.toStringAsFixed(2),
+};
+
+
 
     print("📤 Request body: $requestBody");
 

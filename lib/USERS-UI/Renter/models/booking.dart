@@ -1,19 +1,22 @@
 class Booking {
   final int bookingId;
+  final int carId;
+  final int ownerId;
   final String carName;
   final String carImage;
   final String location;
-
   final String pickupDate;
   final String pickupTime;
   final String returnDate;
   final String returnTime;
-
   final String totalPrice;
   final String status;
+  final String ownerName;
 
   Booking({
     required this.bookingId,
+    required this.carId,
+    required this.ownerId,
     required this.carName,
     required this.carImage,
     required this.location,
@@ -23,20 +26,24 @@ class Booking {
     required this.returnTime,
     required this.totalPrice,
     required this.status,
+    required this.ownerName,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
-      bookingId: int.parse(json['bookingId'].toString()),
-      carName: json['carName'],
-      carImage: json['carImage'],
-      location: json['location'],
-      pickupDate: json['pickupDate'],
-      pickupTime: json['pickupTime'],
-      returnDate: json['returnDate'],
-      returnTime: json['returnTime'],
-      totalPrice: json['totalPrice'],
-      status: json['status'],
+      bookingId: json['bookingId'],
+      carId: json['carId'],
+      ownerId: json['ownerId'],
+      carName: json['carName'] ?? '',
+      carImage: json['carImage'] ?? '',
+      location: json['location'] ?? '',
+      pickupDate: json['pickupDate'] ?? '',
+      pickupTime: json['pickupTime'] ?? '',
+      returnDate: json['returnDate'] ?? '',
+      returnTime: json['returnTime'] ?? '',
+      totalPrice: (json['totalPrice'] as num).toString(),
+      status: json['status'] ?? '',
+      ownerName: json['ownerName'] ?? '',
     );
   }
 }

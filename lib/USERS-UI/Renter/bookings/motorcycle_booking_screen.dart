@@ -36,6 +36,7 @@ class MotorcycleBookingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BookingScreen(
+      vehicleType: "motorcycle",
       carId: motorcycleId, // reuse carId
       carName: motorcycleName,
       carImage: motorcycleImage,

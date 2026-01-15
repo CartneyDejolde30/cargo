@@ -8,19 +8,31 @@ class BookingService {
   // GET MY BOOKINGS (REAL DATA)
   // =========================
   static Future<List<Booking>> getMyBookings(String userId) async {
-    final response = await http.get(
-      Uri.parse(
-        'http://10.244.29.49/carGOAdmin/api/get_my_bookings.php?user_id=$userId',
-      ),
-    );
+  final response = await http.get(
+    Uri.parse(
+      'http://10.139.150.2/carGOAdmin/api/get_my_bookings.php?user_id=$userId',
+    ),
+  );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((e) => Booking.fromJson(e)).toList();
-    } else {
-      throw Exception('Failed to load bookings');
+  print('RAW RESPONSE: ${response.body}');
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> jsonData = jsonDecode(response.body);
+
+    if (jsonData['bookings'] == null) {
+      return [];
     }
+
+    final List list = jsonData['bookings'];
+
+    return list.map((e) => Booking.fromJson(e)).toList();
+  } else {
+    throw Exception('Failed to load bookings');
   }
+}
+
+
+
 
   // =========================
   // CANCEL BOOKING
@@ -31,7 +43,7 @@ class BookingService {
   }) async {
     final response = await http.post(
       Uri.parse(
-        'http://10.244.29.49/carGOAdmin/api/cancel_booking.php',
+        'http://10.139.150.2/carGOAdmin/api/cancel_booking.php',
       ),
       body: {
         'booking_id': bookingId.toString(),

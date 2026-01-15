@@ -105,28 +105,32 @@ class _MotorcycleDetailScreenState
     }
   }
 
-  Future<void> fetchMotorcycleDetails() async {
+Future<void> fetchMotorcycleDetails() async {
   final url = Uri.parse(
     "${baseUrl}api/get_motorcycle_details.php?id=${widget.motorcycleId}",
-
   );
-
-  print("🌐 REQUEST URL: $url"); // 🔥 ADD THIS
 
   try {
     final response = await http.get(url);
     print("📦 Response Body: ${response.body}");
 
-    if (response.body.isEmpty) {
+    if (!mounted) return;
+
+    if (response.statusCode != 200 || response.body.isEmpty) {
       setState(() => loading = false);
       return;
     }
 
     final result = jsonDecode(response.body);
 
-    if (result["status"] == "success") {
+    final bool isSuccess =
+        result["status"] == "success" || result["success"] == true;
+
+    final data = result["motorcycle"] ?? result["car"];
+
+    if (isSuccess && data != null) {
       setState(() {
-        motorcycleData = result["motorcycle"];
+        motorcycleData = data;
         reviews = result["reviews"] ?? [];
         loading = false;
       });
@@ -134,10 +138,12 @@ class _MotorcycleDetailScreenState
       setState(() => loading = false);
     }
   } catch (e) {
-    setState(() => loading = false);
+    if (!mounted) return;
     print("❌ ERROR FETCHING DETAILS: $e");
+    setState(() => loading = false);
   }
 }
+
 
 
   Future<void> _callOwner(String number) async {
@@ -885,7 +891,7 @@ final extraImages = motorcycleData?["extra_images"] != null
                               name: review["fullname"] ?? "User",
                               rating: double.tryParse(review["rating"].toString()) ?? 5.0,
                               date: review["created_at"] ?? "",
-                              review: review["comment"] ?? "",
+                              review: review["review"] ?? "",
                             );
                           }).toList(),
                         ),

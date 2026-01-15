@@ -64,8 +64,8 @@ class PendingRequestsPage extends StatelessWidget {
   }
 
   Future<List<BookingRequest>> fetchPendingRequests() async {
-    // Uncomment this for real API calls
-    /*
+   
+    
     final url = Uri.parse(
       "http://10.244.29.49/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
     );
@@ -87,11 +87,10 @@ class PendingRequestsPage extends StatelessWidget {
       print("❌ ERROR FETCHING: $e");
       return _getMockData();
     }
-    */
+  
 
     // For now, return mock data after a delay to simulate loading
-    await Future.delayed(const Duration(seconds: 1));
-    return _getMockData();
+    
   }
 
   @override
