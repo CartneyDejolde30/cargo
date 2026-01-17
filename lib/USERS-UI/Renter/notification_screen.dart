@@ -66,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-            "http://10.244.29.49/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
+            "http://10.139.150.2/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
       );
 
       print("📩 RAW RESPONSE: ${res.body}");

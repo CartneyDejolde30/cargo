@@ -18,7 +18,7 @@ class GoogleSignInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Your PHP backend URL - UPDATE THIS WITH YOUR ACTUAL IP
-  static const String baseUrl = "http://10.244.29.49/carGOAdmin";
+  static const String baseUrl = "http://10.139.150.2/carGOAdmin";
 
   /// Sign in with Google - ALWAYS shows account picker
   Future<Map<String, dynamic>?> signInWithGoogle() async {

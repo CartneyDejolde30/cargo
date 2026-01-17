@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL
-  static const String baseUrl = "http://10.244.29.49/carGOAdmin/";
+  static const String baseUrl = "http://10.139.150.2/carGOAdmin/";
   
   // API Endpoints
   static const String carsApi = "${baseUrl}cars_api.php";

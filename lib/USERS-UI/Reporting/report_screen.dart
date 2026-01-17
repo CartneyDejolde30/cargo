@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class ReportScreen extends StatefulWidget {
   final String reportType; // 'car', 'user', 'booking', 'chat'
@@ -24,7 +26,13 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController _detailsController = TextEditingController();
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
+Future<String> _getUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('user_id') ?? '';
+}
+
+
+  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
 
   // Report reasons based on type
   Map<String, List<String>> reportReasons = {
@@ -63,6 +71,17 @@ class _ReportScreenState extends State<ReportScreen> {
       'Threatening behavior',
       'Other',
     ],
+
+    'motorcycle': [
+  'Misleading information',
+  'Fake photos',
+  'Vehicle not as described',
+  'Safety concerns',
+  'Suspicious pricing',
+  'Unavailable vehicle',
+  'Other',
+],
+
   };
 
   @override
@@ -72,66 +91,75 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Future<void> _submitReport() async {
-    if (selectedReason == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a reason')),
-      );
-      return;
+  if (selectedReason == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select a reason')),
+    );
+    return;
+  }
+
+  if (_detailsController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please provide details')),
+    );
+    return;
+  }
+
+  setState(() => isSubmitting = true);
+
+  try {
+    final userId = await _getUserId();
+
+    if (userId.isEmpty) {
+      throw Exception("User not logged in");
     }
 
-    if (_detailsController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide details')),
-      );
-      return;
-    }
+    final url = Uri.parse("${baseUrl}api/submit_report.php");
+    final response = await http.post(url, body: {
+      'report_type': widget.reportType.toLowerCase().trim(),
+      'reported_id': widget.reportedId,
+      'reason': selectedReason!,
+      'details': _detailsController.text.trim(),
+      'reporter_id': userId,
+    });
 
-    setState(() => isSubmitting = true);
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
 
-    try {
-      final url = Uri.parse("${baseUrl}api/submit_report.php");
-      final response = await http.post(url, body: {
-        'report_type': widget.reportType,
-        'reported_id': widget.reportedId,
-        'reason': selectedReason,
-        'details': _detailsController.text.trim(),
-        // Add user_id from SharedPreferences in production
-        'reporter_id': 'USER_ID_HERE',
-      });
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        
-        if (result['status'] == 'success') {
-          if (mounted) {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Report submitted successfully'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } else {
-          throw Exception(result['message'] ?? 'Failed to submit report');
+      if (result['status'] == 'success') {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report submitted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
+      } else {
+        throw Exception(result['message'] ?? 'Failed to submit report');
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isSubmitting = false);
-      }
+    } else {
+      throw Exception("Server error: ${response.statusCode}");
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => isSubmitting = false);
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
-    final reasons = reportReasons[widget.reportType] ?? [];
+    final reasons = reportReasons[widget.reportType.toLowerCase().trim()] ?? [];
+
 
     return Scaffold(
       backgroundColor: Colors.white,

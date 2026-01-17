@@ -123,7 +123,7 @@ class RequestDialogs {
                         );
 
                         final url = Uri.parse(
-                          "http://10.244.29.49/carGOAdmin/api/reject_request.php",
+                          "http://10.139.150.2/carGOAdmin/api/reject_request.php",
                         );
 
                         try {

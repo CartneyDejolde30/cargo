@@ -147,7 +147,7 @@ Future<void> _setupNotifications() async {
 
     _saveCredentials();
 
-    final url = Uri.parse("http://10.244.29.49/carGOAdmin/login.php");
+    final url = Uri.parse("http://10.139.150.2/carGOAdmin/login.php");
 
     print("Sending JSON -> email: $email, password: $password");
 

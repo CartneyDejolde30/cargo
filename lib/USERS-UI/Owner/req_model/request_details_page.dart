@@ -494,7 +494,7 @@ class RequestDetailsPage extends StatelessWidget {
 
   Future<void> _handleApprove(BuildContext context) async {
     final url =
-        Uri.parse("http://10.244.29.49/carGOAdmin/api/approve_request.php");
+        Uri.parse("http://10.139.150.2/carGOAdmin/api/approve_request.php");
 
     try {
       // Show loading

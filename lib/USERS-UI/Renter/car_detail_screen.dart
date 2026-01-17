@@ -44,7 +44,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
+  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
