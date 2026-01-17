@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
-
+import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -19,6 +23,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String phone = "";
   String address = "";
   String profileImage = "";
+  String userRole = "";
+  int userId = 0;
+  
+  Map<String, dynamic>? _transactionStats;
+  bool _loadingTransactions = false;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -56,20 +65,52 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       phone = prefs.getString("phone") ?? "";
       address = prefs.getString("address") ?? "";
       profileImage = prefs.getString("profile_image") ?? "";
+      userRole = prefs.getString("role") ?? "";
+      userId = prefs.getInt("user_id") ?? 0;
     });
+    
+    // Load transaction stats if user is an owner
+    if (userRole == "Owner" && userId > 0) {
+      _loadTransactionStats();
+    }
+  }
+
+  Future<void> _loadTransactionStats() async {
+    setState(() => _loadingTransactions = true);
+    
+    try {
+      final response = await http.get(
+        Uri.parse("http://10.139.150.2/carGOAdmin/api/get_owner_transactions.php?owner_id=$userId"),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        if (result['success'] == true) {
+          setState(() {
+            _transactionStats = result['statistics'];
+            _loadingTransactions = false;
+          });
+        } else {
+          setState(() => _loadingTransactions = false);
+        }
+      } else {
+        setState(() => _loadingTransactions = false);
+      }
+    } catch (e) {
+      setState(() => _loadingTransactions = false);
+    }
   }
 
   ImageProvider? _getProfileImage() {
-  if (profileImage.isNotEmpty &&
-      profileImage != "null" &&
-      profileImage != "NULL" &&
-      profileImage != "None" &&
-      profileImage.startsWith("http")) {
-    return NetworkImage(profileImage);
+    if (profileImage.isNotEmpty &&
+        profileImage != "null" &&
+        profileImage != "NULL" &&
+        profileImage != "None" &&
+        profileImage.startsWith("http")) {
+      return NetworkImage(profileImage);
+    }
+    return null;
   }
-  return null;
-}
-
 
   Future<void> logout() async {
     final confirm = await showDialog<bool>(
@@ -449,6 +490,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
               const SizedBox(height: 32),
 
+              // Transaction Summary (Only for Owners)
+              if (userRole == "Owner") ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildTransactionSummary(),
+                ),
+                const SizedBox(height: 32),
+              ],
+
               // Settings Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -477,6 +527,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           );
                         },
                       ),
+                      if (userRole == "Owner")
+                        _MenuItemData(
+                          icon: Icons.account_balance_wallet_rounded,
+                          title: "Transaction History",
+                          subtitle: "View your earnings & payouts",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const OwnerTransactionHistoryScreen()),
+                            );
+                          },
+                        ),
                     ]),
 
                     const SizedBox(height: 24),
@@ -559,7 +621,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     // App Version
                     Center(
                       child: Text(
-                        'CarGo v1.0.0',
+                        'CarGO v1.0.0',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: Colors.grey.shade500,
@@ -576,6 +638,185 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
       ),
     );
+  }
+
+  Widget _buildTransactionSummary() {
+    if (_loadingTransactions) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(
+          child: CircularProgressIndicator(color: Colors.black),
+        ),
+      );
+    }
+
+    if (_transactionStats == null) {
+      return const SizedBox.shrink();
+    }
+
+    final totalEarnings = double.tryParse(_transactionStats!['total_earnings']?.toString() ?? '0') ?? 0;
+    final pendingPayouts = double.tryParse(_transactionStats!['pending_payouts']?.toString() ?? '0') ?? 0;
+    final completedCount = int.tryParse(_transactionStats!['completed_count']?.toString() ?? '0') ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Earnings Overview',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OwnerTransactionHistoryScreen()),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: Text(
+                'View All',
+                style: GoogleFonts.poppins(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.grey.shade900, Colors.grey.shade800],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      'Total Earned',
+                      _formatCurrency(totalEarnings),
+                      Icons.account_balance_wallet,
+                      Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      'In Escrow',
+                      _formatCurrency(pendingPayouts),
+                      Icons.lock_clock,
+                      Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$completedCount Completed Transactions',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(
+      locale: 'en_PH',
+      symbol: '₱',
+      decimalDigits: 2,
+    ).format(amount);
   }
 
   Widget _buildMenuCard(List<_MenuItemData> items) {
