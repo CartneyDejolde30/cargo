@@ -1,3 +1,4 @@
+// lib/USERS-UI/Owner/pending_requests_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -6,91 +7,102 @@ import 'req_model/pending_request_card.dart';
 import 'req_model/request_dialog.dart';
 import 'req_model/booking_request.dart';
 import 'req_model/request_details_page.dart';
+import 'mycar/api_config.dart';
 
-class PendingRequestsPage extends StatelessWidget {
+class PendingRequestsPage extends StatefulWidget {
   final String ownerId;
 
   const PendingRequestsPage({super.key, required this.ownerId});
 
-  // Temporary mock data for UI preview
-  List<BookingRequest> _getMockData() {
-    return [
-      BookingRequest(
-        bookingId: '1',
-        carName: 'Toyota Vios 2024',
-        carImage: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800',
-        totalAmount: '4200',
-        pickupDate: 'Dec 25, 2025',
-        returnDate: 'Dec 28, 2025',
-        rentalPeriod: '3 days',
-        fullName: 'John Doe',
-        contact: '+63 912 345 6789',
-        email: 'johndoe@email.com',
-        location: 'Tampakan, South Cotabato',
-        seats: '5-seater',
-        transmission: 'Automatic',
-      ),
-      BookingRequest(
-        bookingId: '2',
-        carName: 'Honda City 2024',
-        carImage: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800',
-        totalAmount: '3500',
-        pickupDate: 'Dec 22, 2025',
-        returnDate: 'Dec 24, 2025',
-        rentalPeriod: '2 days',
-        fullName: 'Maria Santos',
-        contact: '+63 923 456 7890',
-        email: 'maria.santos@email.com',
-        location: 'Midsayap, Cotabato',
-        seats: '5-seater',
-        transmission: 'Manual',
-      ),
-      BookingRequest(
-        bookingId: '3',
-        carName: 'Mitsubishi Mirage 2023',
-        carImage: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800',
-        totalAmount: '2800',
-        pickupDate: 'Dec 21, 2025',
-        returnDate: 'Dec 23, 2025',
-        rentalPeriod: '2 days',
-        fullName: 'Pedro Cruz',
-        contact: '+63 945 678 9012',
-        email: 'pedro.cruz@email.com',
-        location: 'Koronadal City',
-        seats: '4-seater',
-        transmission: 'Manual',
-      ),
-    ];
+  @override
+  State<PendingRequestsPage> createState() => _PendingRequestsPageState();
+}
+
+class _PendingRequestsPageState extends State<PendingRequestsPage> {
+  List<BookingRequest> _requests = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPendingRequests();
   }
 
-  Future<List<BookingRequest>> fetchPendingRequests() async {
-   
-    
+  Future<void> _fetchPendingRequests() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     final url = Uri.parse(
-      "http://10.244.29.49/carGOAdmin/api/get_pending_requests.php?owner_id=$ownerId",
+      "${ApiConfig.pendingRequestsEndpoint}?owner_id=${widget.ownerId}",
     );
 
     try {
-      final response = await http.get(url);
-      if (response.statusCode != 200 || response.body.isEmpty) {
-        return _getMockData(); // Fallback to mock data
-      }
+      debugPrint("📡 Fetching pending requests: $url");
+      
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
+      
+      debugPrint("📥 Response status: ${response.statusCode}");
+      debugPrint("📥 Response body: ${response.body}");
 
-      final data = jsonDecode(response.body);
-      if (data["success"] == true) {
-        return (data["requests"] as List)
-            .map((req) => BookingRequest.fromJson(req))
-            .toList();
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          setState(() {
+            _requests = [];
+            _isLoading = false;
+            _errorMessage = null;
+          });
+          return;
+        }
+
+        final data = jsonDecode(response.body);
+        
+        if (data["success"] == true) {
+          final requestsList = (data["requests"] as List)
+              .map((req) => BookingRequest.fromJson(req))
+              .toList();
+          
+          setState(() {
+            _requests = requestsList;
+            _isLoading = false;
+            _errorMessage = null;
+          });
+          
+          debugPrint("✅ Loaded ${_requests.length} pending requests");
+        } else {
+          setState(() {
+            _requests = [];
+            _isLoading = false;
+            _errorMessage = data["message"] ?? "Failed to load requests";
+          });
+          debugPrint("⚠️ API returned error: ${data["message"]}");
+        }
+      } else {
+        setState(() {
+          _requests = [];
+          _isLoading = false;
+          _errorMessage = "Server error: ${response.statusCode}";
+        });
+        debugPrint("❌ HTTP Error: ${response.statusCode}");
       }
-      return _getMockData();
     } catch (e) {
-      print("❌ ERROR FETCHING: $e");
-      return _getMockData();
+      if (!mounted) return;
+      
+      setState(() {
+        _requests = [];
+        _isLoading = false;
+        _errorMessage = "Network error. Please check your connection.";
+      });
+      debugPrint("❌ ERROR FETCHING: $e");
     }
-  
+  }
 
-    // For now, return mock data after a delay to simulate loading
-    
+  Future<void> _handleRefresh() async {
+    await _fetchPendingRequests();
   }
 
   @override
@@ -114,7 +126,7 @@ class PendingRequestsPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -149,74 +161,80 @@ class PendingRequestsPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.tune, color: Colors.white),
-                  onPressed: () {},
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _fetchPendingRequests,
+                  tooltip: 'Refresh',
                 ),
               ),
             ],
           ),
 
-          // Bookings List
-          SliverToBoxAdapter(
-            child: FutureBuilder<List<BookingRequest>>(
-              future: fetchPendingRequests(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Container(
-                    height: 400,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(
-                      color: Colors.black,
-                      strokeWidth: 2,
-                    ),
-                  );
-                }
+          // Content
+          SliverFillRemaining(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Container(
-                    height: 400,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "No pending requests",
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+  Widget _buildContent() {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
 
-                final requests = snapshot.data!;
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      ...requests.map((request) => PendingRequestCard(
-                            request: request,
-                            ownerId: ownerId,
-                            onApprove: () => _handleApprove(request, context),
-                            onReject: () => _handleReject(request, context),
-                            onTap: () => _navigateToDetails(request, context),
-                          )),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                );
-              },
+    if (_requests.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - 200,
+            child: _buildEmptyState(),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: Colors.black,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: _requests.length,
+        itemBuilder: (context, index) {
+          final request = _requests[index];
+          return PendingRequestCard(
+            request: request,
+            ownerId: widget.ownerId,
+            onApprove: () => _handleApprove(request),
+            onReject: () => _handleReject(request),
+            onTap: () => _navigateToDetails(request),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            color: Colors.black,
+            strokeWidth: 2,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading requests...',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
             ),
           ),
         ],
@@ -224,54 +242,227 @@ class PendingRequestsPage extends StatelessWidget {
     );
   }
 
-  void _navigateToDetails(BookingRequest request, BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RequestDetailsPage(
-          request: request,
-          ownerId: ownerId,
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              "Oops!",
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                color: Colors.black,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Something went wrong',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _fetchPendingRequests,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _handleReject(BookingRequest request, BuildContext context) {
-    RequestDialogs.showRejectDialog(
-      context,
-      request.bookingId,
-      ownerId,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No pending requests",
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "New booking requests will appear here",
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  void _handleApprove(BookingRequest request, BuildContext context) async {
-    final url =
-        Uri.parse("http://10.244.29.49/carGOAdmin/api/approve_request.php");
+  void _navigateToDetails(BookingRequest request) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RequestDetailsPage(
+          request: request,
+          ownerId: widget.ownerId,
+        ),
+      ),
+    ).then((_) => _fetchPendingRequests());
+  }
+
+  void _handleReject(BookingRequest request) {
+    // Just call the dialog - it handles everything internally including refresh
+    RequestDialogs.showRejectDialog(
+      context,
+      request.bookingId,
+      widget.ownerId,
+      onSuccess: _fetchPendingRequests,
+    );
+  }
+
+  void _handleApprove(BookingRequest request) {
+    _showApprovalFlow(request);
+  }
+
+  Future<void> _showApprovalFlow(BookingRequest request) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Approve Booking?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You are about to approve this booking:',
+              style: GoogleFonts.inter(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    request.carName,
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Renter: ${request.fullName}',
+                    style: GoogleFonts.inter(fontSize: 13),
+                  ),
+                  Text(
+                    'Amount: ₱${request.totalAmount}',
+                    style: GoogleFonts.inter(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Approve'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: Colors.black),
+                const SizedBox(height: 16),
+                Text('Approving booking...', style: GoogleFonts.inter()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
 
     try {
-      // Show loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
-      );
-
+      final url = Uri.parse(ApiConfig.approveBookingEndpoint);
       final response = await http.post(url, body: {
         "booking_id": request.bookingId,
-      });
+        "owner_id": widget.ownerId,
+      }).timeout(ApiConfig.apiTimeout);
+
+      if (!mounted) return;
 
       Navigator.pop(context); // Remove loading
 
       final data = jsonDecode(response.body);
 
-      if (data["success"]) {
+      if (data["success"] == true) {
+        if (!mounted) return;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              "Booking Approved",
-              style: GoogleFonts.inter(),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    data["message"] ?? "Booking approved successfully",
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
@@ -281,12 +472,10 @@ class PendingRequestsPage extends StatelessWidget {
           ),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (_) => PendingRequestsPage(ownerId: ownerId)),
-        );
+        _fetchPendingRequests();
       } else {
+        if (!mounted) return;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -302,7 +491,10 @@ class PendingRequestsPage extends StatelessWidget {
         );
       }
     } catch (e) {
-      Navigator.pop(context); // Remove loading if error
+      if (!mounted) return;
+      
+      Navigator.pop(context);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -59,7 +59,7 @@ class CarDetailPage extends StatelessWidget {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -89,7 +89,7 @@ class CarDetailPage extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -106,10 +106,10 @@ class CarDetailPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: StatusHelper.getStatusColor(status).withOpacity(0.1),
+        color: StatusHelper.getStatusColor(status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: StatusHelper.getStatusColor(status).withOpacity(0.3),
+          color: StatusHelper.getStatusColor(status).withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -166,7 +166,7 @@ class CarDetailPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -205,7 +205,7 @@ class CarDetailPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -295,7 +295,7 @@ class CarDetailPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -328,7 +328,7 @@ class CarDetailPage extends StatelessWidget {
           Icon(
             Icons.payments_rounded,
             size: 48,
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
           ),
         ],
       ),
@@ -423,7 +423,7 @@ class CarDetailPage extends StatelessWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -472,7 +472,7 @@ class CarDetailPage extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

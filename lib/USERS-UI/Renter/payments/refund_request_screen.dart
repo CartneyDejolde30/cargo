@@ -313,7 +313,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -328,14 +328,14 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
               Text(
                 'Refund Amount',
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 13,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -360,7 +360,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.3)),
+          Divider(color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
           _buildInfoItem('Booking', widget.bookingReference),
           const SizedBox(height: 8),
@@ -379,7 +379,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 12,
           ),
         ),
@@ -444,7 +444,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade50,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
@@ -739,7 +739,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

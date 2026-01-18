@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../pending_requests_page.dart';
 
 class RequestDialogs {
   static void showRejectDialog(
     BuildContext context,
     String bookingId,
-    String ownerId,
-  ) {
+    String ownerId, {
+    VoidCallback? onSuccess,
+  }) {
     final TextEditingController reasonController = TextEditingController();
 
     showDialog(
@@ -132,6 +132,8 @@ class RequestDialogs {
                             "reason": reasonController.text.trim(),
                           });
 
+                          if (!context.mounted) return;
+                          
                           Navigator.pop(context); // Remove loading
 
                           final data = jsonDecode(response.body);
@@ -151,12 +153,8 @@ class RequestDialogs {
                               ),
                             );
 
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      PendingRequestsPage(ownerId: ownerId)),
-                            );
+                            // Call the onSuccess callback to refresh the list
+                            onSuccess?.call();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -173,7 +171,10 @@ class RequestDialogs {
                             );
                           }
                         } catch (e) {
+                          if (!context.mounted) return;
+                          
                           Navigator.pop(context); // Remove loading
+                          
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(

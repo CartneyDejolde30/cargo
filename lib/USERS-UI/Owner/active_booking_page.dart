@@ -1,7 +1,9 @@
+// lib/USERS-UI/Owner/active_booking_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard/booking_service.dart';
+import 'mycar/api_config.dart';
 
 class ActiveBookingsPage extends StatefulWidget {
   const ActiveBookingsPage({super.key});
@@ -16,6 +18,7 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   String? _ownerId;
   bool _isLoading = true;
   List<Map<String, dynamic>> _activeBookings = [];
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -36,21 +39,42 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
         return;
       }
 
-      setState(() => _ownerId = userId);
+      setState(() {
+        _ownerId = userId;
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-      // Fetch active bookings
-      final bookings = await _bookingService.fetchActiveBookings(userId);
+      await _fetchActiveBookings();
+    } catch (e) {
+      debugPrint('❌ Error loading owner data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load data. Please try again.';
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchActiveBookings() async {
+    try {
+      final bookings = await _bookingService.fetchActiveBookings(_ownerId!);
       
       if (mounted) {
         setState(() {
           _activeBookings = bookings;
           _isLoading = false;
+          _errorMessage = null;
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading owner data: $e');
+      debugPrint('❌ Error fetching active bookings: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load active bookings. Pull to retry.';
+        });
       }
     }
   }
@@ -73,6 +97,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleRefresh() async {
+    await _fetchActiveBookings();
   }
 
   @override
@@ -124,27 +152,111 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
             ),
           ),
 
-          // Loading or Content
-          SliverToBoxAdapter(
-            child: _isLoading
-                ? Container(
-                    height: 400,
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(color: Colors.black),
-                  )
-                : _activeBookings.isEmpty
-                    ? _buildEmptyState()
-                    : _buildBookingsList(),
+          // Content with Pull-to-Refresh
+          SliverFillRemaining(
+            child: _buildContent(),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildContent() {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (_activeBookings.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - 200,
+            child: _buildEmptyState(),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: Colors.black,
+      child: _buildBookingsList(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: Colors.black),
+          const SizedBox(height: 16),
+          Text(
+            'Loading active bookings...',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              "Oops!",
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                color: Colors.black,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Something went wrong',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadOwnerIdAndFetchBookings,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
-    return Container(
-      height: 400,
-      alignment: Alignment.center,
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -172,21 +284,21 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   }
 
   Widget _buildBookingsList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          const SizedBox(height: 8),
-          ..._activeBookings.map((booking) => _buildModernBookingCard(booking)),
-          const SizedBox(height: 20),
-        ],
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: _activeBookings.length,
+      itemBuilder: (context, index) {
+        return _buildModernBookingCard(_activeBookings[index]);
+      },
     );
   }
 
   Widget _buildModernBookingCard(Map<String, dynamic> booking) {
     final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
     final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
+    
+    // Get image URL using ApiConfig
+    final imageUrl = ApiConfig.getCarImageUrl(booking['car_image']);
 
     return GestureDetector(
       onTap: () {
@@ -198,7 +310,7 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               ownerId: _ownerId!,
             ),
           ),
-        ).then((_) => _loadOwnerIdAndFetchBookings()); // Refresh on return
+        ).then((_) => _handleRefresh());
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
@@ -226,10 +338,26 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                     topRight: Radius.circular(20),
                   ),
                   child: Image.network(
-                    booking['car_image'] ?? '',
+                    imageUrl,
                     height: 220,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 220,
+                        color: Colors.grey.shade200,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.black,
+                          ),
+                        ),
+                      );
+                    },
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         height: 220,
@@ -405,12 +533,17 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: progress / 100,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
-                          minHeight: 8,
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: progress / 100,
+                            backgroundColor: Colors.grey.shade200,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              progress < 33 ? Colors.green :
+                              progress < 66 ? Colors.orange : Colors.red
+                            ),
+                            minHeight: 8,
+                          ),
                         ),
                       ],
                     ),
@@ -455,8 +588,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   }
 }
 
-// Details Page (keeping existing UI, just using real data)
-class ActiveBookingDetailsPage extends StatelessWidget {
+// ========================================
+// DETAILS PAGE
+// ========================================
+class ActiveBookingDetailsPage extends StatefulWidget {
   final Map<String, dynamic> booking;
   final String ownerId;
 
@@ -467,9 +602,117 @@ class ActiveBookingDetailsPage extends StatelessWidget {
   });
 
   @override
+  State<ActiveBookingDetailsPage> createState() => _ActiveBookingDetailsPageState();
+}
+
+class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
+  final BookingService _bookingService = BookingService();
+  bool _isEnding = false;
+
+  Future<void> _handleEndTrip() async {
+    // Show confirmation dialog first
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('End Trip?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(
+          'Are you sure you want to mark this rental as completed? This action cannot be undone.',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('End Trip'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isEnding = true);
+
+    try {
+      final result = await _bookingService.endTrip(
+        widget.booking['booking_id'].toString(),
+        widget.ownerId,
+      );
+
+      if (!mounted) return;
+
+      setState(() => _isEnding = false);
+
+      if (result['success'] == true) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result['message'] ?? 'Trip completed successfully',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+
+        // Navigate back
+        Navigator.pop(context);
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result['message'] ?? 'Failed to end trip',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() => _isEnding = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Network error. Please try again.',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
-    final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
+    final progress = double.tryParse(widget.booking['trip_progress']?.toString() ?? '0') ?? 0;
+    final daysRemaining = int.tryParse(widget.booking['days_remaining']?.toString() ?? '0') ?? 0;
+    final imageUrl = ApiConfig.getCarImageUrl(widget.booking['car_image']);
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -477,6 +720,7 @@ class ActiveBookingDetailsPage extends StatelessWidget {
         title: Text('Booking Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
         backgroundColor: Colors.white,
         elevation: 0,
+        foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -487,7 +731,7 @@ class ActiveBookingDetailsPage extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
-                booking['car_image'] ?? '',
+                imageUrl,
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -502,7 +746,7 @@ class ActiveBookingDetailsPage extends StatelessWidget {
             
             // Car Name & Price
             Text(
-              booking['car_full_name'] ?? 'Car',
+              widget.booking['car_full_name'] ?? 'Car',
               style: GoogleFonts.outfit(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -510,7 +754,7 @@ class ActiveBookingDetailsPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '₱${booking['total_amount']} Total',
+              '₱${widget.booking['total_amount']} Total',
               style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -548,19 +792,24 @@ class ActiveBookingDetailsPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  LinearProgressIndicator(
-                    value: progress / 100,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
-                    minHeight: 10,
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress / 100,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        progress < 33 ? Colors.green :
+                        progress < 66 ? Colors.orange : Colors.red
+                      ),
+                      minHeight: 10,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStat('Days Left', '$daysRemaining'),
-                      _buildStat('Total Days', booking['rental_period'] ?? ''),
+                      _buildStat('Total Days', widget.booking['rental_period'] ?? ''),
                     ],
                   ),
                 ],
@@ -570,17 +819,17 @@ class ActiveBookingDetailsPage extends StatelessWidget {
             
             // Renter Info
             _buildSection('Renter Information', [
-              _buildDetailRow('Name', booking['renter_name'] ?? ''),
-              _buildDetailRow('Contact', booking['renter_contact'] ?? ''),
-              _buildDetailRow('Email', booking['renter_email'] ?? ''),
+              _buildDetailRow('Name', widget.booking['renter_name'] ?? ''),
+              _buildDetailRow('Contact', widget.booking['renter_contact'] ?? ''),
+              _buildDetailRow('Email', widget.booking['renter_email'] ?? ''),
             ]),
             const SizedBox(height: 20),
             
             // Trip Details
             _buildSection('Trip Details', [
-              _buildDetailRow('Start', booking['pickup_date'] ?? ''),
-              _buildDetailRow('End', booking['return_date'] ?? ''),
-              _buildDetailRow('Location', booking['location'] ?? ''),
+              _buildDetailRow('Start', widget.booking['pickup_date'] ?? ''),
+              _buildDetailRow('End', widget.booking['return_date'] ?? ''),
+              _buildDetailRow('Location', widget.booking['location'] ?? ''),
             ]),
             const SizedBox(height: 30),
             
@@ -588,22 +837,32 @@ class ActiveBookingDetailsPage extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _showEndTripDialog(context),
+                onPressed: _isEnding ? null : _handleEndTrip,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade600,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  'End Trip',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isEnding
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'End Trip',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -679,34 +938,6 @@ class ActiveBookingDetailsPage extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEndTripDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('End Trip?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text(
-          'Mark this rental as completed?',
-          style: GoogleFonts.inter(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Call end_trip.php API
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('End Trip'),
           ),
         ],
       ),

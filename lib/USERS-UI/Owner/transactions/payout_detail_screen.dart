@@ -72,7 +72,7 @@ class PayoutDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: (isCompleted ? Colors.green : Colors.blue).withOpacity(0.3),
+            color: (isCompleted ? Colors.green : Colors.blue).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -87,14 +87,14 @@ class PayoutDetailScreen extends StatelessWidget {
               Text(
                 'Your Earnings',
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 13,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -119,7 +119,7 @@ class PayoutDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.3)),
+          Divider(color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
           _buildInfoItem(
             'Booking', 
@@ -139,7 +139,7 @@ class PayoutDetailScreen extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 12,
           ),
         ),
@@ -392,7 +392,7 @@ class PayoutDetailScreen extends StatelessWidget {
                   child: Container(
                     width: 2,
                     margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: isCompleted ? color.withOpacity(0.3) : Colors.grey.shade300,
+                    color: isCompleted ? color.withValues(alpha: 0.3) : Colors.grey.shade300,
                   ),
                 ),
             ],
@@ -461,7 +461,7 @@ class PayoutDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

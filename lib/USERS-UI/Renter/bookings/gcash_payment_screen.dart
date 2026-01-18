@@ -444,7 +444,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           if (_paymentIntentStatus != null && _paymentIntentStatus != 'succeeded')
             Container(
               padding: const EdgeInsets.all(12),
-              color: _getStatusColor(_paymentIntentStatus!).withOpacity(0.1),
+              color: _getStatusColor(_paymentIntentStatus!).withValues(alpha: 0.1),
               child: Row(
                 children: [
                   Icon(
@@ -574,7 +574,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -606,7 +606,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
                     Text(
                       'Tap to view and scan GCash QR',
                       style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
                       ),
                     ),
@@ -632,7 +632,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF007DFF).withOpacity(0.3),
+            color: const Color(0xFF007DFF).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -658,7 +658,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
               Text(
                 'Total Amount',
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -679,7 +679,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           Text(
             'Philippine Peso',
             style: GoogleFonts.poppins(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
             ),
           ),
@@ -980,7 +980,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1001,8 +1001,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             boxShadow: [
               BoxShadow(
                 color: (isProcessing || !hasAgreedToTerms)
-                    ? Colors.grey.withOpacity(0.3)
-                    : const Color(0xFF1a73e8).withOpacity(0.4),
+                    ? Colors.grey.withValues(alpha: 0.3)
+                    : const Color(0xFF1a73e8).withValues(alpha: 0.4),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),

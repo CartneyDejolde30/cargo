@@ -74,8 +74,8 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.95),
-              Colors.grey.shade900.withOpacity(0.95),
+              Colors.black.withValues(alpha: 0.95),
+              Colors.grey.shade900.withValues(alpha: 0.95),
             ],
           ),
         ),
@@ -126,12 +126,12 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.4),
+                        color: Colors.blue.withValues(alpha: 0.4),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),
@@ -173,7 +173,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -249,7 +249,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.4),
+                  color: color.withValues(alpha: 0.4),
                   blurRadius: 15,
                   spreadRadius: 2,
                 ),

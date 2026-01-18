@@ -187,12 +187,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           width: 3,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Colors.blue.withValues(alpha: 0.3),
                             blurRadius: 30,
                             spreadRadius: 5,
                           ),

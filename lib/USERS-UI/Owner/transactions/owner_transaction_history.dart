@@ -227,7 +227,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -258,7 +258,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
               ),
               Expanded(
@@ -275,7 +275,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -304,7 +304,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
               label,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -334,9 +334,9 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.5)),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Text(
             displayText,
@@ -352,7 +352,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
           label,
           style: GoogleFonts.poppins(
             fontSize: 10,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -430,12 +430,12 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getStatusColor(statusBadge).withOpacity(0.2),
+          color: _getStatusColor(statusBadge).withValues(alpha: 0.2),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -457,7 +457,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _getStatusColor(statusBadge).withOpacity(0.1),
+                color: _getStatusColor(statusBadge).withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -468,7 +468,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(statusBadge).withOpacity(0.2),
+                      color: _getStatusColor(statusBadge).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
