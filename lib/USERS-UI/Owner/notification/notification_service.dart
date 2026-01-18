@@ -11,6 +11,9 @@ class NotificationService {
       final url = Uri.parse("${ApiConstants.baseUrl}get_notification.php?user_id=$userId");
       final response = await http.get(url).timeout(ApiConstants.apiTimeout);
 
+      debugPrint("📡 Fetching notifications: $url");
+      debugPrint("📥 Response status: ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
@@ -19,6 +22,8 @@ class NotificationService {
               .map((json) => NotificationModel.fromJson(json))
               .toList();
         }
+      } else {
+        debugPrint("❌ HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("❌ Error fetching notifications: $e");
@@ -54,10 +59,14 @@ class NotificationService {
   /* ---------------- MARK NOTIFICATION AS READ ---------------- */
   Future<bool> markAsRead(String notificationId) async {
     try {
+      final url = Uri.parse("${ApiConstants.baseUrl}api/mark_notification_read.php");
       final response = await http.post(
-        Uri.parse("${ApiConstants.baseUrl}api/mark_notification_read.php"),
+        url,
         body: {'notification_id': notificationId},
       ).timeout(ApiConstants.apiTimeout);
+
+      debugPrint("📡 Mark as read: $url");
+      debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -73,13 +82,19 @@ class NotificationService {
   /* ---------------- MARK ALL AS READ ---------------- */
   Future<bool> markAllAsRead(int userId) async {
     try {
+      final url = Uri.parse("${ApiConstants.baseUrl}update_all.php");
       final response = await http.post(
-        Uri.parse("${ApiConstants.baseUrl}update_all.php"),
+        url,
         body: {'user_id': userId.toString()},
       ).timeout(ApiConstants.apiTimeout);
 
+      debugPrint("📡 Mark all as read: $url");
+      debugPrint("📥 Response status: ${response.statusCode}");
+      debugPrint("📥 Response body: ${response.body}");
+
       if (response.statusCode == 200) {
-        return true;
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
       }
     } catch (e) {
       debugPrint("❌ Error marking all as read: $e");
@@ -91,13 +106,18 @@ class NotificationService {
   /* ---------------- ARCHIVE NOTIFICATION ---------------- */
   Future<bool> archiveNotification(int notificationId) async {
     try {
+      final url = Uri.parse("${ApiConstants.baseUrl}archive_notification.php");
       final response = await http.post(
-        Uri.parse("${ApiConstants.baseUrl}archive_notification.php"),
+        url,
         body: {'id': notificationId.toString()},
       ).timeout(ApiConstants.apiTimeout);
 
+      debugPrint("📡 Archive notification: $url");
+      debugPrint("📥 Response: ${response.body}");
+
       if (response.statusCode == 200) {
-        return true;
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
       }
     } catch (e) {
       debugPrint("❌ Error archiving notification: $e");

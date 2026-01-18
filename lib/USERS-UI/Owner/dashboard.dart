@@ -207,33 +207,32 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   }
 
   Widget _buildQuickStatsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 1.2,
-        children: [
-          StatCard(
-            title: "Total Cars",
-            value: "${stats.totalCars}",
-            icon: Icons.directions_car_outlined,
-            subtitle: "${stats.approvedCars} active",
-          ),
-          StatCard(
-            title: "Total Income",
-            value: _formatCurrency(stats.totalIncome),
-            icon: Icons.account_balance_wallet_outlined,
-            iconBackgroundColor: Colors.purple.shade50,
-          ),
-        ],
-      ),
-    );
-  }
-
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24),
+    child: GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 14,
+      mainAxisSpacing: 14,
+      childAspectRatio: 1.52, // Fine-tuned to eliminate sub-pixel overflow
+      children: [
+        StatCard(
+          title: "Total Cars",
+          value: "${stats.totalCars}",
+          icon: Icons.directions_car_outlined,
+          subtitle: "${stats.approvedCars} active",
+        ),
+        StatCard(
+          title: "Total Income",
+          value: _formatCurrency(stats.totalIncome),
+          icon: Icons.account_balance_wallet_outlined,
+          iconBackgroundColor: Colors.purple.shade50,
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildQuickActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),

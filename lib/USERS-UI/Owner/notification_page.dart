@@ -129,7 +129,7 @@ class _NotificationPageState extends State<NotificationPage>
   /* ---------------- VIBRATE ---------------- */
   void _vibrate() async {
     try {
-      if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasVibrator() == true) { // FIXED: Changed from ?? false to == true
         Vibration.vibrate(duration: 80);
       }
     } catch (e) {
