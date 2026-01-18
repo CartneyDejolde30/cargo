@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
-
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -61,16 +61,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   ImageProvider? _getProfileImage() {
-  if (profileImage.isNotEmpty &&
-      profileImage != "null" &&
-      profileImage != "NULL" &&
-      profileImage != "None" &&
-      profileImage.startsWith("http")) {
-    return NetworkImage(profileImage);
+    if (profileImage.isNotEmpty &&
+        profileImage != "null" &&
+        profileImage != "NULL" &&
+        profileImage != "None" &&
+        profileImage.startsWith("http")) {
+      return NetworkImage(profileImage);
+    }
+    return null;
   }
-  return null;
-}
-
 
   Future<void> logout() async {
     final confirm = await showDialog<bool>(
@@ -475,6 +474,32 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                          );
+                        },
+                      ),
+                    ]),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Payment & Transactions',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuCard([
+                      _MenuItemData(
+                        icon: Icons.receipt_long_rounded,
+                        title: "Transaction History",
+                        subtitle: "View all your payment transactions",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const OwnerTransactionHistoryScreen()),
                           );
                         },
                       ),

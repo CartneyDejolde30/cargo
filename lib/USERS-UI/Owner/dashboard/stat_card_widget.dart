@@ -38,6 +38,7 @@ class StatCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // ✅ PREVENTS OVERFLOW
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -51,24 +52,27 @@ class StatCard extends StatelessWidget {
                   child: Icon(icon, size: 24, color: Colors.black),
                 ),
                 if (subtitle != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      subtitle!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                  Flexible( // ✅ PREVENTS SUBTITLE OVERFLOW
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 8), // ✅ FIXED SPACING
             Text(
               title,
               style: TextStyle(
@@ -76,6 +80,8 @@ class StatCard extends StatelessWidget {
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -85,6 +91,8 @@ class StatCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 letterSpacing: -0.5,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

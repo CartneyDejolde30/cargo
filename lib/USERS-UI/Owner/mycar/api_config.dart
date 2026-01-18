@@ -1,9 +1,11 @@
 // lib/USERS-UI/Owner/mycar/api_config.dart
 class ApiConfig {
   // ========================================
-  // CHANGE THIS TO YOUR SERVER IP/DOMAIN
+  // ⚠️ CHANGE THIS TO YOUR COMPUTER'S IP!
+  // Run 'ipconfig' in Command Prompt to find it
+  // Example: 192.168.1.100
   // ========================================
-  static const String _baseIP = '10.244.29.49'; // Change this to your server IP
+  static const String _baseIP = '192.168.137.1'; // ← PUT YOUR IP HERE!
   static const String _basePath = 'carGOAdmin';
   
   // Base URLs
