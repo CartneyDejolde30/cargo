@@ -41,7 +41,7 @@ Future<void> saveFcmToken() async {
 
   if (userId == null) return;
 
-  final url = Uri.parse("http://192.168.137.1/carGOAdmin/api/save_fcm_token.php");
+  final url = Uri.parse("http://10.139.150.2/carGOAdmin/api/save_fcm_token.php");
 
   await http.post(url, body: {
     "user_id": userId,
@@ -72,7 +72,7 @@ void initState() {
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
 
     final cleanPath = path.replaceFirst("uploads/", "");
-    return "http://192.168.137.1/carGOAdmin/uploads/$cleanPath";
+    return "http://10.139.150.2/carGOAdmin/uploads/$cleanPath";
   }
 
   /// Async resolver that checks whether an image URL exists (via HEAD).
@@ -88,7 +88,7 @@ void initState() {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = "http://192.168.137.1/carGOAdmin/uploads/$clean";
+      candidate = "http://10.139.150.2/carGOAdmin/uploads/$clean";
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -109,7 +109,7 @@ void initState() {
 
 
   Future<void> fetchCars() async {
-    final String apiUrl = "http://192.168.137.1/carGOAdmin/api/get_cars.php";
+    final String apiUrl = "http://10.139.150.2/carGOAdmin/api/get_cars.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
