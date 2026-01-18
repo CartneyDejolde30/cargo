@@ -31,7 +31,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   int totalReviews = 0;
   double averageRating = 0.0;
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
 
   @override
   void initState() {
@@ -558,7 +558,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.3),
+                          color: Colors.blue.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),

@@ -5,8 +5,8 @@ import '../req_model/booking_request.dart';
 class PendingRequestCard extends StatelessWidget {
   final BookingRequest request;
   final String ownerId;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
+  final VoidCallback onApprove;  // Keep as VoidCallback
+  final VoidCallback onReject;   // Keep as VoidCallback
   final VoidCallback onTap;
 
   const PendingRequestCard({
@@ -30,7 +30,7 @@ class PendingRequestCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -83,7 +83,7 @@ class PendingRequestCard extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.1),
+                      Colors.black.withValues(alpha: 0.1),
                     ],
                   ),
                 ),
@@ -101,7 +101,7 @@ class PendingRequestCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withOpacity(0.3),
+                  color: Colors.orange.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -145,7 +145,7 @@ class PendingRequestCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -257,7 +257,7 @@ class PendingRequestCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -294,7 +294,7 @@ class PendingRequestCard extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

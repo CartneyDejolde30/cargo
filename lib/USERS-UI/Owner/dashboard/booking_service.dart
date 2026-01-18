@@ -1,16 +1,19 @@
+// lib/USERS-UI/Owner/dashboard/booking_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import '../mycar/api_config.dart';
 import './booking_model.dart';
 
 class BookingService {
-  static const String baseUrl = 'http://10.139.150.2/carGOAdmin/';
-  
   /* ---------------- FETCH RECENT BOOKINGS ---------------- */
   Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async {
     try {
-      final url = Uri.parse("${baseUrl}api/dashboard/recent_bookings.php?owner_id=$ownerId&limit=$limit");
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.parse("${ApiConfig.recentBookingsEndpoint}?owner_id=$ownerId&limit=$limit");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 Recent Bookings API: $url");
+      debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -23,6 +26,7 @@ class BookingService {
       }
     } catch (e) {
       debugPrint("❌ Error fetching recent bookings: $e");
+      rethrow;
     }
 
     return [];
@@ -31,8 +35,11 @@ class BookingService {
   /* ---------------- FETCH UPCOMING BOOKINGS ---------------- */
   Future<List<Booking>> fetchUpcomingBookings(String ownerId) async {
     try {
-      final url = Uri.parse("${baseUrl}api/dashboard/upcoming_bookings.php?owner_id=$ownerId");
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.parse("${ApiConfig.upcomingBookingsEndpoint}?owner_id=$ownerId");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 Upcoming Bookings API: $url");
+      debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -45,6 +52,7 @@ class BookingService {
       }
     } catch (e) {
       debugPrint("❌ Error fetching upcoming bookings: $e");
+      rethrow;
     }
 
     return [];
@@ -53,8 +61,8 @@ class BookingService {
   /* ---------------- FETCH PENDING REQUESTS ---------------- */
   Future<List<Map<String, dynamic>>> fetchPendingRequests(String ownerId) async {
     try {
-      final url = Uri.parse("${baseUrl}api/get_owner_pending_requests.php?owner_id=$ownerId");
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.parse("${ApiConfig.pendingRequestsEndpoint}?owner_id=$ownerId");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
       debugPrint("📡 Pending Requests API: $url");
       debugPrint("📥 Response: ${response.body}");
@@ -64,10 +72,15 @@ class BookingService {
         
         if (data['success'] == true && data['requests'] is List) {
           return List<Map<String, dynamic>>.from(data['requests']);
+        } else {
+          debugPrint("⚠️ API returned success=false: ${data['message']}");
         }
+      } else {
+        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("❌ Error fetching pending requests: $e");
+      rethrow;
     }
 
     return [];
@@ -76,8 +89,8 @@ class BookingService {
   /* ---------------- FETCH ACTIVE BOOKINGS ---------------- */
   Future<List<Map<String, dynamic>>> fetchActiveBookings(String ownerId) async {
     try {
-      final url = Uri.parse("${baseUrl}api/get_owner_active_bookings.php?owner_id=$ownerId");
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.parse("${ApiConfig.activeBookingsEndpoint}?owner_id=$ownerId");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
       debugPrint("📡 Active Bookings API: $url");
       debugPrint("📥 Response: ${response.body}");
@@ -87,10 +100,15 @@ class BookingService {
         
         if (data['success'] == true && data['bookings'] is List) {
           return List<Map<String, dynamic>>.from(data['bookings']);
+        } else {
+          debugPrint("⚠️ API returned success=false: ${data['message']}");
         }
+      } else {
+        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("❌ Error fetching active bookings: $e");
+      rethrow;
     }
 
     return [];
@@ -99,14 +117,14 @@ class BookingService {
   /* ---------------- APPROVE BOOKING ---------------- */
   Future<Map<String, dynamic>> approveBooking(String bookingId, String ownerId) async {
     try {
-      final url = Uri.parse("${baseUrl}api/approve_booking.php");
+      final url = Uri.parse(ApiConfig.approveBookingEndpoint);
       final response = await http.post(
         url,
         body: {
           'booking_id': bookingId,
           'owner_id': ownerId,
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.apiTimeout);
 
       debugPrint("📡 Approve Booking API: $url");
       debugPrint("📤 Body: booking_id=$bookingId, owner_id=$ownerId");
@@ -114,12 +132,16 @@ class BookingService {
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}'
+        };
       }
     } catch (e) {
       debugPrint("❌ Error approving booking: $e");
+      return {'success': false, 'message': 'Network error: $e'};
     }
-
-    return {'success': false, 'message': 'Network error'};
   }
 
   /* ---------------- REJECT BOOKING ---------------- */
@@ -129,7 +151,7 @@ class BookingService {
     String reason
   ) async {
     try {
-      final url = Uri.parse("${baseUrl}api/reject_booking.php");
+      final url = Uri.parse(ApiConfig.rejectBookingEndpoint);
       final response = await http.post(
         url,
         body: {
@@ -137,40 +159,51 @@ class BookingService {
           'owner_id': ownerId,
           'reason': reason,
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.apiTimeout);
 
       debugPrint("📡 Reject Booking API: $url");
       debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}'
+        };
       }
     } catch (e) {
       debugPrint("❌ Error rejecting booking: $e");
+      return {'success': false, 'message': 'Network error: $e'};
     }
-
-    return {'success': false, 'message': 'Network error'};
   }
 
   /* ---------------- END TRIP/MARK AS COMPLETED ---------------- */
   Future<Map<String, dynamic>> endTrip(String bookingId, String ownerId) async {
     try {
-      final url = Uri.parse("${baseUrl}api/end_trip.php");
+      final url = Uri.parse(ApiConfig.endTripEndpoint);
       final response = await http.post(
         url,
         body: {
           'booking_id': bookingId,
           'owner_id': ownerId,
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 End Trip API: $url");
+      debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}'
+        };
       }
     } catch (e) {
       debugPrint("❌ Error ending trip: $e");
+      return {'success': false, 'message': 'Network error: $e'};
     }
-
-    return {'success': false, 'message': 'Network error'};
   }
 }

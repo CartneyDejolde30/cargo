@@ -29,7 +29,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isLoadingPayment = true;
   Map<String, dynamic>? _paymentData;
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
 
   @override
   void initState() {

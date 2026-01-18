@@ -74,10 +74,10 @@ class PaymentStatusTracker extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: statusInfo['color'].withOpacity(0.1),
+        color: statusInfo['color'].withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: statusInfo['color'].withOpacity(0.3),
+          color: statusInfo['color'].withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -89,7 +89,7 @@ class PaymentStatusTracker extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusInfo['color'].withOpacity(0.2),
+                  color: statusInfo['color'].withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -175,13 +175,13 @@ class PaymentStatusTracker extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [statusInfo['color'].withOpacity(0.1), Colors.white],
+          colors: [statusInfo['color'].withValues(alpha: 0.1), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: statusInfo['color'].withOpacity(0.3),
+          color: statusInfo['color'].withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -335,7 +335,7 @@ class PaymentStatusTracker extends StatelessWidget {
                   child: Container(
                     width: 2,
                     margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: isCompleted ? color.withOpacity(0.3) : Colors.grey.shade300,
+                    color: isCompleted ? color.withValues(alpha: 0.3) : Colors.grey.shade300,
                   ),
                 ),
             ],

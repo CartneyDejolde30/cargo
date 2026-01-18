@@ -21,7 +21,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      var url = Uri.parse("http://10.139.150.2/carGOAdmin/register.php"); 
+      var url = Uri.parse("http://192.168.137.1/carGOAdmin/register.php"); 
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},

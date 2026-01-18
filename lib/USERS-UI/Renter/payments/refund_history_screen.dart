@@ -4,19 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'receipt_viewer_screen.dart';
-import 'refund_request_screen.dart';
 
-class PaymentHistoryScreen extends StatefulWidget {
-  const PaymentHistoryScreen({super.key});
+class RefundHistoryScreen extends StatefulWidget {
+  const RefundHistoryScreen({super.key});
 
   @override
-  State<PaymentHistoryScreen> createState() => _PaymentHistoryScreenState();
+  State<RefundHistoryScreen> createState() => _RefundHistoryScreenState();
 }
 
-class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
+class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
   bool _isLoading = true;
-  List<Map<String, dynamic>> _payments = [];
+  List<Map<String, dynamic>> _refunds = [];
   Map<String, dynamic>? _statistics;
   String? _userId;
   String _filterStatus = 'all';
@@ -26,27 +24,27 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserIdAndPayments();
+    _loadUserIdAndRefunds();
   }
 
-  Future<void> _loadUserIdAndPayments() async {
+  Future<void> _loadUserIdAndRefunds() async {
     final prefs = await SharedPreferences.getInstance();
     _userId = prefs.getString('user_id');
 
     if (_userId == null) {
       setState(() => _isLoading = false);
-      _showError('Please login to view payment history');
+      _showError('Please login to view refund history');
       return;
     }
 
-    await _fetchPaymentHistory();
+    await _fetchRefundHistory();
   }
 
-  Future<void> _fetchPaymentHistory() async {
+  Future<void> _fetchRefundHistory() async {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse("${baseUrl}api/get_user_payment_history.php?user_id=$_userId");
+      final url = Uri.parse("${baseUrl}api/refund/get_refund_history.php?user_id=$_userId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -54,12 +52,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
         if (result['success'] == true) {
           setState(() {
-            _payments = List<Map<String, dynamic>>.from(result['payments']);
+            _refunds = List<Map<String, dynamic>>.from(result['refunds']);
             _statistics = result['statistics'];
             _isLoading = false;
           });
         } else {
-          _showError(result['message'] ?? 'Failed to load payments');
+          _showError(result['message'] ?? 'Failed to load refunds');
           setState(() => _isLoading = false);
         }
       } else {
@@ -72,28 +70,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     }
   }
 
-  List<Map<String, dynamic>> get _filteredPayments {
-    if (_filterStatus == 'all') return _payments;
-    
-    return _payments.where((p) {
-      final paymentStatus = p['payment_status']?.toString().toLowerCase() ?? '';
-      final escrowStatus = p['escrow_status']?.toString().toLowerCase() ?? '';
-      
-      switch (_filterStatus) {
-        case 'verified':
-          return paymentStatus == 'verified' || escrowStatus == 'held';
-        case 'pending':
-          return paymentStatus == 'pending';
-        case 'completed':
-          return escrowStatus == 'released_to_owner';
-        case 'rejected':
-          return paymentStatus == 'rejected' || paymentStatus == 'failed';
-        case 'refunded':
-          return escrowStatus == 'refunded';
-        default:
-          return true;
-      }
-    }).toList();
+  List<Map<String, dynamic>> get _filteredRefunds {
+    if (_filterStatus == 'all') return _refunds;
+    return _refunds.where((r) => r['status'] == _filterStatus).toList();
   }
 
   void _showError(String message) {
@@ -106,35 +85,36 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     );
   }
 
-  Color _getStatusColor(Map<String, dynamic> statusBadge) {
-    switch (statusBadge['color']?.toString().toLowerCase()) {
-      case 'green':
-        return Colors.green;
-      case 'blue':
-        return Colors.blue;
-      case 'orange':
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
         return Colors.orange;
-      case 'red':
+      case 'approved':
+      case 'processing':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      case 'rejected':
+      case 'cancelled':
         return Colors.red;
-      case 'purple':
-        return Colors.purple;
       default:
         return Colors.grey;
     }
   }
 
-  IconData _getStatusIcon(Map<String, dynamic> statusBadge) {
-    switch (statusBadge['icon']?.toString()) {
-      case 'check_circle':
-        return Icons.check_circle;
-      case 'lock':
-        return Icons.lock;
-      case 'schedule':
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
         return Icons.schedule;
-      case 'cancel':
+      case 'approved':
+        return Icons.check_circle;
+      case 'processing':
+        return Icons.sync;
+      case 'completed':
+        return Icons.check_circle_outline;
+      case 'rejected':
+      case 'cancelled':
         return Icons.cancel;
-      case 'undo':
-        return Icons.undo;
       default:
         return Icons.info;
     }
@@ -158,7 +138,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'Payment History',
+        'Refund History',
         style: GoogleFonts.poppins(
           color: Colors.black,
           fontSize: 18,
@@ -177,7 +157,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           CircularProgressIndicator(color: Colors.black),
           const SizedBox(height: 16),
           Text(
-            'Loading payments...',
+            'Loading refunds...',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey.shade600,
@@ -194,15 +174,15 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         if (_statistics != null) _buildStatisticsCard(),
         _buildFilterChips(),
         Expanded(
-          child: _filteredPayments.isEmpty
+          child: _filteredRefunds.isEmpty
               ? _buildEmptyState()
               : RefreshIndicator(
-                  onRefresh: _fetchPaymentHistory,
+                  onRefresh: _fetchRefundHistory,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(20),
-                    itemCount: _filteredPayments.length,
+                    itemCount: _filteredRefunds.length,
                     itemBuilder: (context, index) {
-                      return _buildPaymentCard(_filteredPayments[index]);
+                      return _buildRefundCard(_filteredRefunds[index]);
                     },
                   ),
                 ),
@@ -212,9 +192,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   Widget _buildStatisticsCard() {
-    final totalPaid = double.tryParse(_statistics!['total_paid']?.toString() ?? '0') ?? 0;
-    final totalPending = double.tryParse(_statistics!['total_pending']?.toString() ?? '0') ?? 0;
-    final verifiedCount = int.tryParse(_statistics!['verified_count']?.toString() ?? '0') ?? 0;
+    final totalRefunded = double.tryParse(_statistics!['total_refunded']?.toString() ?? '0') ?? 0;
+    final completedCount = int.tryParse(_statistics!['completed_count']?.toString() ?? '0') ?? 0;
     final pendingCount = int.tryParse(_statistics!['pending_count']?.toString() ?? '0') ?? 0;
 
     return Container(
@@ -222,14 +201,14 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.black, Colors.grey.shade800],
+          colors: [Colors.purple.shade700, Colors.purple.shade900],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.purple.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -239,7 +218,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Payment Overview',
+            'Refund Summary',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -251,9 +230,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             children: [
               Expanded(
                 child: _buildStatItem(
-                  'Total Paid',
-                  _formatCurrency(totalPaid),
-                  Icons.payments,
+                  'Total Refunded',
+                  _formatCurrency(totalRefunded),
+                  Icons.undo,
                   Colors.green,
                 ),
               ),
@@ -266,7 +245,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               Expanded(
                 child: _buildStatItem(
                   'Pending',
-                  _formatCurrency(totalPending),
+                  pendingCount.toString(),
                   Icons.pending,
                   Colors.orange,
                 ),
@@ -275,10 +254,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildCountBadge('Verified', verifiedCount, Colors.green),
-              _buildCountBadge('Pending', pendingCount, Colors.orange),
+              _buildCountBadge('Completed', completedCount, Colors.green),
             ],
           ),
         ],
@@ -358,15 +336,13 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           children: [
             _buildFilterChip('all', 'All', Icons.list),
             const SizedBox(width: 8),
-            _buildFilterChip('verified', 'Paid', Icons.check_circle),
-            const SizedBox(width: 8),
             _buildFilterChip('pending', 'Pending', Icons.schedule),
+            const SizedBox(width: 8),
+            _buildFilterChip('approved', 'Approved', Icons.check_circle),
             const SizedBox(width: 8),
             _buildFilterChip('completed', 'Completed', Icons.done_all),
             const SizedBox(width: 8),
-            _buildFilterChip('rejected', 'Failed', Icons.cancel),
-            const SizedBox(width: 8),
-            _buildFilterChip('refunded', 'Refunded', Icons.undo),
+            _buildFilterChip('rejected', 'Rejected', Icons.cancel),
           ],
         ),
       ),
@@ -408,12 +384,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     );
   }
 
-  Widget _buildPaymentCard(Map<String, dynamic> payment) {
-    final statusBadge = payment['status_badge'] as Map<String, dynamic>? ?? {};
-    final bookingId = payment['booking_id'] ?? 0;
-    final amount = double.tryParse(payment['amount'].toString()) ?? 0;
-    final hasReceipt = payment['has_receipt'] == true || payment['has_receipt'] == 1;
-    final canRefund = payment['can_request_refund'] == true || payment['can_request_refund'] == 1;
+  Widget _buildRefundCard(Map<String, dynamic> refund) {
+    final status = refund['status'] ?? 'pending';
+    final statusColor = _getStatusColor(status);
+    final statusIcon = _getStatusIcon(status);
+    final amount = double.tryParse(refund['final_refund_amount'].toString()) ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -421,7 +396,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getStatusColor(statusBadge).withValues(alpha: 0.2),
+          color: statusColor.withValues(alpha: 0.2),
           width: 2,
         ),
         boxShadow: [
@@ -434,11 +409,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       ),
       child: Column(
         children: [
-          // Header with status
+          // Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _getStatusColor(statusBadge).withValues(alpha: 0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -449,14 +424,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(statusBadge).withValues(alpha: 0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    _getStatusIcon(statusBadge),
-                    color: _getStatusColor(statusBadge),
-                    size: 24,
-                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -464,16 +435,15 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        statusBadge['label']?.toString() ?? 'UNKNOWN',
+                        status.toUpperCase(),
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: _getStatusColor(statusBadge),
+                          color: statusColor,
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        'Booking #$bookingId',
+                        refund['refund_id'] ?? 'N/A',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -494,114 +464,88 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             ),
           ),
 
-          // Car Details
+          // Content
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    payment['car_image'] ?? '',
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey.shade200,
-                      child: Icon(Icons.directions_car, color: Colors.grey.shade400),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        payment['car_full_name'] ?? 'N/A',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        payment['payment_date_formatted'] ?? '',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        refund['car_image'] ?? '',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey.shade200,
+                          child: Icon(Icons.directions_car, color: Colors.grey.shade400),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            refund['car_full_name'] ?? 'N/A',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            refund['booking_reference'] ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            refund['created_at_formatted'] ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-
-          // Divider
-          Divider(height: 1, color: Colors.grey.shade200),
-
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                if (hasReceipt)
-                  Expanded(
-                    child: _buildActionButton(
-                      'View Receipt',
-                      Icons.receipt_long,
-                      Colors.black,
-                      () => _viewReceipt(bookingId),
+                if (refund['deduction_amount'] != null && refund['deduction_amount'] > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Deduction: ${_formatCurrency(double.parse(refund['deduction_amount'].toString()))}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                if (hasReceipt && canRefund) const SizedBox(width: 8),
-                if (canRefund)
-                  Expanded(
-                    child: _buildActionButton(
-                      'Request Refund',
-                      Icons.undo,
-                      Colors.red.shade600,
-                      () => _requestRefund(payment),
-                    ),
-                  ),
+                ],
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 16),
-      label: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        elevation: 0,
       ),
     );
   }
@@ -611,10 +555,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.payment, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.undo, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            'No payments found',
+            'No refunds found',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -624,8 +568,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             _filterStatus == 'all'
-                ? 'Your payment history will appear here'
-                : 'No ${_filterStatus} payments',
+                ? 'Your refund requests will appear here'
+                : 'No ${_filterStatus} refunds',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -634,35 +578,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         ],
       ),
     );
-  }
-
-  void _viewReceipt(int bookingId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ReceiptViewerScreen(bookingId: bookingId),
-      ),
-    );
-  }
-
-  void _requestRefund(Map<String, dynamic> payment) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RefundRequestScreen(
-          bookingId: payment['booking_id'],
-          bookingReference: '#BK-${payment['booking_id']}',
-          totalAmount: double.tryParse(payment['amount'].toString()) ?? 0,
-          cancellationDate: payment['payment_date'] ?? DateTime.now().toString(),
-          paymentMethod: payment['payment_method'] ?? 'N/A',
-          paymentReference: payment['payment_reference'] ?? 'N/A',
-        ),
-      ),
-    ).then((result) {
-      if (result == true) {
-        _fetchPaymentHistory();
-      }
-    });
   }
 
   String _formatCurrency(double amount) {

@@ -22,7 +22,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   Map<String, dynamic>? _receiptData;
   String? _error;
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
 
   @override
   void initState() {
@@ -364,7 +364,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

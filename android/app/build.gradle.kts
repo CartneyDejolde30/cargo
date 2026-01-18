@@ -21,7 +21,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.flutter_application_1"
-        minSdk = flutter.minSdkVersion
+        // ✅ FIX: Increase minSdk to 24 (was causing geocoding issues)
+        minSdk = 24  // Changed from flutter.minSdkVersion
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -53,7 +54,7 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     
-    // ✅ NEW: Facebook SDK
+    // ✅ Facebook SDK (already present)
     implementation("com.facebook.android:facebook-android-sdk:17.0.2")
     
     // MultiDex

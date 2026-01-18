@@ -48,7 +48,7 @@ class _MotorcycleDetailScreenState
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -267,7 +267,7 @@ final deliveryTypes = motorcycleData?["delivery_types"] != null
     ? List<String>.from(motorcycleData!["delivery_types"])
     : <String>[];
 
-final extraImages = motorcycleData?["extra_images"] != null
+final extraImages = motorcycleData?["extra_imaRges"] != null
     ? List<String>.from(motorcycleData!["extra_images"])
     : <String>[];
 

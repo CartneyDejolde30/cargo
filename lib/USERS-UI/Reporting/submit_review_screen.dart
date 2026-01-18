@@ -33,7 +33,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   final TextEditingController _ownerReviewController = TextEditingController();
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
 
   // Review categories for cars
   Map<String, double> carCategories = {
@@ -362,9 +362,9 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _getRatingColor(avgCarRating).withOpacity(0.1),
+                      color: _getRatingColor(avgCarRating).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _getRatingColor(avgCarRating).withOpacity(0.3)),
+                      border: Border.all(color: _getRatingColor(avgCarRating).withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -559,9 +559,9 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _getRatingColor(avgOwnerRating).withOpacity(0.1),
+                      color: _getRatingColor(avgOwnerRating).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _getRatingColor(avgOwnerRating).withOpacity(0.3)),
+                      border: Border.all(color: _getRatingColor(avgOwnerRating).withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -758,7 +758,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: rating > 0 ? Colors.amber.withOpacity(0.3) : Colors.grey.shade200,
+          color: rating > 0 ? Colors.amber.withValues(alpha: 0.3) : Colors.grey.shade200,
           width: rating > 0 ? 2 : 1,
         ),
       ),
