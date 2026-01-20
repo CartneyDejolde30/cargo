@@ -34,8 +34,21 @@ class _ReportScreenState extends State<ReportScreen> {
   final _formKey = GlobalKey<FormState>();
   bool isSubmitting = false;
 
+<<<<<<< HEAD
   // Enhanced report reasons with better organization
   static const Map<String, List<ReportReason>> reportReasons = {
+=======
+Future<String> _getUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('user_id') ?? '';
+}
+
+
+  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+
+  // Report reasons based on type
+  Map<String, List<String>> reportReasons = {
+>>>>>>> ba9c4f24c532401faeb42838d7ac4e3c5a1d23de
     'car': [
       ReportReason('Misleading information', Icons.error_outline),
       ReportReason('Fake photos', Icons.image_not_supported),

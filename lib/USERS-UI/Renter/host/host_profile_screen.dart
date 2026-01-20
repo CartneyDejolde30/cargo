@@ -31,7 +31,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   int totalReviews = 0;
   double averageRating = 0.0;
 
-  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
+  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
 
   @override
   void initState() {
@@ -40,10 +40,18 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   }
 
   String formatImage(String path) {
-    if (path.isEmpty) return "https://via.placeholder.com/150";
-    if (path.startsWith("http")) return path;
-    return "$baseUrl$path";
+  if (path.isEmpty) return "https://via.placeholder.com/150";
+  if (path.startsWith("http")) return path;
+
+  if (!path.startsWith("uploads/profile image/")) {
+    path = "uploads/profile_images/$path";
   }
+
+  // Encode space to %20 for browser compatibility
+  return Uri.encodeFull("$baseUrl$path");
+}
+
+
 
   Future<void> fetchOwnerProfile() async {
     final url = Uri.parse("${baseUrl}api/get_owner_profile.php?owner_id=${widget.ownerId}");
@@ -111,7 +119,11 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   Future<bool> _checkIfUserRentedFromHost(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse("${baseUrl}api/check_user_host_rental.php?user_id=$userId&owner_id=${widget.ownerId}"),
+       Uri.parse(
+  "${baseUrl}api/check_user_host_rental.php?"
+  "user_id=$userId&car_id=${widget.ownerId}"
+)
+
       );
       
       if (response.statusCode == 200) {

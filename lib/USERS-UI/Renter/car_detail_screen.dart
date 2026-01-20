@@ -44,7 +44,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
+  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,11 +56,64 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     };
   }
 
-  String formatImage(String path) {
-    if (path.isEmpty) return "https://via.placeholder.com/400x300";
-    if (path.startsWith("http")) return path;
-    return "$baseUrl$path";
+  List<String> getAllImages() {
+  List<String> images = [];
+
+  // Main image
+  if (carData?["image"] != null && carData!["image"].toString().isNotEmpty) {
+    images.add(formatImage(carData!["image"]));
   }
+
+  // Extra images
+  final extra = carData?["extra_images"];
+
+  if (extra != null && extra.toString().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(extra);
+
+      if (decoded is List) {
+        for (var img in decoded) {
+          images.add(formatImage(img.toString()));
+        }
+      }
+    } catch (e) {
+      // If it's comma-separated instead of JSON
+      final splitImages = extra.toString().split(",");
+      for (var img in splitImages) {
+        images.add(formatImage(img.trim()));
+      }
+    }
+  }
+
+  return images;
+}
+
+
+ String formatImage(String path) {
+  if (path.isEmpty || path == "null") {
+    return "https://via.placeholder.com/400x300";
+  }
+
+  // If API already returned full URL
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    // Fix double uploads issue
+    return path
+        .replaceAll("//uploads/uploads/", "/uploads/")
+        .replaceAll("/uploads/uploads/", "/uploads/");
+  }
+
+  // Clean filename paths
+  final cleanPath = path
+      .replaceAll("uploads/uploads/", "")
+      .replaceAll("uploads/", "");
+
+  // Extra images live in /uploads/
+  return "$baseUrl/uploads/$cleanPath";
+}
+
+
+
+
 
    Future<void> _checkVerificationStatus() async {
     final userData = await _getUserData();
@@ -209,6 +262,12 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
+    final images = getAllImages();
+     print("🖼 IMAGES: $images");
+    if (images.isEmpty) {
+  images.add("https://via.placeholder.com/400x300");
+}
+
 
     final imageUrl = formatImage(carData?["image"] ?? "");
     final ownerImage = formatImage(carData?["owner_image"] ?? "");
@@ -246,30 +305,40 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                   // Hero Image with Back Button
                   Stack(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FullscreenImageViewer(imageUrl: imageUrl),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 280,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(24),
-                              bottomRight: Radius.circular(24),
-                            ),
-                            image: DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
+                      SizedBox(
+  height: 280,
+  child: PageView.builder(
+    itemCount: images.length,
+    itemBuilder: (context, index) {
+      final imgUrl = images[index];
+
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FullscreenImageViewer(imageUrl: imgUrl),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+            image: DecorationImage(
+              image: NetworkImage(imgUrl),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+),
+
                       // Back Button (LEFT)
                       Positioned(
                         top: 16,
@@ -678,8 +747,14 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 28,
+                                  backgroundColor: Colors.grey.shade300,
                                   backgroundImage: NetworkImage(ownerImage),
+                                  onBackgroundImageError: (_, __) {},
+                                  child: ownerImage.contains("placeholder")
+                                      ? const Icon(Icons.person, color: Colors.white70)
+                                      : null,
                                 ),
+
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(

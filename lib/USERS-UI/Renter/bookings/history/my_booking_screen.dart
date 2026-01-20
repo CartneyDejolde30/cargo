@@ -134,60 +134,42 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  List<Booking> _filterBookings(List<Booking> all) {
-    final now = DateTime.now();
+List<Booking> _filterBookings(List<Booking> all) {
+  final now = DateTime.now();
 
-    switch (_currentTabIndex) {
-      case 0: // Active
-        return all.where((b) {
-          if (b.status != 'approved') return false;
-          final pickup = _parseDate(b.pickupDate);
-          final returnDate = _parseDate(b.returnDate);
-          return pickup != null && returnDate != null && 
-                 !pickup.isAfter(now) && !returnDate.isBefore(now);
-        }).toList();
+  switch (_currentTabIndex) {
+    case 0: // Active (includes upcoming approved)
+      return all.where((b) {
+        if (b.status != 'approved') return false;
+        return true; // show all approved
+      }).toList();
 
-      case 1: // Pending
-        return all.where((b) => b.status == 'pending').toList();
+    case 1: // Pending
+      return all.where((b) => b.status == 'pending').toList();
 
-      case 2: // Past
-        return all.where((b) =>
-          b.status == 'completed' ||
-          b.status == 'cancelled' ||
-          b.status == 'rejected'
-        ).toList();
+    case 2: // Past
+      return all.where((b) =>
+        b.status == 'completed' ||
+        b.status == 'cancelled' ||
+        b.status == 'rejected'
+      ).toList();
 
-      default:
-        return [];
-    }
+    default:
+      return [];
   }
+}
 
-  DateTime? _parseDate(String dateStr) {
-    try {
-      if (dateStr.contains('-')) {
-        return DateTime.parse(dateStr);
-      } else {
-        final parts = dateStr.split(' ');
-        if (parts.length >= 3) {
-          final monthMap = {
-            'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
-            'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
-            'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
-          };
-          final month = monthMap[parts[0]];
-          final day = int.tryParse(parts[1].replaceAll(',', ''));
-          final year = int.tryParse(parts[2]);
-          
-          if (month != null && day != null && year != null) {
-            return DateTime(year, month, day);
-          }
-        }
-      }
-    } catch (e) {
-      print('Error parsing date: $dateStr - $e');
-    }
+
+ DateTime? _parseDate(String dateStr) {
+  try {
+    final normalized = dateStr.trim().replaceFirst(' ', 'T');
+    return DateTime.parse(normalized);
+  } catch (e) {
+    print("❌ Date parse failed: $dateStr");
     return null;
   }
+}
+
 
   String _mapStatusForUI(String dbStatus) {
     switch (dbStatus) {
