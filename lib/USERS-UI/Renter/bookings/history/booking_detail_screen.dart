@@ -9,6 +9,7 @@ import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_status_tr
 import 'package:flutter_application_1/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
 
+
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
   final String status;
@@ -400,42 +401,128 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  Widget _buildBottomButton(BuildContext context) {
-    switch (widget.status) {
-      case 'active':
-        return _twoButtons(
-          context,
-          'Cancel Booking',
-          Colors.red,
-          _showCancelDialog,
-          'View Trip',
-          Colors.black,
-        );
-      case 'pending':
-        return _singleButton(
-          'Complete Payment',
-          Colors.green.shade600,
-          () => _showPaymentOptions(context),
-        );
-      case 'upcoming':
-        return _twoButtons(
-          context,
-          'Modify Booking',
-          Colors.grey,
-          _showCancelDialog,
-          'Get Directions',
-          Colors.black,
-        );
-      case 'past':
-        return _singleButton(
-          'Book This Car Again',
-          Colors.black,
-          () {},
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+Widget _buildBottomButton(BuildContext context) {
+  // 🆕 CHECK FOR REJECTED/CANCELLED BOOKINGS
+  if (widget.booking.status == 'rejected' || widget.booking.status == 'cancelled') {
+    return _buildRefundButton(context);
   }
+
+  switch (widget.status) {
+    case 'active':
+      return _twoButtons(
+        context,
+        'Cancel Booking',
+        Colors.red,
+        _showCancelDialog,
+        'View Trip',
+        Colors.black,
+      );
+    case 'pending':
+      return _singleButton(
+        'Complete Payment',
+        Colors.green.shade600,
+        () => _showPaymentOptions(context),
+      );
+    case 'upcoming':
+      return _twoButtons(
+        context,
+        'Modify Booking',
+        Colors.grey,
+        _showCancelDialog,
+        'Get Directions',
+        Colors.black,
+      );
+    case 'past':
+      return _singleButton(
+        'Book This Car Again',
+        Colors.black,
+        () {},
+      );
+    default:
+      return const SizedBox.shrink();
+  }
+}
+
+// 🆕 ADD THIS NEW METHOD
+Widget _buildRefundButton(BuildContext context) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // Status alert
+      Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.red.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                widget.booking.status == 'rejected'
+                    ? 'This booking was rejected by the owner'
+                    : 'This booking was cancelled',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.red.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      
+      // Refund button
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RefundRequestScreen(
+                  bookingId: widget.booking.bookingId,
+                  bookingReference: '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
+                  totalAmount: double.tryParse(widget.booking.totalPrice.replaceAll(',', '')) ?? 0,
+                  cancellationDate: DateTime.now().toString(),
+                  paymentMethod: _paymentData?['payment_method'] ?? 'gcash',
+                  paymentReference: _paymentData?['payment_reference'] ?? widget.booking.bookingId.toString(),
+                ),
+              ),
+            );
+
+            if (result == true) {
+              // Refresh payment info
+              await _fetchPaymentInfo();
+            }
+          },
+          icon: const Icon(Icons.undo, size: 20),
+          label: Text(
+            'Request Refund',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade600,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   String _calculateTotal(String fee) {
     final value = int.tryParse(fee.replaceAll(',', '')) ?? 0;

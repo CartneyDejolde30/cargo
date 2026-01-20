@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
 import 'booking_detail_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
@@ -201,96 +201,206 @@ class BookingCardWidget extends StatelessWidget {
   // =========================
   // STATUS BADGE
   // =========================
-  Widget _statusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: status == 'active' ? Colors.black : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: status != 'active'
-            ? Border.all(color: Colors.grey.shade300)
-            : null,
-      ),
-      child: Text(
-        _getStatusText(),
-        style: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color:
-              status == 'active' ? Colors.white : Colors.grey.shade700,
-        ),
-      ),
-    );
+Widget _statusBadge() {
+  Color badgeColor;
+  Color textColor;
+
+  switch (booking.status.toLowerCase()) {
+    case 'approved':
+      badgeColor = Colors.black;
+      textColor = Colors.white;
+      break;
+    case 'pending':
+      badgeColor = Colors.grey.shade100;
+      textColor = Colors.grey.shade700;
+      break;
+    case 'rejected':
+      badgeColor = Colors.red.shade100;
+      textColor = Colors.red.shade900;
+      break;
+    case 'cancelled':
+      badgeColor = Colors.orange.shade100;
+      textColor = Colors.orange.shade900;
+      break;
+    case 'completed':
+      badgeColor = Colors.green.shade100;
+      textColor = Colors.green.shade900;
+      break;
+    default:
+      badgeColor = Colors.grey.shade100;
+      textColor = Colors.grey.shade700;
   }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: badgeColor,
+      borderRadius: BorderRadius.circular(8),
+      border: badgeColor == Colors.black ? null : Border.all(color: Colors.grey.shade300),
+    ),
+    child: Text(
+      _getStatusText(),
+      style: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+    ),
+  );
+}
 
   // =========================
   // ACTION BUTTON
   // =========================
-  Widget _buildActionButton(BuildContext context) {
-    switch (status) {
-      case 'active':
-      case 'pending':
-      case 'upcoming':
-        return ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => BookingDetailScreen(
-                  booking: booking,
-                  status: status,
-                ),
+Widget _buildActionButton(BuildContext context) {
+  switch (status) {
+    case 'active':
+    case 'upcoming':
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BookingDetailScreen(
+                booking: booking,
+                status: status,
               ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                status == 'upcoming' ? Colors.white : Colors.black,
-            foregroundColor:
-                status == 'upcoming' ? Colors.black : Colors.white,
-            side: status == 'upcoming'
-                ? const BorderSide(color: Colors.black)
-                : null,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
             ),
-            elevation: 0,
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: status == 'upcoming' ? Colors.white : Colors.black,
+          foregroundColor: status == 'upcoming' ? Colors.black : Colors.white,
+          side: status == 'upcoming' ? const BorderSide(color: Colors.black) : null,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Text(
-            status == 'pending' ? 'Pay Now' : 'View Details',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-
-      case 'past':
-  return ElevatedButton(
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SubmitReviewScreen(
-            bookingId: booking.bookingId.toString(),
-            carId: booking.carId.toString(),
-            carName: booking.carName,
-            carImage: booking.carImage,
-            ownerId: booking.ownerId.toString(),
-            ownerName: booking.ownerName,
-            ownerImage: '',
+          elevation: 0,
+        ),
+        child: Text(
+          'View Details',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
-      ).then((result) {
-        if (result == true && onReviewSubmitted != null) {
-          onReviewSubmitted!();
-        }
-      });
+      );
+
+    case 'pending':
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BookingDetailScreen(
+                booking: booking,
+                status: status,
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          'Pay Now',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      );
+
+    case 'past':
+      // 🆕 CHECK IF BOOKING IS REJECTED/CANCELLED AND ELIGIBLE FOR REFUND
+      if (booking.status == 'rejected' || booking.status == 'cancelled') {
+        return _buildRefundButton(context);
+      }
+      
+      // Default: Show review button for completed bookings
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SubmitReviewScreen(
+                bookingId: booking.bookingId.toString(),
+                carId: booking.carId.toString(),
+                carName: booking.carName,
+                carImage: booking.carImage,
+                ownerId: booking.ownerId.toString(),
+                ownerName: booking.ownerName,
+                ownerImage: '',
+              ),
+            ),
+          ).then((result) {
+            if (result == true && onReviewSubmitted != null) {
+              onReviewSubmitted!();
+            }
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              'Rate & Review',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+
+    default:
+      return const SizedBox.shrink();
+  }
+}
+
+// 🆕 ADD THIS NEW METHOD
+Widget _buildRefundButton(BuildContext context) {
+  return ElevatedButton(
+    onPressed: () async {
+      // Navigate to refund request screen
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RefundRequestScreen(
+            bookingId: booking.bookingId,
+            bookingReference: '#BK-${booking.bookingId.toString().padLeft(4, '0')}',
+            totalAmount: double.tryParse(booking.totalPrice.replaceAll(',', '')) ?? 0,
+            cancellationDate: DateTime.now().toString(),
+            paymentMethod: 'gcash', // Get from booking data if available
+            paymentReference: booking.bookingId.toString(),
+          ),
+        ),
+      );
+
+      if (result == true && onReviewSubmitted != null) {
+        onReviewSubmitted!(); // Refresh bookings
+      }
     },
     style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.red.shade600,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
@@ -300,10 +410,10 @@ class BookingCardWidget extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.star, size: 16, color: Colors.white),
+        const Icon(Icons.undo, size: 16, color: Colors.white),
         const SizedBox(width: 6),
         Text(
-          'Rate & Review',
+          'Request Refund',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontSize: 13,
@@ -313,12 +423,7 @@ class BookingCardWidget extends StatelessWidget {
       ],
     ),
   );
-
-
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+}
 
   // =========================
   // HELPERS

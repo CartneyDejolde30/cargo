@@ -9,6 +9,8 @@ import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dar
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
 
+import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_history_screen.dart';
+
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
 
@@ -135,7 +137,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   }
 
 List<Booking> _filterBookings(List<Booking> all) {
-  final now = DateTime.now();
+  // ❌ Removed unused variable: final now = DateTime.now();
 
   switch (_currentTabIndex) {
     case 0: // Active (includes upcoming approved)
@@ -158,7 +160,6 @@ List<Booking> _filterBookings(List<Booking> all) {
       return [];
   }
 }
-
 
  DateTime? _parseDate(String dateStr) {
   try {
@@ -212,22 +213,58 @@ List<Booking> _filterBookings(List<Booking> all) {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      title: Text(
-        'My Bookings',
-        style: GoogleFonts.poppins(
-          color: Colors.black,
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
+PreferredSizeWidget _buildAppBar() {
+  return AppBar(
+    backgroundColor: Colors.white,
+    elevation: 0,
+    automaticallyImplyLeading: false,
+    title: Text(
+      'My Bookings',
+      style: GoogleFonts.poppins(
+        color: Colors.black,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    centerTitle: false,
+    // 🆕 ADD REFUND HISTORY BUTTON
+    actions: [
+      IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const RefundHistoryScreen(),
+            ),
+          );
+        },
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.undo, size: 18, color: Colors.black),
+              const SizedBox(width: 6),
+              Text(
+                'Refunds',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      centerTitle: false,
-    );
-  }
+      const SizedBox(width: 8),
+    ],
+  );
+}
 
   Widget _buildBookingBody() {
     if (_isLoading) {
