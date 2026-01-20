@@ -23,6 +23,9 @@ class ApiConfig {
   static const String rejectBookingEndpoint = '${apiUrl}reject_booking.php';
   static const String endTripEndpoint = '${apiUrl}bookings/end_trip.php';
   static const String transactionsEndpoint = '${apiUrl}get_owner_transactions.php';
+
+   static String get cancelledBookingsEndpoint => "${baseUrl}api/bookings/cancelled_bookings.php";
+  static String get rejectedBookingsEndpoint => "${baseUrl}api/bookings/rejected_bookings.php";
   
   // Timeouts
   static const Duration apiTimeout = Duration(seconds: 15);

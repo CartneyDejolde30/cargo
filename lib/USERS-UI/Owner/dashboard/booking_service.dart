@@ -114,6 +114,62 @@ class BookingService {
     return [];
   }
 
+  /* ---------------- NEW: FETCH CANCELLED BOOKINGS ---------------- */
+  Future<List<Map<String, dynamic>>> fetchCancelledBookings(String ownerId) async {
+    try {
+      final url = Uri.parse("${ApiConfig.cancelledBookingsEndpoint}?owner_id=$ownerId");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 Cancelled Bookings API: $url");
+      debugPrint("📥 Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['bookings'] is List) {
+          return List<Map<String, dynamic>>.from(data['bookings']);
+        } else {
+          debugPrint("⚠️ API returned success=false: ${data['message']}");
+        }
+      } else {
+        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching cancelled bookings: $e");
+      rethrow;
+    }
+
+    return [];
+  }
+
+  /* ---------------- NEW: FETCH REJECTED BOOKINGS ---------------- */
+  Future<List<Map<String, dynamic>>> fetchRejectedBookings(String ownerId) async {
+    try {
+      final url = Uri.parse("${ApiConfig.rejectedBookingsEndpoint}?owner_id=$ownerId");
+      final response = await http.get(url).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 Rejected Bookings API: $url");
+      debugPrint("📥 Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['bookings'] is List) {
+          return List<Map<String, dynamic>>.from(data['bookings']);
+        } else {
+          debugPrint("⚠️ API returned success=false: ${data['message']}");
+        }
+      } else {
+        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching rejected bookings: $e");
+      rethrow;
+    }
+
+    return [];
+  }
+
   /* ---------------- APPROVE BOOKING ---------------- */
   Future<Map<String, dynamic>> approveBooking(String bookingId, String ownerId) async {
     try {

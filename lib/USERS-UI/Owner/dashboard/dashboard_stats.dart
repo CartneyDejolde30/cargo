@@ -6,6 +6,8 @@ class DashboardStats {
   final int totalBookings;
   final int pendingRequests;
   final int activeBookings;
+  final int cancelledBookings; // NEW
+  final int rejectedBookings;  // NEW
   final double totalIncome;
   final double monthlyIncome;
   final double weeklyIncome;
@@ -21,6 +23,8 @@ class DashboardStats {
     required this.totalBookings,
     required this.pendingRequests,
     required this.activeBookings,
+    required this.cancelledBookings,
+    required this.rejectedBookings,
     required this.totalIncome,
     required this.monthlyIncome,
     required this.weeklyIncome,
@@ -38,6 +42,8 @@ class DashboardStats {
       totalBookings: int.tryParse(json['total_bookings']?.toString() ?? '0') ?? 0,
       pendingRequests: int.tryParse(json['pending_requests']?.toString() ?? '0') ?? 0,
       activeBookings: int.tryParse(json['active_bookings']?.toString() ?? '0') ?? 0,
+      cancelledBookings: int.tryParse(json['cancelled_bookings']?.toString() ?? '0') ?? 0, // NEW
+      rejectedBookings: int.tryParse(json['rejected_bookings']?.toString() ?? '0') ?? 0,   // NEW
       totalIncome: double.tryParse(json['total_income']?.toString() ?? '0') ?? 0.0,
       monthlyIncome: double.tryParse(json['monthly_income']?.toString() ?? '0') ?? 0.0,
       weeklyIncome: double.tryParse(json['weekly_income']?.toString() ?? '0') ?? 0.0,
@@ -47,7 +53,6 @@ class DashboardStats {
     );
   }
 
-  // Helper method for default/empty state
   factory DashboardStats.empty() {
     return DashboardStats(
       totalCars: 0,
@@ -57,6 +62,8 @@ class DashboardStats {
       totalBookings: 0,
       pendingRequests: 0,
       activeBookings: 0,
+      cancelledBookings: 0,
+      rejectedBookings: 0,
       totalIncome: 0.0,
       monthlyIncome: 0.0,
       weeklyIncome: 0.0,
@@ -75,6 +82,8 @@ class DashboardStats {
       'total_bookings': totalBookings,
       'pending_requests': pendingRequests,
       'active_bookings': activeBookings,
+      'cancelled_bookings': cancelledBookings,
+      'rejected_bookings': rejectedBookings,
       'total_income': totalIncome,
       'monthly_income': monthlyIncome,
       'weekly_income': weeklyIncome,

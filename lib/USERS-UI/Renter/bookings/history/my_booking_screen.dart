@@ -33,16 +33,18 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   // Badge counts for each tab
   int _activeCount = 0;
   int _pendingCount = 0;
-  int _pastCount = 0;
+  int _completedCount = 0;
+  int _rejectedCount = 0;
 
-  // Tab labels
-  final List<String> _tabLabels = ['Active', 'Pending', 'Past'];
+  // Tab labels - UPDATED with 4 tabs
+  final List<String> _tabLabels = ['Active', 'Pending', 'Completed', 'Rejected'];
 
   @override
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: 3, vsync: this);
+    // UPDATED: Changed to 4 tabs
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
 
     _loadUserIdAndFetchBookings();
@@ -80,7 +82,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // OPTIMIZED: Calculate badge counts from existing bookings data
+  // UPDATED: Calculate badge counts including rejected bookings
   void _updateBadgeCountsFromBookings(List<Booking> bookings) {
     final now = DateTime.now();
     
@@ -94,10 +96,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     
     _pendingCount = bookings.where((b) => b.status == 'pending').length;
     
-    _pastCount = bookings.where((b) =>
-      b.status == 'completed' ||
-      b.status == 'cancelled' ||
-      b.status == 'rejected'
+    _completedCount = bookings.where((b) => b.status == 'completed').length;
+    
+    _rejectedCount = bookings.where((b) => 
+      b.status == 'rejected' || b.status == 'cancelled'
     ).length;
   }
 
@@ -136,42 +138,42 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-List<Booking> _filterBookings(List<Booking> all) {
-  // ❌ Removed unused variable: final now = DateTime.now();
+  // UPDATED: Filter bookings for 4 tabs
+  List<Booking> _filterBookings(List<Booking> all) {
+    switch (_currentTabIndex) {
+      case 0: // Active (includes upcoming approved)
+        return all.where((b) {
+          if (b.status != 'approved') return false;
+          return true; // show all approved
+        }).toList();
 
-  switch (_currentTabIndex) {
-    case 0: // Active (includes upcoming approved)
-      return all.where((b) {
-        if (b.status != 'approved') return false;
-        return true; // show all approved
-      }).toList();
+      case 1: // Pending
+        return all.where((b) => b.status == 'pending').toList();
 
-    case 1: // Pending
-      return all.where((b) => b.status == 'pending').toList();
+      case 2: // Completed
+        return all.where((b) => b.status == 'completed').toList();
 
-    case 2: // Past
-      return all.where((b) =>
-        b.status == 'completed' ||
-        b.status == 'cancelled' ||
-        b.status == 'rejected'
-      ).toList();
+      case 3: // Rejected (includes cancelled)
+        return all.where((b) =>
+          b.status == 'cancelled' || b.status == 'rejected'
+        ).toList();
 
-    default:
-      return [];
+      default:
+        return [];
+    }
   }
-}
 
- DateTime? _parseDate(String dateStr) {
-  try {
-    final normalized = dateStr.trim().replaceFirst(' ', 'T');
-    return DateTime.parse(normalized);
-  } catch (e) {
-    print("❌ Date parse failed: $dateStr");
-    return null;
+  DateTime? _parseDate(String dateStr) {
+    try {
+      final normalized = dateStr.trim().replaceFirst(' ', 'T');
+      return DateTime.parse(normalized);
+    } catch (e) {
+      print("❌ Date parse failed: $dateStr");
+      return null;
+    }
   }
-}
 
-
+  // UPDATED: Map status for UI including rejected
   String _mapStatusForUI(String dbStatus) {
     switch (dbStatus) {
       case 'approved':
@@ -179,9 +181,10 @@ List<Booking> _filterBookings(List<Booking> all) {
       case 'pending':
         return 'pending';
       case 'completed':
+        return 'past';
       case 'cancelled':
       case 'rejected':
-        return 'past';
+        return 'past'; // Use 'past' to show refund button
       default:
         return 'pending';
     }
@@ -213,58 +216,57 @@ List<Booking> _filterBookings(List<Booking> all) {
     );
   }
 
-PreferredSizeWidget _buildAppBar() {
-  return AppBar(
-    backgroundColor: Colors.white,
-    elevation: 0,
-    automaticallyImplyLeading: false,
-    title: Text(
-      'My Bookings',
-      style: GoogleFonts.poppins(
-        color: Colors.black,
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-    centerTitle: false,
-    // 🆕 ADD REFUND HISTORY BUTTON
-    actions: [
-      IconButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const RefundHistoryScreen(),
-            ),
-          );
-        },
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.undo, size: 18, color: Colors.black),
-              const SizedBox(width: 6),
-              Text(
-                'Refunds',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      title: Text(
+        'My Bookings',
+        style: GoogleFonts.poppins(
+          color: Colors.black,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      const SizedBox(width: 8),
-    ],
-  );
-}
+      centerTitle: false,
+      actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RefundHistoryScreen(),
+              ),
+            );
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.undo, size: 18, color: Colors.black),
+                const SizedBox(width: 6),
+                Text(
+                  'Refunds',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
 
   Widget _buildBookingBody() {
     if (_isLoading) {
@@ -368,7 +370,6 @@ PreferredSizeWidget _buildAppBar() {
           );
         }
 
-        // OPTIMIZED: Update badge counts from the fetched data
         final allBookings = snapshot.data!;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -417,6 +418,7 @@ PreferredSizeWidget _buildAppBar() {
     );
   }
 
+  // UPDATED: Now shows 4 badge counts
   Widget _buildTabBar() {
     return BookingTabsWidget(
       currentTabIndex: _currentTabIndex,
@@ -424,7 +426,7 @@ PreferredSizeWidget _buildAppBar() {
         _tabController.animateTo(index);
       },
       tabs: _tabLabels,
-      badgeCounts: [_activeCount, _pendingCount, _pastCount],
+      badgeCounts: [_activeCount, _pendingCount, _completedCount, _rejectedCount],
     );
   }
 }
