@@ -72,26 +72,29 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
   }
 
   List<Map<String, dynamic>> get _filteredTransactions {
-    if (_filterStatus == 'all') return _transactions;
-    
-    return _transactions.where((t) {
-      final escrowStatus = t['escrow_status']?.toString().toLowerCase() ?? '';
-      final paymentStatus = t['payment_status']?.toString().toLowerCase() ?? '';
-      
-      switch (_filterStatus) {
-        case 'completed':
-          return escrowStatus == 'released';
-        case 'escrowed':
-          return escrowStatus == 'held';
-        case 'paid':
-          return t['is_paid'] == true && escrowStatus != 'held';
-        case 'pending':
-          return paymentStatus == 'pending';
-        default:
-          return true;
-      }
-    }).toList();
-  }
+  if (_filterStatus == 'all') return _transactions;
+  
+  return _transactions.where((t) {
+    final escrowStatus = t['escrow_status']?.toString().toLowerCase() ?? '';
+    final paymentStatus = t['payment_status']?.toString().toLowerCase() ?? '';
+    final isCompleted = t['is_completed'] == true;
+    final isPaid = t['is_paid'] == true;
+
+    switch (_filterStatus) {
+      case 'completed':
+        return isCompleted;
+      case 'escrowed':
+        return escrowStatus == 'held';
+      case 'paid':
+        return isPaid && escrowStatus != 'held';
+      case 'pending':
+        return paymentStatus == 'pending';
+      default:
+        return true;
+    }
+  }).toList();
+}
+
 
   void _showError(String message) {
     if (!mounted) return;
