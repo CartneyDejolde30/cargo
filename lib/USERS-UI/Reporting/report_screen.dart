@@ -4,17 +4,24 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Configuration class for API
+class ApiConfig {
+  static const String baseUrl = "http://192.168.137.1/carGOAdmin/";
+  static const Duration timeoutDuration = Duration(seconds: 30);
+}
 
 class ReportScreen extends StatefulWidget {
-  final String reportType; // 'car', 'user', 'booking', 'chat'
-  final String reportedId; // ID of the item being reported
-  final String reportedName; // Name of the item/person being reported
+  final String reportType; // 'car', 'motorcycle', 'user', 'booking', 'chat'
+  final String reportedId;
+  final String reportedName;
+  final String? reportedItemDetails; // Optional: Additional context
   
   const ReportScreen({
     super.key,
     required this.reportType,
     required this.reportedId,
     required this.reportedName,
+    this.reportedItemDetails,
   });
 
   @override
@@ -24,64 +31,55 @@ class ReportScreen extends StatefulWidget {
 class _ReportScreenState extends State<ReportScreen> {
   String? selectedReason;
   final TextEditingController _detailsController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool isSubmitting = false;
 
-Future<String> _getUserId() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString('user_id') ?? '';
-}
-
-
-  final String baseUrl = "http://192.168.137.1/carGOAdmin/";
-
-  // Report reasons based on type
-  Map<String, List<String>> reportReasons = {
+  // Enhanced report reasons with better organization
+  static const Map<String, List<ReportReason>> reportReasons = {
     'car': [
-      'Misleading information',
-      'Fake photos',
-      'Vehicle not as described',
-      'Safety concerns',
-      'Suspicious pricing',
-      'Unavailable vehicle',
-      'Other',
+      ReportReason('Misleading information', Icons.error_outline),
+      ReportReason('Fake photos', Icons.image_not_supported),
+      ReportReason('Vehicle not as described', Icons.directions_car),
+      ReportReason('Safety concerns', Icons.warning),
+      ReportReason('Suspicious pricing', Icons.attach_money),
+      ReportReason('Unavailable vehicle', Icons.block),
+      ReportReason('Other', Icons.more_horiz),
+    ],
+    'motorcycle': [
+      ReportReason('Misleading information', Icons.error_outline),
+      ReportReason('Fake photos', Icons.image_not_supported),
+      ReportReason('Vehicle not as described', Icons.two_wheeler),
+      ReportReason('Safety concerns', Icons.warning),
+      ReportReason('Suspicious pricing', Icons.attach_money),
+      ReportReason('Unavailable vehicle', Icons.block),
+      ReportReason('Other', Icons.more_horiz),
     ],
     'user': [
-      'Inappropriate behavior',
-      'Harassment',
-      'Fraud/Scam',
-      'Fake profile',
-      'Suspicious activity',
-      'Spam',
-      'Other',
+      ReportReason('Inappropriate behavior', Icons.person_off),
+      ReportReason('Harassment', Icons.report_problem),
+      ReportReason('Fraud/Scam', Icons.gavel),
+      ReportReason('Fake profile', Icons.account_circle),
+      ReportReason('Suspicious activity', Icons.security),
+      ReportReason('Spam', Icons.warning_amber),
+      ReportReason('Other', Icons.more_horiz),
     ],
     'booking': [
-      'No-show',
-      'Late pickup/return',
-      'Vehicle damage',
-      'Cleanliness issues',
-      'Payment dispute',
-      'Cancellation issues',
-      'Other',
+      ReportReason('No-show', Icons.event_busy),
+      ReportReason('Late pickup/return', Icons.schedule),
+      ReportReason('Vehicle damage', Icons.car_crash),
+      ReportReason('Cleanliness issues', Icons.cleaning_services),
+      ReportReason('Payment dispute', Icons.payment),
+      ReportReason('Cancellation issues', Icons.cancel),
+      ReportReason('Other', Icons.more_horiz),
     ],
     'chat': [
-      'Harassment',
-      'Spam messages',
-      'Inappropriate content',
-      'Scam attempt',
-      'Threatening behavior',
-      'Other',
+      ReportReason('Harassment', Icons.report_problem),
+      ReportReason('Spam messages', Icons.warning_amber),
+      ReportReason('Inappropriate content', Icons.block),
+      ReportReason('Scam attempt', Icons.gavel),
+      ReportReason('Threatening behavior', Icons.warning),
+      ReportReason('Other', Icons.more_horiz),
     ],
-
-    'motorcycle': [
-  'Misleading information',
-  'Fake photos',
-  'Vehicle not as described',
-  'Safety concerns',
-  'Suspicious pricing',
-  'Unavailable vehicle',
-  'Other',
-],
-
   };
 
   @override
@@ -90,76 +88,176 @@ Future<String> _getUserId() async {
     super.dispose();
   }
 
-  Future<void> _submitReport() async {
-  if (selectedReason == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select a reason')),
-    );
-    return;
-  }
-
-  if (_detailsController.text.trim().isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please provide details')),
-    );
-    return;
-  }
-
-  setState(() => isSubmitting = true);
-
-  try {
-    final userId = await _getUserId();
-
-    if (userId.isEmpty) {
+  Future<String> _getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    if (userId == null || userId.isEmpty) {
       throw Exception("User not logged in");
     }
+    return userId;
+  }
 
-    final url = Uri.parse("${baseUrl}api/submit_report.php");
-    final response = await http.post(url, body: {
-      'report_type': widget.reportType.toLowerCase().trim(),
-      'reported_id': widget.reportedId,
-      'reason': selectedReason!,
-      'details': _detailsController.text.trim(),
-      'reporter_id': userId,
-    });
+  Future<void> _submitReport() async {
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-    if (response.statusCode == 200) {
-      final result = jsonDecode(response.body);
+    if (selectedReason == null) {
+      _showSnackBar('Please select a reason', isError: true);
+      return;
+    }
 
-      if (result['status'] == 'success') {
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Report submitted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+    // Show confirmation dialog
+    final confirmed = await _showConfirmationDialog();
+    if (!confirmed) return;
+
+    setState(() => isSubmitting = true);
+
+    try {
+      final userId = await _getUserId();
+      final url = Uri.parse("${ApiConfig.baseUrl}api/submit_report.php");
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'report_type': widget.reportType.toLowerCase().trim(),
+          'reported_id': widget.reportedId,
+          'reason': selectedReason!,
+          'details': _detailsController.text.trim(),
+          'reporter_id': userId,
+        },
+      ).timeout(
+        ApiConfig.timeoutDuration,
+        onTimeout: () {
+          throw Exception("Request timed out. Please check your connection.");
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+
+        if (result['status'] == 'success') {
+          if (mounted) {
+            _showSuccessDialog();
+          }
+        } else {
+          throw Exception(result['message'] ?? 'Failed to submit report');
         }
       } else {
-        throw Exception(result['message'] ?? 'Failed to submit report');
+        throw Exception("Server error (${response.statusCode}). Please try again later.");
       }
-    } else {
-      throw Exception("Server error: ${response.statusCode}");
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() => isSubmitting = false);
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSubmitting = false);
+      }
     }
   }
-}
 
+  Future<bool> _showConfirmationDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Confirm Report',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to submit this report? False reports may result in account suspension.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Submit', style: GoogleFonts.poppins(color: Colors.white)),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.check_circle, color: Colors.green, size: 48),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Report Submitted',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Thank you for your report. Our team will review it within 24-48 hours.',
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Close report screen
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text('Done', style: GoogleFonts.poppins(color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final reasons = reportReasons[widget.reportType.toLowerCase().trim()] ?? [];
-
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -187,176 +285,220 @@ Future<String> _getUserId() async {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Info Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Help us understand the issue. Your report will be reviewed by our team.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.orange.shade900,
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange.shade700),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Help us understand the issue. Your report will be reviewed within 24-48 hours.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.orange.shade900,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Reporting
-              Text(
-                'You are reporting:',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.reportedName,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Reason Selection
-              Text(
-                'Select a reason',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              ...reasons.map((reason) => _buildReasonOption(reason)).toList(),
-
-              const SizedBox(height: 32),
-
-              // Details
-              Text(
-                'Provide details',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please describe the issue in detail',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: TextField(
-                  controller: _detailsController,
-                  maxLines: 6,
-                  maxLength: 500,
-                  decoration: InputDecoration(
-                    hintText: 'Describe what happened...',
-                    hintStyle: GoogleFonts.poppins(
-                      color: Colors.grey.shade400,
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
+                    ],
                   ),
-                  style: GoogleFonts.poppins(fontSize: 14),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isSubmitting ? null : _submitReport,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Submit Report',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Disclaimer
-              Center(
-                child: Text(
-                  'False reports may result in account suspension',
+                // Reporting
+                Text(
+                  'You are reporting:',
                   style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(_getTypeIcon(), color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.reportedName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                            if (widget.reportedItemDetails != null)
+                              Text(
+                                widget.reportedItemDetails!,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Reason Selection
+                Text(
+                  'Select a reason *',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                ...reasons.map((reason) => _buildReasonOption(reason)).toList(),
+
+                const SizedBox(height: 32),
+
+                // Details
+                Text(
+                  'Provide details *',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please describe the issue in detail (minimum 20 characters)',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextFormField(
+                    controller: _detailsController,
+                    maxLines: 6,
+                    maxLength: 500,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please provide details';
+                      }
+                      if (value.trim().length < 20) {
+                        return 'Please provide at least 20 characters';
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Describe what happened in detail...',
+                      hintStyle: GoogleFonts.poppins(
+                        color: Colors.grey.shade400,
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                      errorStyle: GoogleFonts.poppins(fontSize: 12),
+                    ),
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSubmitting ? null : _submitReport,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      disabledBackgroundColor: Colors.red.shade200,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Submit Report',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Disclaimer
+                Center(
+                  child: Text(
+                    'False reports may result in account suspension',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildReasonOption(String reason) {
-    final isSelected = selectedReason == reason;
+  Widget _buildReasonOption(ReportReason reason) {
+    final isSelected = selectedReason == reason.text;
 
     return GestureDetector(
-      onTap: () => setState(() => selectedReason = reason),
+      onTap: () => setState(() => selectedReason = reason.text),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -370,6 +512,22 @@ Future<String> _getUserId() async {
         ),
         child: Row(
           children: [
+            Icon(
+              reason.icon,
+              color: isSelected ? Colors.red : Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                reason.text,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? Colors.black : Colors.grey.shade700,
+                ),
+              ),
+            ),
             Container(
               width: 20,
               height: 20,
@@ -385,17 +543,6 @@ Future<String> _getUserId() async {
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : null,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                reason,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.black : Colors.grey.shade700,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -403,9 +550,11 @@ Future<String> _getUserId() async {
   }
 
   String _getTypeLabel() {
-    switch (widget.reportType) {
+    switch (widget.reportType.toLowerCase()) {
       case 'car':
         return 'Car';
+      case 'motorcycle':
+        return 'Motorcycle';
       case 'user':
         return 'User';
       case 'booking':
@@ -416,4 +565,29 @@ Future<String> _getUserId() async {
         return 'Issue';
     }
   }
+
+  IconData _getTypeIcon() {
+    switch (widget.reportType.toLowerCase()) {
+      case 'car':
+        return Icons.directions_car;
+      case 'motorcycle':
+        return Icons.two_wheeler;
+      case 'user':
+        return Icons.person;
+      case 'booking':
+        return Icons.event_note;
+      case 'chat':
+        return Icons.chat_bubble;
+      default:
+        return Icons.report;
+    }
+  }
+}
+
+// Helper class for report reasons
+class ReportReason {
+  final String text;
+  final IconData icon;
+
+  const ReportReason(this.text, this.icon);
 }
