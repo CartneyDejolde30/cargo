@@ -83,6 +83,7 @@ class RecentActivityWidget extends StatelessWidget {
   }
 
   Widget _buildActivityItem(Booking booking) {
+     debugPrint("🖼 IMAGE URL: ${ApiConstants.getCarImageUrl(booking.carImage)}");
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -93,6 +94,8 @@ class RecentActivityWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
+
+          
           // Car Image
           ClipRRect(
             borderRadius: BorderRadius.circular(8),

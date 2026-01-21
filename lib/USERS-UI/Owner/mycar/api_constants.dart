@@ -11,7 +11,10 @@ class ApiConstants {
   static const String checkVerificationApi = "${baseUrl}api/check_verification.php";
   
   // Helper methods
-  static String getCarImageUrl(String imagePath) => "$baseUrl$imagePath";
+  static String getCarImageUrl(String imagePath) {
+  return "$baseUrl$imagePath";
+}
+
   
   // Timeout duration
   static const Duration apiTimeout = Duration(seconds: 10);

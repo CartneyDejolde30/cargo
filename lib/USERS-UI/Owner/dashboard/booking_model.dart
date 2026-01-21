@@ -2,9 +2,8 @@
 
 class Booking {
   final int id;
-  final String carName;
-  final String carImage;
   final String carFullName;
+  final String carImage;
   final String renterName;
   final String startDate;
   final String endDate;
@@ -14,9 +13,8 @@ class Booking {
 
   Booking({
     required this.id,
-    required this.carName,
-    required this.carImage,
     required this.carFullName,
+    required this.carImage,
     required this.renterName,
     required this.startDate,
     required this.endDate,
@@ -26,19 +24,11 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
-    // Get car brand and model for full name
-    final brand = json['brand']?.toString() ?? '';
-    final model = json['model']?.toString() ?? '';
-    final carFullName = brand.isNotEmpty && model.isNotEmpty 
-        ? '$brand $model' 
-        : json['car_name']?.toString() ?? 'Unknown Car';
-
     return Booking(
-      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-      carName: json['car_name']?.toString() ?? '',
-      carImage: json['car_image']?.toString() ?? '',
-      carFullName: carFullName,
-      renterName: json['full_name']?.toString() ?? 'Unknown Renter',
+      id: int.tryParse(json['booking_id']?.toString() ?? '0') ?? 0,
+      carFullName: json['car_full_name']?.toString() ?? 'Unknown Car',
+      carImage: json['car_image']?.toString() ?? 'uploads/default_car.png',
+      renterName: json['renter_name']?.toString() ?? 'Unknown Renter',
       startDate: json['pickup_date']?.toString() ?? '',
       endDate: json['return_date']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
@@ -49,11 +39,10 @@ class Booking {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'car_name': carName,
-      'car_image': carImage,
+      'booking_id': id,
       'car_full_name': carFullName,
-      'full_name': renterName,
+      'car_image': carImage,
+      'renter_name': renterName,
       'pickup_date': startDate,
       'return_date': endDate,
       'status': status,

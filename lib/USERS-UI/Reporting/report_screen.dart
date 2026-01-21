@@ -166,26 +166,8 @@ final streamedResponse = await request.send().timeout(
 final response = await http.Response.fromStream(streamedResponse);
 final result = jsonDecode(response.body);
 
-<<<<<<< HEAD
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
-=======
-
-if (response.statusCode == 200 || response.statusCode == 201) {
-  if (result['status'] == 'success') {
-    if (mounted) {
-      _showSuccessDialog();
-    }
-  } else {
-    throw Exception(result['message'] ?? 'Failed to submit report');
-  }
-} else {
-  throw Exception(
-    result['message'] ??
-    "Server error (${response.statusCode}). Please try again later."
-  );
-}
->>>>>>> a22b770ed35b3dfca8b0a1a6a918181dabc88296
 
         if (result['status'] == 'success') {
           if (mounted) {

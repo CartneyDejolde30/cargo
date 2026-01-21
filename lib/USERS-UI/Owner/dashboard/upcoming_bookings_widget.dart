@@ -97,6 +97,10 @@ class UpcomingBookingsWidget extends StatelessWidget {
     final daysUntil = _getDaysUntil(booking.startDate);
     final isToday = daysUntil == 0;
     final isTomorrow = daysUntil == 1;
+    final formattedDate = _formatDate(booking.startDate);
+    final parts = formattedDate.split(' ');
+    final month = parts.isNotEmpty ? parts[0] : '';
+    final day = parts.length > 1 ? parts[1] : '';
 
     String timeLabel;
     Color timeColor;
@@ -139,8 +143,8 @@ class UpcomingBookingsWidget extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text(
-                  _formatDate(booking.startDate).split(' ')[0],
+               Text(
+                  month,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -149,7 +153,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _formatDate(booking.startDate).split(' ')[1],
+                  day,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
