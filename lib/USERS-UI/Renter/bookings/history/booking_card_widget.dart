@@ -18,19 +18,22 @@ class BookingCardWidget extends StatelessWidget {
   });
 
   String _getStatusText() {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'pending':
-        return 'Pending Payment';
-      case 'upcoming':
-        return 'Confirmed';
-      case 'past':
-        return 'Completed';
-      default:
-        return status;
-    }
+  switch (booking.status.toLowerCase()) {
+    case 'approved':
+      return 'Active';
+    case 'pending':
+      return 'Pending Payment';
+    case 'completed':
+      return 'Completed';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return booking.status;
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +256,12 @@ Widget _statusBadge() {
   // ACTION BUTTON
   // =========================
 Widget _buildActionButton(BuildContext context) {
+  // 🔥 Always prioritize refund for rejected/cancelled
+  if (booking.status.toLowerCase() == 'rejected' ||
+      booking.status.toLowerCase() == 'cancelled') {
+    return _buildRefundButton(context);
+  }
+
   switch (status) {
     case 'active':
     case 'upcoming':
@@ -266,12 +275,18 @@ Widget _buildActionButton(BuildContext context) {
                 status: status,
               ),
             ),
-          );
+          ).then((result) {
+            if (result == true && onReviewSubmitted != null) {
+              onReviewSubmitted!();
+            }
+          });
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: status == 'upcoming' ? Colors.white : Colors.black,
           foregroundColor: status == 'upcoming' ? Colors.black : Colors.white,
-          side: status == 'upcoming' ? const BorderSide(color: Colors.black) : null,
+          side: status == 'upcoming'
+              ? const BorderSide(color: Colors.black)
+              : null,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -298,7 +313,11 @@ Widget _buildActionButton(BuildContext context) {
                 status: status,
               ),
             ),
-          );
+          ).then((result) {
+            if (result == true && onReviewSubmitted != null) {
+              onReviewSubmitted!();
+            }
+          });
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
@@ -319,12 +338,7 @@ Widget _buildActionButton(BuildContext context) {
       );
 
     case 'past':
-      // 🆕 CHECK IF BOOKING IS REJECTED/CANCELLED AND ELIGIBLE FOR REFUND
-      if (booking.status == 'rejected' || booking.status == 'cancelled') {
-        return _buildRefundButton(context);
-      }
-      
-      // Default: Show review button for completed bookings
+      // ✅ Completed bookings only
       return ElevatedButton(
         onPressed: () {
           Navigator.push(
@@ -375,6 +389,7 @@ Widget _buildActionButton(BuildContext context) {
       return const SizedBox.shrink();
   }
 }
+
 
 // 🆕 ADD THIS NEW METHOD
 Widget _buildRefundButton(BuildContext context) {

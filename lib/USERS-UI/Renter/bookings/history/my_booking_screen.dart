@@ -140,28 +140,42 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   // UPDATED: Filter bookings for 4 tabs
   List<Booking> _filterBookings(List<Booking> all) {
-    switch (_currentTabIndex) {
-      case 0: // Active (includes upcoming approved)
-        return all.where((b) {
-          if (b.status != 'approved') return false;
-          return true; // show all approved
-        }).toList();
+  switch (_currentTabIndex) {
+    case 0: // Active
+      return all.where((b) => b.status == 'approved').toList();
 
-      case 1: // Pending
-        return all.where((b) => b.status == 'pending').toList();
+    case 1: // Pending
+      return all.where((b) => b.status == 'pending').toList();
 
-      case 2: // Completed
-        return all.where((b) => b.status == 'completed').toList();
+    case 2: // Completed
+      return all.where((b) => b.status == 'completed').toList();
 
-      case 3: // Rejected (includes cancelled)
-        return all.where((b) =>
-          b.status == 'cancelled' || b.status == 'rejected'
-        ).toList();
+    case 3: // Rejected (NEWEST → OLDEST)
+  final rejected = all.where((b) =>
+    b.status.toLowerCase() == 'cancelled' ||
+    b.status.toLowerCase() == 'rejected'
+  ).toList();
 
-      default:
-        return [];
-    }
+  // 🔥 Sort by pickup date (newest first)
+  rejected.sort((a, b) {
+    final dateA = _parseDate(a.pickupDate);
+    final dateB = _parseDate(b.pickupDate);
+
+    if (dateA == null && dateB == null) return 0;
+    if (dateA == null) return 1;
+    if (dateB == null) return -1;
+
+    return dateB.compareTo(dateA); // DESC = newest first
+  });
+
+  return rejected;
+
+
+    default:
+      return [];
   }
+}
+
 
   DateTime? _parseDate(String dateStr) {
     try {
@@ -174,21 +188,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   }
 
   // UPDATED: Map status for UI including rejected
-  String _mapStatusForUI(String dbStatus) {
-    switch (dbStatus) {
-      case 'approved':
-        return 'active';
-      case 'pending':
-        return 'pending';
-      case 'completed':
-        return 'past';
-      case 'cancelled':
-      case 'rejected':
-        return 'past'; // Use 'past' to show refund button
-      default:
-        return 'pending';
-    }
+  String _mapStatusForUI(String status) {
+  switch (status) {
+    case 'approved':
+      return 'active';
+    case 'pending':
+      return 'pending';
+    case 'completed':
+      return 'completed'; // show completed
+    case 'cancelled':
+      return 'cancelled'; // show cancelled
+    case 'rejected':
+      return 'rejected'; // show rejected
+    default:
+      return 'pending';
   }
+}
 
   void _handleNavigation(int index) {
     if (_selectedNavIndex != index) {

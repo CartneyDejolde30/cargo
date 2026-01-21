@@ -172,6 +172,16 @@ Future<void> _setupNotifications() async {
             SnackBar(content: Text(data["message"])),
           );
 
+// 🔐 SAVE AUTH TOKEN
+if (data["token"] != null) {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString("auth_token", data["token"]);
+  print("🔐 TOKEN SAVED: ${data["token"]}");
+} else {
+  print("❌ NO TOKEN RECEIVED FROM SERVER");
+}
+
+
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString("user_id", data["id"].toString());  
           await prefs.setString("fullname", data["fullname"]);

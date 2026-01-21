@@ -13,11 +13,14 @@ import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_sc
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
   final String status;
+ 
+
 
   const BookingDetailScreen({
     super.key,
     required this.booking,
     required this.status,
+   
   });
 
   @override
@@ -29,6 +32,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isLoading = true;
   bool _isLoadingPayment = true;
   Map<String, dynamic>? _paymentData;
+  bool _bookingChanged = false;
 
   final String baseUrl = "http://10.139.150.2/carGOAdmin/";
 
@@ -78,34 +82,41 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   String _getStatusText() {
-    switch (widget.status) {
-      case 'active':
-        return 'Active';
-      case 'pending':
-        return 'Pending Payment';
-      case 'upcoming':
-        return 'Confirmed';
-      case 'past':
-        return 'Completed';
-      default:
-        return widget.status;
-    }
+  switch (widget.booking.status.toLowerCase()) {
+
+    case 'approved':
+      return 'Active';
+    case 'pending':
+      return 'Pending Payment';
+    case 'completed':
+      return 'Completed';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return widget.booking.status;
   }
+}
+
 
   Color _getStatusColor() {
-    switch (widget.status) {
-      case 'active':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'upcoming':
-        return Colors.blue;
-      case 'past':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
+  switch (widget.booking.status) {
+    case 'approved':
+      return Colors.green;
+    case 'pending':
+      return Colors.orange;
+    case 'completed':
+      return Colors.grey;
+    case 'cancelled':
+      return Colors.red.shade400;
+    case 'rejected':
+      return Colors.red.shade700;
+    default:
+      return Colors.grey;
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +146,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       backgroundColor: Colors.white,
       leading: IconButton(
         icon: _circleIcon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
+       onPressed: () => Navigator.pop(context, _bookingChanged),
+
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
@@ -291,6 +303,54 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
+Widget _buildBottomButton(BuildContext context) {
+  // Show refund button for rejected/cancelled
+  if (widget.booking.status == 'rejected' ||
+      widget.booking.status == 'cancelled') {
+    return _buildRefundButton(context);
+  }
+
+  switch (widget.status) {
+    case 'active':
+      return _twoButtons(
+        context,
+        'Cancel Booking',
+        Colors.red,
+        _showCancelDialog,
+        'View Trip',
+        Colors.black,
+      );
+
+    case 'pending':
+      return _singleButton(
+        'Complete Payment',
+        Colors.green.shade600,
+        () => _showPaymentOptions(context),
+      );
+
+    case 'upcoming':
+      return _twoButtons(
+        context,
+        'Modify Booking',
+        Colors.grey,
+        _showCancelDialog,
+        'Get Directions',
+        Colors.black,
+      );
+
+    case 'past':
+      return _singleButton(
+        'Book This Car Again',
+        Colors.black,
+        () {},
+      );
+
+    default:
+      return const SizedBox.shrink();
+  }
+}
+
+
   Widget _locationCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -401,49 +461,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-Widget _buildBottomButton(BuildContext context) {
-  // 🆕 CHECK FOR REJECTED/CANCELLED BOOKINGS
-  if (widget.booking.status == 'rejected' || widget.booking.status == 'cancelled') {
-    return _buildRefundButton(context);
-  }
-
-  switch (widget.status) {
-    case 'active':
-      return _twoButtons(
-        context,
-        'Cancel Booking',
-        Colors.red,
-        _showCancelDialog,
-        'View Trip',
-        Colors.black,
-      );
-    case 'pending':
-      return _singleButton(
-        'Complete Payment',
-        Colors.green.shade600,
-        () => _showPaymentOptions(context),
-      );
-    case 'upcoming':
-      return _twoButtons(
-        context,
-        'Modify Booking',
-        Colors.grey,
-        _showCancelDialog,
-        'Get Directions',
-        Colors.black,
-      );
-    case 'past':
-      return _singleButton(
-        'Book This Car Again',
-        Colors.black,
-        () {},
-      );
-    default:
-      return const SizedBox.shrink();
-  }
-}
-
-// 🆕 ADD THIS NEW METHOD
 Widget _buildRefundButton(BuildContext context) {
   return Column(
     mainAxisSize: MainAxisSize.min,
@@ -476,7 +493,7 @@ Widget _buildRefundButton(BuildContext context) {
           ],
         ),
       ),
-      
+
       // Refund button
       SizedBox(
         width: double.infinity,
@@ -487,17 +504,24 @@ Widget _buildRefundButton(BuildContext context) {
               MaterialPageRoute(
                 builder: (_) => RefundRequestScreen(
                   bookingId: widget.booking.bookingId,
-                  bookingReference: '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
-                  totalAmount: double.tryParse(widget.booking.totalPrice.replaceAll(',', '')) ?? 0,
+                  bookingReference:
+                      '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
+                  totalAmount: double.tryParse(
+                        widget.booking.totalPrice.replaceAll(',', ''),
+                      ) ??
+                      0,
                   cancellationDate: DateTime.now().toString(),
-                  paymentMethod: _paymentData?['payment_method'] ?? 'gcash',
-                  paymentReference: _paymentData?['payment_reference'] ?? widget.booking.bookingId.toString(),
+                  paymentMethod:
+                      _paymentData?['payment_method'] ?? 'gcash',
+                  paymentReference:
+                      _paymentData?['payment_reference'] ??
+                          widget.booking.bookingId.toString(),
                 ),
               ),
             );
 
+            // 🔄 Refresh payment info only
             if (result == true) {
-              // Refresh payment info
               await _fetchPaymentInfo();
             }
           },
@@ -523,6 +547,7 @@ Widget _buildRefundButton(BuildContext context) {
     ],
   );
 }
+
 
   String _calculateTotal(String fee) {
     final value = int.tryParse(fee.replaceAll(',', '')) ?? 0;
@@ -600,7 +625,9 @@ Widget _buildRefundButton(BuildContext context) {
                   ),
                 );
 
+                _bookingChanged = true;
                 Navigator.pop(context, true);
+
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

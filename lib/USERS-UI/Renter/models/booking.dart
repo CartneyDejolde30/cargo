@@ -30,20 +30,27 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
-    return Booking(
-      bookingId: json['bookingId'],
-      carId: json['carId'],
-      ownerId: json['ownerId'],
-      carName: json['carName'] ?? '',
-      carImage: json['carImage'] ?? '',
-      location: json['location'] ?? '',
-      pickupDate: json['pickupDate'] ?? '',
-      pickupTime: json['pickupTime'] ?? '',
-      returnDate: json['returnDate'] ?? '',
-      returnTime: json['returnTime'] ?? '',
-      totalPrice: (json['totalPrice'] as num).toString(),
-      status: json['status'] ?? '',
-      ownerName: json['ownerName'] ?? '',
-    );
-  }
+  return Booking(
+    bookingId: json['bookingId'],
+    carId: json['carId'],
+    ownerId: json['ownerId'],
+    carName: json['carName'] ?? '',
+    carImage: json['carImage'] ?? '',
+    location: json['location'] ?? '',
+    pickupDate: json['pickupDate'] ?? '',
+    pickupTime: json['pickupTime'] ?? '',
+    returnDate: json['returnDate'] ?? '',
+    returnTime: json['returnTime'] ?? '',
+    totalPrice: (json['totalPrice'] as num).toString(),
+
+    // 🔥 Normalize status here
+    status: json['status']
+        .toString()
+        .trim()
+        .toLowerCase(),
+
+    ownerName: json['ownerName'] ?? '',
+  );
+}
+
 }

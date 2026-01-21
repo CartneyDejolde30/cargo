@@ -19,7 +19,7 @@ class ApiConfig {
   static const String upcomingBookingsEndpoint = '${apiUrl}dashboard/upcoming_bookings.php';
   static const String pendingRequestsEndpoint = '${apiUrl}bookings/get_owner_pending_requests.php'; // FIXED: Added bookings/ subdirectory
   static const String activeBookingsEndpoint = '${apiUrl}bookings/get_owner_active_bookings.php'; // FIXED: Added bookings/ subdirectory
-  static const String approveBookingEndpoint = '${apiUrl}approve_booking.php';
+  static const String approveBookingEndpoint = '${apiUrl}approve_request.php';
   static const String rejectBookingEndpoint = '${apiUrl}reject_booking.php';
   static const String endTripEndpoint = '${apiUrl}bookings/end_trip.php';
   static const String transactionsEndpoint = '${apiUrl}get_owner_transactions.php';

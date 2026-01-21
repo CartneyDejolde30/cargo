@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class RefundRequestScreen extends StatefulWidget {
   final int bookingId;
@@ -66,26 +68,39 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   Future<void> _submitRefundRequest() async {
     if (!_validateForm()) return;
 
+    if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
+final prefs = await SharedPreferences.getInstance();
+final token = prefs.getString('auth_token');
+print("TOKEN FROM STORAGE: $token");
     try {
-      final response = await http.post(
-        Uri.parse('${baseUrl}api/refund/request_refund.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'booking_id': widget.bookingId.toString(),
-          'refund_amount': widget.totalAmount.toString(),
-          'refund_method': _selectedRefundMethod,
-          'account_number': _accountNumberController.text.trim(),
-          'account_name': _accountNameController.text.trim(),
-          'refund_reason': _selectedReason,
-          'reason_details': _reasonController.text.trim(),
-          'original_payment_method': widget.paymentMethod,
-          'original_payment_reference': widget.paymentReference,
-        },
-      );
+     final response = await http.post(
+  Uri.parse('${baseUrl}api/refund/request_refund.php'),
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Authorization': 'Bearer $token',
+  },
+  body: {
+  'booking_id': widget.bookingId.toString(),
+  'refund_method': _selectedRefundMethod,
+  'account_number': _accountNumberController.text.trim(),
+  'account_name': _accountNameController.text.trim(),
+  'bank_name': _selectedRefundMethod == 'bank' ? 'User Bank' : '',
+  'refund_reason': _selectedReason,
+  'reason_details': _reasonController.text.trim(),
+  'original_payment_method': widget.paymentMethod,
+  'original_payment_reference': widget.paymentReference,
+  'token': token ?? '',
+}
+
+);
+ print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
 
       final data = jsonDecode(response.body);
+     
+
 
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -107,6 +122,11 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   bool _validateForm() {
     if (_accountNumberController.text.trim().isEmpty) {
       _showError('Please enter your ${_selectedRefundMethod.toUpperCase()} number');
+      return false;
+    }
+    if (_selectedRefundMethod == 'bank' &&
+        _accountNumberController.text.trim().length < 8) {
+      _showError('Please enter a valid bank account number');
       return false;
     }
 
