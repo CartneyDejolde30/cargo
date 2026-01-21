@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
 
 // Configuration class for API
 class ApiConfig {
@@ -27,6 +30,9 @@ class ReportScreen extends StatefulWidget {
   @override
   State<ReportScreen> createState() => _ReportScreenState();
 }
+bool isSubmitting = false;
+File? _selectedImage;
+final ImagePicker _picker = ImagePicker();
 
 class _ReportScreenState extends State<ReportScreen> {
   String? selectedReason;
@@ -88,6 +94,20 @@ class _ReportScreenState extends State<ReportScreen> {
     super.dispose();
   }
 
+Future<void> _pickImage() async {
+  final XFile? pickedFile = await _picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 70, // compress
+  );
+
+  if (pickedFile != null) {
+    setState(() {
+      _selectedImage = File(pickedFile.path);
+    });
+  }
+}
+
+
   Future<String> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
@@ -118,25 +138,54 @@ class _ReportScreenState extends State<ReportScreen> {
       final userId = await _getUserId();
       final url = Uri.parse("${ApiConfig.baseUrl}api/submit_report.php");
       
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'report_type': widget.reportType.toLowerCase().trim(),
-          'reported_id': widget.reportedId,
-          'reason': selectedReason!,
-          'details': _detailsController.text.trim(),
-          'reporter_id': userId,
-        },
-      ).timeout(
-        ApiConfig.timeoutDuration,
-        onTimeout: () {
-          throw Exception("Request timed out. Please check your connection.");
-        },
-      );
+      final request = http.MultipartRequest('POST', url);
 
+request.fields['report_type'] = widget.reportType.toLowerCase().trim();
+request.fields['reported_id'] = widget.reportedId;
+request.fields['reason'] = selectedReason!;
+request.fields['details'] = _detailsController.text.trim();
+request.fields['reporter_id'] = userId;
+
+// Optional image
+if (_selectedImage != null) {
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      'image', // MUST match PHP: $_FILES['image']
+      _selectedImage!.path,
+    ),
+  );
+}
+
+final streamedResponse = await request.send().timeout(
+  ApiConfig.timeoutDuration,
+  onTimeout: () {
+    throw Exception("Request timed out. Please check your connection.");
+  },
+);
+
+final response = await http.Response.fromStream(streamedResponse);
+final result = jsonDecode(response.body);
+
+<<<<<<< HEAD
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
+=======
+
+if (response.statusCode == 200 || response.statusCode == 201) {
+  if (result['status'] == 'success') {
+    if (mounted) {
+      _showSuccessDialog();
+    }
+  } else {
+    throw Exception(result['message'] ?? 'Failed to submit report');
+  }
+} else {
+  throw Exception(
+    result['message'] ??
+    "Server error (${response.statusCode}). Please try again later."
+  );
+}
+>>>>>>> a22b770ed35b3dfca8b0a1a6a918181dabc88296
 
         if (result['status'] == 'success') {
           if (mounted) {
@@ -437,6 +486,60 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
 
                 const SizedBox(height: 32),
+
+                // Optional Image Upload
+Text(
+  'Attach Image (Optional)',
+  style: GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: Colors.black,
+  ),
+),
+const SizedBox(height: 8),
+
+GestureDetector(
+  onTap: _pickImage,
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey.shade300),
+    ),
+    child: Column(
+      children: [
+        Icon(Icons.image, color: Colors.grey.shade600, size: 32),
+        const SizedBox(height: 8),
+        Text(
+          _selectedImage == null
+              ? 'Tap to select an image'
+              : 'Image selected',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+if (_selectedImage != null) ...[
+  const SizedBox(height: 12),
+  ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Image.file(
+      _selectedImage!,
+      height: 150,
+      fit: BoxFit.cover,
+      width: double.infinity,
+    ),
+  ),
+],
+
+const SizedBox(height: 32),
 
                 // Submit Button
                 SizedBox(
