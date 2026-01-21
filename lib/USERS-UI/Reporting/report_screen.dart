@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Configuration class for API
 class ApiConfig {
-  static const String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  static const String baseUrl = "http://192.168.137.1/carGOAdmin/";
   static const Duration timeoutDuration = Duration(seconds: 30);
 }
 
@@ -34,14 +34,8 @@ class _ReportScreenState extends State<ReportScreen> {
   final _formKey = GlobalKey<FormState>();
   bool isSubmitting = false;
 
-
-
-
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
-
-  // Report reasons based on type
-  Map<String, List<ReportReason>> reportReasons = {
-
+  // Enhanced report reasons with better organization
+  static const Map<String, List<ReportReason>> reportReasons = {
     'car': [
       ReportReason('Misleading information', Icons.error_outline),
       ReportReason('Fake photos', Icons.image_not_supported),
@@ -99,7 +93,6 @@ class _ReportScreenState extends State<ReportScreen> {
     final userId = prefs.getString('user_id');
     if (userId == null || userId.isEmpty) {
       throw Exception("User not logged in");
-
     }
     return userId;
   }
@@ -142,23 +135,19 @@ class _ReportScreenState extends State<ReportScreen> {
         },
       );
 
-      final result = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
 
-if (response.statusCode == 200 || response.statusCode == 201) {
-  if (result['status'] == 'success') {
-    if (mounted) {
-      _showSuccessDialog();
-    }
-  } else {
-    throw Exception(result['message'] ?? 'Failed to submit report');
-  }
-} else {
-  throw Exception(
-    result['message'] ??
-    "Server error (${response.statusCode}). Please try again later."
-  );
-}
-
+        if (result['status'] == 'success') {
+          if (mounted) {
+            _showSuccessDialog();
+          }
+        } else {
+          throw Exception(result['message'] ?? 'Failed to submit report');
+        }
+      } else {
+        throw Exception("Server error (${response.statusCode}). Please try again later.");
+      }
     } catch (e) {
       if (mounted) {
         _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', isError: true);

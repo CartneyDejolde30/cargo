@@ -21,6 +21,8 @@ import './dashboard/upcoming_bookings_widget.dart';
 // Pages
 import 'pending_requests_page.dart';
 import 'active_booking_page.dart';
+import 'cancelled_bookings_page.dart';
+import 'rejected_bookings_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -163,7 +165,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                     
                     const SizedBox(height: 24),
                     
-                    // Quick Actions (has Pending Requests and Active Bookings)
+                    // Quick Actions (Now includes all 4 actions)
                     _buildQuickActions(),
                     
                     const SizedBox(height: 24),
@@ -207,32 +209,33 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   }
 
   Widget _buildQuickStatsGrid() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 24),
-    child: GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 14,
-      childAspectRatio: 1.52, // Fine-tuned to eliminate sub-pixel overflow
-      children: [
-        StatCard(
-          title: "Total Cars",
-          value: "${stats.totalCars}",
-          icon: Icons.directions_car_outlined,
-          subtitle: "${stats.approvedCars} active",
-        ),
-        StatCard(
-          title: "Total Income",
-          value: _formatCurrency(stats.totalIncome),
-          icon: Icons.account_balance_wallet_outlined,
-          iconBackgroundColor: Colors.purple.shade50,
-        ),
-      ],
-    ),
-  );
-}
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 1.52,
+        children: [
+          StatCard(
+            title: "Total Cars",
+            value: "${stats.totalCars}",
+            icon: Icons.directions_car_outlined,
+            subtitle: "${stats.approvedCars} active",
+          ),
+          StatCard(
+            title: "Total Income",
+            value: _formatCurrency(stats.totalIncome),
+            icon: Icons.account_balance_wallet_outlined,
+            iconBackgroundColor: Colors.purple.shade50,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -248,6 +251,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             ),
           ),
           const SizedBox(height: 16),
+          
+          // Pending Requests
           QuickActionCard(
             title: "Pending Requests",
             subtitle: "Review and approve bookings",
@@ -264,6 +269,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             },
           ),
           const SizedBox(height: 14),
+          
+          // Active Bookings
           QuickActionCard(
             title: "Active Bookings",
             subtitle: "Currently rented vehicles",
@@ -275,6 +282,42 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                 context,
                 MaterialPageRoute(
                   builder: (_) => const ActiveBookingsPage(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          
+          // Cancelled Bookings (NEW)
+          QuickActionCard(
+            title: "Cancelled Bookings",
+            subtitle: "Bookings cancelled by renters",
+            count: stats.cancelledBookings,
+            icon: Icons.cancel_outlined,
+            backgroundColor: Colors.orange.shade700,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CancelledBookingsPage(ownerId: ownerId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          
+          // Rejected Bookings (NEW)
+          QuickActionCard(
+            title: "Rejected Bookings",
+            subtitle: "Bookings you have rejected",
+            count: stats.rejectedBookings,
+            icon: Icons.block_outlined,
+            backgroundColor: Colors.red.shade700,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RejectedBookingsPage(ownerId: ownerId),
                 ),
               );
             },
