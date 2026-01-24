@@ -5,13 +5,13 @@ class BookingTabsWidget extends StatelessWidget {
   final int currentTabIndex;
   final Function(int) onTabChanged;
   final List<String> tabs;
-  final List<int>? badgeCounts; // Optional badge counts for each tab
+  final List<int>? badgeCounts;
 
   const BookingTabsWidget({
     super.key,
     required this.currentTabIndex,
     required this.onTabChanged,
-    this.tabs = const ['Active', 'Pending', 'Upcoming', 'Past'],
+    this.tabs = const ['Active', 'Pending', 'Completed', 'Rejected'],
     this.badgeCounts,
   });
 
@@ -50,7 +50,7 @@ class BookingTabsWidget extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onTabChanged(index),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected ? Colors.black : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -63,22 +63,24 @@ class BookingTabsWidget extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 11.5, // Reduced from 13
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isSelected ? Colors.white : Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Optional badge
+              // Badge
               if (badgeCount != null && badgeCount > 0)
                 Positioned(
-                  top: -4,
-                  right: -4,
+                  top: -6,
+                  right: 0,
                   child: Container(
-                    padding: EdgeInsets.all(4),
+                    padding: EdgeInsets.all(3),
                     constraints: BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.white : Colors.black,
@@ -88,7 +90,7 @@ class BookingTabsWidget extends StatelessWidget {
                       child: Text(
                         badgeCount > 99 ? '99+' : badgeCount.toString(),
                         style: GoogleFonts.poppins(
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: isSelected ? Colors.black : Colors.white,
                         ),
@@ -97,135 +99,6 @@ class BookingTabsWidget extends StatelessWidget {
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Alternative style - Underline tabs (if you want a different look)
-class BookingTabsUnderlineWidget extends StatelessWidget {
-  final int currentTabIndex;
-  final Function(int) onTabChanged;
-  final List<String> tabs;
-
-  const BookingTabsUnderlineWidget({
-    super.key,
-    required this.currentTabIndex,
-    required this.onTabChanged,
-    this.tabs = const ['Active', 'Pending', 'Upcoming', 'Past'],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: List.generate(
-          tabs.length,
-          (index) => _buildTab(tabs[index], index),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTab(String label, int index) {
-    bool isSelected = currentTabIndex == index;
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onTabChanged(index),
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.black : Colors.grey.shade600,
-                ),
-              ),
-            ),
-            Container(
-              height: 2,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.transparent,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Alternative style - Segmented Control (iOS style)
-class BookingTabsSegmentedWidget extends StatelessWidget {
-  final int currentTabIndex;
-  final Function(int) onTabChanged;
-  final List<String> tabs;
-
-  const BookingTabsSegmentedWidget({
-    super.key,
-    required this.currentTabIndex,
-    required this.onTabChanged,
-    this.tabs = const ['Active', 'Pending', 'Upcoming', 'Past'],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: List.generate(
-          tabs.length,
-          (index) => _buildTab(tabs[index], index),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTab(String label, int index) {
-    bool isSelected = currentTabIndex == index;
-    bool isFirst = index == 0;
-    bool isLast = index == tabs.length - 1;
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onTabChanged(index),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: isFirst ? Radius.circular(11) : Radius.zero,
-              bottomLeft: isFirst ? Radius.circular(11) : Radius.zero,
-              topRight: isLast ? Radius.circular(11) : Radius.zero,
-              bottomRight: isLast ? Radius.circular(11) : Radius.zero,
-            ),
-            border: Border(
-              right: !isLast
-                  ? BorderSide(color: Colors.grey.shade300, width: 1)
-                  : BorderSide.none,
-            ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
-            ),
           ),
         ),
       ),
