@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard/booking_service.dart';
 import 'mycar/api_config.dart';
+import 'live_tracking_screen.dart'; // Import the new tracking screen
 
 class ActiveBookingsPage extends StatefulWidget {
   const ActiveBookingsPage({super.key});
@@ -109,7 +110,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // Modern App Bar
           SliverAppBar(
             expandedHeight: 120,
             floating: false,
@@ -151,8 +151,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               ),
             ),
           ),
-
-          // Content with Pull-to-Refresh
           SliverFillRemaining(
             child: _buildContent(),
           ),
@@ -296,8 +294,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   Widget _buildModernBookingCard(Map<String, dynamic> booking) {
     final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
     final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
-    
-    // Get image URL using ApiConfig
     final imageUrl = ApiConfig.getCarImageUrl(booking['car_image']);
 
     return GestureDetector(
@@ -329,7 +325,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Modern Image with Gradient Overlay
             Stack(
               children: [
                 ClipRRect(
@@ -372,7 +367,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   ),
                 ),
                 
-                // Status Badge
                 Positioned(
                   top: 16,
                   left: 16,
@@ -407,7 +401,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   ),
                 ),
                 
-                // Days Badge
                 Positioned(
                   top: 16,
                   right: 16,
@@ -437,13 +430,11 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               ],
             ),
             
-            // Content Section
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Price
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -474,7 +465,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Car Name
                   Text(
                     booking['car_full_name'] ?? 'Car',
                     style: GoogleFonts.outfit(
@@ -485,7 +475,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   ),
                   const SizedBox(height: 12),
                   
-                  // Renter & Trip Info
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -504,7 +493,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Progress Bar
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -548,6 +536,43 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                       ],
                     ),
                   ),
+                  
+                  // NEW: Live Tracking Button
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveTrackingScreen(
+                              bookingId: booking['booking_id'].toString(),
+                              carName: booking['car_full_name'] ?? 'Car',
+                              renterName: booking['renter_name'] ?? 'Unknown',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.map, size: 20),
+                      label: Text(
+                        'Track Car Location',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -588,9 +613,7 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   }
 }
 
-// ========================================
-// DETAILS PAGE
-// ========================================
+// DETAILS PAGE (unchanged, keeping original implementation)
 class ActiveBookingDetailsPage extends StatefulWidget {
   final Map<String, dynamic> booking;
   final String ownerId;
@@ -610,7 +633,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   bool _isEnding = false;
 
   Future<void> _handleEndTrip() async {
-    // Show confirmation dialog first
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -652,7 +674,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
       setState(() => _isEnding = false);
 
       if (result['success'] == true) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -673,10 +694,8 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
           ),
         );
 
-        // Navigate back
         Navigator.pop(context);
       } else {
-        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -721,13 +740,30 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LiveTrackingScreen(
+                    bookingId: widget.booking['booking_id'].toString(),
+                    carName: widget.booking['car_full_name'] ?? 'Car',
+                    renterName: widget.booking['renter_name'] ?? 'Unknown',
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.map),
+            tooltip: 'Track Location',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Car Image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
@@ -744,7 +780,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ),
             const SizedBox(height: 20),
             
-            // Car Name & Price
             Text(
               widget.booking['car_full_name'] ?? 'Car',
               style: GoogleFonts.outfit(
@@ -763,7 +798,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ),
             const SizedBox(height: 24),
             
-            // Progress Card
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -817,7 +851,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ),
             const SizedBox(height: 24),
             
-            // Renter Info
             _buildSection('Renter Information', [
               _buildDetailRow('Name', widget.booking['renter_name'] ?? ''),
               _buildDetailRow('Contact', widget.booking['renter_contact'] ?? ''),
@@ -825,7 +858,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ]),
             const SizedBox(height: 20),
             
-            // Trip Details
             _buildSection('Trip Details', [
               _buildDetailRow('Start', widget.booking['pickup_date'] ?? ''),
               _buildDetailRow('End', widget.booking['return_date'] ?? ''),
@@ -833,7 +865,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ]),
             const SizedBox(height: 30),
             
-            // End Trip Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
