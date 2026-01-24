@@ -5,11 +5,7 @@ import '../models/user_verification.dart';
 
 class VerificationService {
   static const String baseUrl =
-<<<<<<< Updated upstream
       "http://10.77.127.2/carGOAdmin/api/submit_verification.php";
-=======
-      "http://10.77.127.2/carGOAdmin/api/submit_verification.php";
->>>>>>> Stashed changes
 
   static Future<Map<String, dynamic>> submitVerification(
       UserVerification user) async {

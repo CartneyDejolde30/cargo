@@ -20,11 +20,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen> {
   String? _userId;
   Map<String, dynamic>? _currentSettings;
 
-<<<<<<< Updated upstream
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
-=======
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
->>>>>>> Stashed changes
 
   @override
   void initState() {

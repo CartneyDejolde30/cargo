@@ -18,11 +18,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
   String? _userId;
   String _filterStatus = 'all';
 
-<<<<<<< Updated upstream
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
-=======
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
->>>>>>> Stashed changes
 
   @override
   void initState() {
