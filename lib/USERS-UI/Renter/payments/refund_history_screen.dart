@@ -52,7 +52,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
 
         if (result['success'] == true) {
           setState(() {
-            _refunds = List<Map<String, dynamic>>.from(result['refunds']);
+            _refunds = List<Map<String, dynamic>>.from(result['refunds'] ?? []);
             _statistics = result['statistics'];
             _isLoading = false;
           });
@@ -154,7 +154,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Colors.black),
+          const CircularProgressIndicator(color: Colors.black),
           const SizedBox(height: 16),
           Text(
             'Loading refunds...',
@@ -192,9 +192,10 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
   }
 
   Widget _buildStatisticsCard() {
-    final totalRefunded = double.tryParse(_statistics!['total_refunded']?.toString() ?? '0') ?? 0;
-    final completedCount = int.tryParse(_statistics!['completed_count']?.toString() ?? '0') ?? 0;
-    final pendingCount = int.tryParse(_statistics!['pending_count']?.toString() ?? '0') ?? 0;
+    final totalRefunded = _parseDouble(_statistics!['total_refunded']);
+    final completedCount = _parseInt(_statistics!['completed_count']);
+    final pendingCount = _parseInt(_statistics!['pending_count']);
+    final avgDays = _parseDouble(_statistics!['avg_processing_days']);
 
     return Container(
       margin: const EdgeInsets.all(20),
@@ -254,9 +255,11 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildCountBadge('Completed', completedCount, Colors.green),
+              if (avgDays > 0)
+                _buildCountBadge('${avgDays.toStringAsFixed(0)} days avg', 0, Colors.blue, showCount: false),
             ],
           ),
         ],
@@ -272,11 +275,14 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
           children: [
             Icon(icon, color: color, size: 16),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.8),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -294,7 +300,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
     );
   }
 
-  Widget _buildCountBadge(String label, int count, Color color) {
+  Widget _buildCountBadge(String label, int count, Color color, {bool showCount = true}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -305,15 +311,17 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            count.toString(),
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          if (showCount) ...[
+            Text(
+              count.toString(),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
+            const SizedBox(width: 6),
+          ],
           Text(
             label,
             style: GoogleFonts.poppins(
@@ -388,7 +396,8 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
     final status = refund['status'] ?? 'pending';
     final statusColor = _getStatusColor(status);
     final statusIcon = _getStatusIcon(status);
-    final amount = double.tryParse(refund['final_refund_amount'].toString()) ?? 0;
+    final amount = _parseDouble(refund['final_refund_amount']);
+    final deductionAmount = _parseDouble(refund['deduction_amount']);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -517,7 +526,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
                     ),
                   ],
                 ),
-                if (refund['deduction_amount'] != null && refund['deduction_amount'] > 0) ...[
+                if (deductionAmount > 0) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -531,11 +540,34 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Deduction: ${_formatCurrency(double.parse(refund['deduction_amount'].toString()))}',
+                            'Deduction: ${_formatCurrency(deductionAmount)}${refund['deduction_reason'] != null ? ' - ${refund['deduction_reason']}' : ''}',
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               color: Colors.orange.shade900,
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (refund['expected_completion'] != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule, color: Colors.blue.shade700, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Expected completion: ${refund['expected_completion']}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.blue.shade900,
                           ),
                         ),
                       ],
@@ -569,7 +601,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
           Text(
             _filterStatus == 'all'
                 ? 'Your refund requests will appear here'
-                : 'No ${_filterStatus} refunds',
+                : 'No $_filterStatus refunds',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -586,5 +618,22 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
       symbol: '₱',
       decimalDigits: 2,
     ).format(amount);
+  }
+
+  // Helper methods for safe parsing
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

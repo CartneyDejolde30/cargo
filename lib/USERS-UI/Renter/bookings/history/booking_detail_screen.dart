@@ -8,19 +8,17 @@ import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_status_tracker.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
 
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
   final String status;
- 
-
 
   const BookingDetailScreen({
     super.key,
     required this.booking,
     required this.status,
-   
   });
 
   @override
@@ -51,7 +49,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       _isLoading = false;
     });
 
-    // Load payment information
     await _fetchPaymentInfo();
   }
 
@@ -82,41 +79,38 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   String _getStatusText() {
-  switch (widget.booking.status.toLowerCase()) {
-
-    case 'approved':
-      return 'Active';
-    case 'pending':
-      return 'Pending Payment';
-    case 'completed':
-      return 'Completed';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'rejected':
-      return 'Rejected';
-    default:
-      return widget.booking.status;
+    switch (widget.booking.status.toLowerCase()) {
+      case 'approved':
+        return 'Active';
+      case 'pending':
+        return 'Pending Payment';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return widget.booking.status;
+    }
   }
-}
-
 
   Color _getStatusColor() {
-  switch (widget.booking.status) {
-    case 'approved':
-      return Colors.green;
-    case 'pending':
-      return Colors.orange;
-    case 'completed':
-      return Colors.grey;
-    case 'cancelled':
-      return Colors.red.shade400;
-    case 'rejected':
-      return Colors.red.shade700;
-    default:
-      return Colors.grey;
+    switch (widget.booking.status) {
+      case 'approved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'completed':
+        return Colors.grey;
+      case 'cancelled':
+        return Colors.red.shade400;
+      case 'rejected':
+        return Colors.red.shade700;
+      default:
+        return Colors.grey;
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +140,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       backgroundColor: Colors.white,
       leading: IconButton(
         icon: _circleIcon(Icons.arrow_back),
-       onPressed: () => Navigator.pop(context, _bookingChanged),
-
+        onPressed: () => Navigator.pop(context, _bookingChanged),
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
@@ -179,7 +172,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _locationCard(),
         const SizedBox(height: 20),
         
-        // 🆕 PAYMENT STATUS SECTION
+        // Payment Status Section
         if (_paymentData != null) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -210,7 +203,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                 ).then((result) {
                   if (result == true) {
-                    // Refresh payment info after refund request
                     _fetchPaymentInfo();
                   }
                 });
@@ -239,21 +231,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Widget _carInfo() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
-          widget.booking.carName,
-          style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Row(children: [
-          Icon(Icons.receipt_long, size: 16, color: Colors.grey.shade600),
-          const SizedBox(width: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            'Booking ID: ${widget.booking.bookingId}',
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+            widget.booking.carName,
+            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-        ]),
-      ]),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.receipt_long, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(
+                'Booking ID: ${widget.booking.bookingId}',
+                style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -267,89 +264,142 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.blue.shade100),
         ),
-        child: Column(children: [
-          Row(children: [
-            Icon(Icons.calendar_today, color: Colors.blue.shade700),
-            const SizedBox(width: 8),
-            Text(
-              'Rental Period',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.calendar_today, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Rental Period',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 20),
-          Row(children: [
-            Expanded(
-              child: _dateCard(
-                'Pick Up',
-                widget.booking.pickupDate,
-                widget.booking.pickupTime,
-                Icons.arrow_circle_up,
-                Colors.green,
-              ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _dateCard(
+                    'Pick Up',
+                    widget.booking.pickupDate,
+                    widget.booking.pickupTime,
+                    Icons.arrow_circle_up,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _dateCard(
+                    'Return',
+                    widget.booking.returnDate,
+                    widget.booking.returnTime,
+                    Icons.arrow_circle_down,
+                    Colors.orange,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _dateCard(
-                'Return',
-                widget.booking.returnDate,
-                widget.booking.returnTime,
-                Icons.arrow_circle_down,
-                Colors.orange,
-              ),
-            ),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }
 
-Widget _buildBottomButton(BuildContext context) {
-  // Show refund button for rejected/cancelled
-  if (widget.booking.status == 'rejected' ||
-      widget.booking.status == 'cancelled') {
-    return _buildRefundButton(context);
+  Widget _buildBottomButton(BuildContext context) {
+    // Show refund button for rejected/cancelled
+    if (widget.booking.status == 'rejected' || widget.booking.status == 'cancelled') {
+      return _buildRefundButton(context);
+    }
+
+    switch (widget.status) {
+      case 'active':
+        return _twoButtons(
+          context,
+          'Cancel Booking',
+          Colors.red,
+          _showCancelDialog,
+          'View Trip',
+          Colors.black,
+          rightAction: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LiveTripTrackerScreen(
+                  booking: widget.booking,
+                ),
+              ),
+            );
+          },
+        );
+
+      case 'pending':
+        return ElevatedButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Awaiting owner approval...'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+          child: Text(
+            'Awaiting Approval',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        );
+
+      case 'upcoming':
+        return _twoButtons(
+          context,
+          'Modify Booking',
+          Colors.grey,
+          _showCancelDialog,
+          'Get Directions',
+          Colors.black,
+          rightAction: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LiveTripTrackerScreen(
+                  booking: widget.booking,
+                ),
+              ),
+            );
+          },
+        );
+
+      case 'past':
+      case 'completed':
+        return _singleButton(
+          'Book This Car Again',
+          Colors.black,
+          () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Rebooking feature coming soon!'),
+                backgroundColor: Colors.black,
+              ),
+            );
+          },
+        );
+
+      default:
+        return const SizedBox.shrink();
+    }
   }
-
-  switch (widget.status) {
-    case 'active':
-      return _twoButtons(
-        context,
-        'Cancel Booking',
-        Colors.red,
-        _showCancelDialog,
-        'View Trip',
-        Colors.black,
-      );
-
-    case 'pending':
-      return _singleButton(
-        'Complete Payment',
-        Colors.green.shade600,
-        () => _showPaymentOptions(context),
-      );
-
-    case 'upcoming':
-      return _twoButtons(
-        context,
-        'Modify Booking',
-        Colors.grey,
-        _showCancelDialog,
-        'Get Directions',
-        Colors.black,
-      );
-
-    case 'past':
-      return _singleButton(
-        'Book This Car Again',
-        Colors.black,
-        () {},
-      );
-
-    default:
-      return const SizedBox.shrink();
-  }
-}
-
 
   Widget _locationCard() {
     return Padding(
@@ -360,22 +410,29 @@ Widget _buildBottomButton(BuildContext context) {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Row(children: [
-          _iconBox(Icons.location_on, Colors.red),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Location',
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 4),
-              Text(
-                widget.booking.location,
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        child: Row(
+          children: [
+            _iconBox(Icons.location_on, Colors.red),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Location',
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.booking.location,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
-            ]),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ]),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+          ],
+        ),
       ),
     );
   }
@@ -383,64 +440,74 @@ Widget _buildBottomButton(BuildContext context) {
   Widget _paymentDetails() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
-          'Payment Breakdown',
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment Breakdown',
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          child: Column(children: [
-            _paymentRow('Rental Fee', '₱${widget.booking.totalPrice}'),
-            const Divider(height: 24),
-            _paymentRow('Service Fee', '₱250', isSubtotal: true),
-            const Divider(height: 24),
-            _paymentRow(
-              'Total Amount',
-              '₱${_calculateTotal(widget.booking.totalPrice)}',
-              isTotal: true,
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
             ),
-          ]),
-        ),
-      ]),
+            child: Column(
+              children: [
+                _paymentRow('Rental Fee', '₱${widget.booking.totalPrice}'),
+                const Divider(height: 24),
+                _paymentRow('Service Fee', '₱250', isSubtotal: true),
+                const Divider(height: 24),
+                _paymentRow(
+                  'Total Amount',
+                  '₱${_calculateTotal(widget.booking.totalPrice)}',
+                  isTotal: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _helpSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
-          'Need Help?',
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Row(children: [
-          Expanded(
-            child: _contactButton(
-              'Message Owner',
-              Icons.chat_bubble_outline,
-              Colors.blue,
-              () {},
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Need Help?',
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _contactButton(
-              'Call Support',
-              Icons.phone,
-              Colors.green,
-              () {},
-            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _contactButton(
+                  'Message Owner',
+                  Icons.chat_bubble_outline,
+                  Colors.blue,
+                  () {},
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _contactButton(
+                  'Call Support',
+                  Icons.phone,
+                  Colors.green,
+                  () {},
+                ),
+              ),
+            ],
           ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -461,93 +528,83 @@ Widget _buildBottomButton(BuildContext context) {
     );
   }
 
-Widget _buildRefundButton(BuildContext context) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      // Status alert
-      Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade200),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.red.shade700),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                widget.booking.status == 'rejected'
-                    ? 'This booking was rejected by the owner'
-                    : 'This booking was cancelled',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.red.shade900,
-                  fontWeight: FontWeight.w500,
+  Widget _buildRefundButton(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.red.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.booking.status == 'rejected'
+                      ? 'This booking was rejected by the owner'
+                      : 'This booking was cancelled',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.red.shade900,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-
-      // Refund button
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RefundRequestScreen(
-                  bookingId: widget.booking.bookingId,
-                  bookingReference:
-                      '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
-                  totalAmount: double.tryParse(
-                        widget.booking.totalPrice.replaceAll(',', ''),
-                      ) ??
-                      0,
-                  cancellationDate: DateTime.now().toString(),
-                  paymentMethod:
-                      _paymentData?['payment_method'] ?? 'gcash',
-                  paymentReference:
-                      _paymentData?['payment_reference'] ??
-                          widget.booking.bookingId.toString(),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RefundRequestScreen(
+                    bookingId: widget.booking.bookingId,
+                    bookingReference: '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
+                    totalAmount: double.tryParse(
+                          widget.booking.totalPrice.replaceAll(',', ''),
+                        ) ?? 0,
+                    cancellationDate: DateTime.now().toString(),
+                    paymentMethod: _paymentData?['payment_method'] ?? 'gcash',
+                    paymentReference: _paymentData?['payment_reference'] ?? widget.booking.bookingId.toString(),
+                  ),
                 ),
-              ),
-            );
+              );
 
-            // 🔄 Refresh payment info only
-            if (result == true) {
-              await _fetchPaymentInfo();
-            }
-          },
-          icon: const Icon(Icons.undo, size: 20),
-          label: Text(
-            'Request Refund',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              if (result == true) {
+                await _fetchPaymentInfo();
+              }
+            },
+            icon: const Icon(Icons.undo, size: 20),
+            label: Text(
+              'Request Refund',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.shade600,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
             ),
-            elevation: 0,
           ),
         ),
-      ),
-    ],
-  );
-}
-
+      ],
+    );
+  }
 
   String _calculateTotal(String fee) {
     final value = int.tryParse(fee.replaceAll(',', '')) ?? 0;
@@ -627,7 +684,6 @@ Widget _buildRefundButton(BuildContext context) {
 
                 _bookingChanged = true;
                 Navigator.pop(context, true);
-
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -645,17 +701,12 @@ Widget _buildRefundButton(BuildContext context) {
     );
   }
 
-  void _showPaymentOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => const SizedBox(height: 200),
-    );
-  }
-
   Widget _circleIcon(IconData icon) => Container(
         padding: const EdgeInsets.all(8),
-        decoration:
-            const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
         child: Icon(icon),
       );
 
@@ -710,17 +761,22 @@ Widget _buildRefundButton(BuildContext context) {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 6),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11)),
-        ]),
-        const SizedBox(height: 8),
-        Text(date, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Text(time, style: GoogleFonts.poppins(fontSize: 11)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Text(label, style: GoogleFonts.poppins(fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(date, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(time, style: GoogleFonts.poppins(fontSize: 11)),
+        ],
+      ),
     );
   }
 
@@ -763,11 +819,14 @@ Widget _buildRefundButton(BuildContext context) {
           color: color.withAlpha((0.1 * 255).round()),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.poppins(color: color)),
-        ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 8),
+            Text(label, style: GoogleFonts.poppins(color: color)),
+          ],
+        ),
       ),
     );
   }
@@ -793,54 +852,58 @@ Widget _buildRefundButton(BuildContext context) {
     );
   }
 
+  // ✅ UPDATED: Only ONE _twoButtons method with optional right action
   Widget _twoButtons(
     BuildContext context,
     String leftLabel,
     Color leftColor,
     Function(BuildContext) leftAction,
     String rightLabel,
-    Color rightColor,
-  ) {
-    return Row(children: [
-      Expanded(
-        child: OutlinedButton(
-          onPressed: () => leftAction(context),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: leftColor),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    Color rightColor, {
+    VoidCallback? rightAction,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => leftAction(context),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: leftColor),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          ),
-          child: Text(
-            leftLabel,
-            style: GoogleFonts.poppins(
-              color: leftColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: rightColor,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(
-            rightLabel,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+            child: Text(
+              leftLabel,
+              style: GoogleFonts.poppins(
+                color: leftColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
-      ),
-    ]);
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: rightAction ?? () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: rightColor,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              rightLabel,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
