@@ -5,7 +5,7 @@ class ApiConfig {
   // Run 'ipconfig' in Command Prompt to find it
   // Example: 192.168.1.100
   // ========================================
-  static const String _baseIP = '10.77.127.141'; // ← PUT YOUR IP HERE!
+  static const String _baseIP = '10.77.127.2'; // ← PUT YOUR IP HERE!
   static const String _basePath = 'carGOAdmin';
   
   // Base URLs

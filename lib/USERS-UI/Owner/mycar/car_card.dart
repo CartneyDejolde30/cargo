@@ -17,7 +17,8 @@ class CarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = ApiConstants.getCarImageUrl(car['image']);
+    final imageUrl = car['image'];
+
     final status = car["status"] ?? "Unknown";
 
     return Container(

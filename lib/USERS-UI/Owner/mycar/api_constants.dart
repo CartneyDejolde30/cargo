@@ -4,18 +4,26 @@ class ApiConstants {
   // Run 'ipconfig' in Command Prompt to find it
   // Example: 192.168.1.100
   // ========================================
-  static const String baseUrl = "http://10.77.127.141/carGOAdmin/"; // ← PUT YOUR IP HERE!
-  
-  // API Endpoints
-  static const String carsApi = "${baseUrl}cars_api.php";
-  static const String checkVerificationApi = "${baseUrl}api/check_verification.php";
-  
-  // Helper methods
-  static String getCarImageUrl(String imagePath) {
-  return "$baseUrl$imagePath";
-}
+  static const String baseUrl = "http://10.77.127.2/carGOAdmin/";
 
-  
-  // Timeout duration
+  // APIs
+  static const String carsApi = "${baseUrl}cars_api.php";
+  static const String checkVerificationApi =
+      "${baseUrl}api/check_verification.php";
+
+  // IMAGES
+  static const String imageBaseUrl = "${baseUrl}uploads";
+
+  static String getCarImageUrl(String imagePath) {
+    if (imagePath.isEmpty) return "";
+
+    final cleanPath = imagePath.startsWith("/")
+        ? imagePath.substring(1)
+        : imagePath;
+
+    return "$imageBaseUrl/$cleanPath";
+  }
+
+  // TIMEOUT
   static const Duration apiTimeout = Duration(seconds: 10);
 }

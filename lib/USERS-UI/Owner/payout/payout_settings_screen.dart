@@ -20,7 +20,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen> {
   String? _userId;
   Map<String, dynamic>? _currentSettings;
 
-  final String baseUrl = "http://10.77.127.141/carGOAdmin/";
+  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
 
   @override
   void initState() {

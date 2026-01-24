@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 // Configuration class for API
 class ApiConfig {
-  static const String baseUrl = "http://192.168.137.1/carGOAdmin/";
+  static const String baseUrl = "http://10.77.127.2/carGOAdmin/";
   static const Duration timeoutDuration = Duration(seconds: 30);
 }
 

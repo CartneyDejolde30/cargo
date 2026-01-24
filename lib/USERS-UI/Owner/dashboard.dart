@@ -108,6 +108,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
 
   Future<void> _fetchDashboardStats() async {
     final fetchedStats = await _dashboardService.fetchDashboardStats(ownerId);
+    debugPrint("👤 OWNER ID => $ownerId");
+
     setState(() => stats = fetchedStats);
   }
 

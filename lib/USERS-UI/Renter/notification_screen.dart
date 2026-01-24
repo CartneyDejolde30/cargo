@@ -66,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-            "http://10.77.127.141/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
+            "http://10.77.127.2/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
       );
 
       print("📩 RAW RESPONSE: ${res.body}");
@@ -192,6 +192,109 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() {
       notification["isRead"] = true;
     });
+  }
+
+  // ---------------- DELETE NOTIFICATION ---------------- //
+
+  Future<void> _deleteNotification(Map<String, dynamic> notification) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          "Delete Notification",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        content: Text(
+          "Are you sure you want to delete this notification?",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              "Cancel",
+              style: GoogleFonts.poppins(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              "Delete",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _notifications.remove(notification);
+        _groupByDate();
+      });
+
+      // Optional: Make API call to delete from backend
+      // await _deleteFromBackend(notification["id"]);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Notification deleted",
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.black,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------------- OPEN NOTIFICATION DETAIL ---------------- //
+
+  void _openNotificationDetail(Map<String, dynamic> notification) {
+    _markAsRead(notification);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NotificationDetailScreen(
+          notification: notification,
+          onDelete: () {
+            Navigator.of(context).pop();
+            _deleteNotification(notification);
+          },
+        ),
+      ),
+    );
   }
 
   // ---------------- UI ---------------- //
@@ -341,7 +444,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _markAsRead(n),
+          onTap: () => _openNotificationDetail(n),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -429,6 +532,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     ],
                   ),
                 ),
+                IconButton(
+                  onPressed: () => _deleteNotification(n),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: Colors.grey.shade400,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
           ),
@@ -438,4 +551,139 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _handleNavigation(int index) {}
+}
+
+// ---------------- NOTIFICATION DETAIL SCREEN ---------------- //
+
+class NotificationDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> notification;
+  final VoidCallback onDelete;
+
+  const NotificationDetailScreen({
+    super.key,
+    required this.notification,
+    required this.onDelete,
+  });
+
+  IconData _getIconByType(String type) {
+    switch (type.toLowerCase()) {
+      case 'booking':
+        return Icons.calendar_month_outlined;
+      case 'payment':
+        return Icons.account_balance_wallet_outlined;
+      case 'alert':
+        return Icons.info_outline;
+      case 'success':
+        return Icons.verified_outlined;
+      case 'message':
+        return Icons.chat_bubble_outline_rounded;
+      case 'info':
+        return Icons.info_outline;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+
+  Color _getBackgroundByType(String type) {
+    return Colors.grey.shade50;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = notification["type"] ?? "info";
+    final icon = _getIconByType(type);
+    final backgroundColor = _getBackgroundByType(type);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.black),
+            onPressed: onDelete,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.black,
+                  size: 40,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              notification["title"],
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "${notification["date"]} • ${notification["time"]}",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                notification["message"],
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: Colors.grey.shade800,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

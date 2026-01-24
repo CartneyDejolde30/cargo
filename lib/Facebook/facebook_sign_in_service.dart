@@ -11,7 +11,7 @@ class FacebookSignInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ⚠️ UPDATE THIS WITH YOUR SERVER IP
-  static const String baseUrl = "http://10.77.127.141/carGOAdmin";
+  static const String baseUrl = "http://10.77.127.2/carGOAdmin";
 
   /// Sign in with Facebook
   Future<Map<String, dynamic>?> signInWithFacebook() async {
