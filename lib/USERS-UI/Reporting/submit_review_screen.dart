@@ -33,7 +33,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   final TextEditingController _ownerReviewController = TextEditingController();
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.139.150.2/carGOAdmin/";
+  final String baseUrl = "http://10.77.127.141/carGOAdmin/";
 
   // Review categories for cars
   Map<String, double> carCategories = {

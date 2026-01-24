@@ -255,6 +255,8 @@ Widget _statusBadge() {
   // =========================
   // ACTION BUTTON
   // =========================
+// Update the _buildActionButton method in booking_card_widget.dart
+
 Widget _buildActionButton(BuildContext context) {
   // 🔥 Always prioritize refund for rejected/cancelled
   if (booking.status.toLowerCase() == 'rejected' ||
@@ -303,6 +305,7 @@ Widget _buildActionButton(BuildContext context) {
       );
 
     case 'pending':
+      // ✅ Changed from "Pay Now" to "View Details"
       return ElevatedButton(
         onPressed: () {
           Navigator.push(
@@ -328,7 +331,7 @@ Widget _buildActionButton(BuildContext context) {
           elevation: 0,
         ),
         child: Text(
-          'Pay Now',
+          'View Details',
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -337,8 +340,56 @@ Widget _buildActionButton(BuildContext context) {
         ),
       );
 
+    case 'completed':
+      // ✅ Rate & Review button for completed bookings
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SubmitReviewScreen(
+                bookingId: booking.bookingId.toString(),
+                carId: booking.carId.toString(),
+                carName: booking.carName,
+                carImage: booking.carImage,
+                ownerId: booking.ownerId.toString(),
+                ownerName: booking.ownerName,
+                ownerImage: '',
+              ),
+            ),
+          ).then((result) {
+            if (result == true && onReviewSubmitted != null) {
+              onReviewSubmitted!();
+            }
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              'Rate & Review',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+
     case 'past':
-      // ✅ Completed bookings only
+      // Keep for backward compatibility
       return ElevatedButton(
         onPressed: () {
           Navigator.push(
