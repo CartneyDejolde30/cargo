@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+
+
+
 
 class LiveTripTrackerScreen extends StatefulWidget {
   final Booking booking;
@@ -17,6 +24,13 @@ class LiveTripTrackerScreen extends StatefulWidget {
 
 class _LiveTripTrackerScreenState extends State<LiveTripTrackerScreen> {
   int _selectedTabIndex = 0;
+
+
+Future<String> _getCurrentUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString("user_id") ?? "";
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -884,24 +898,63 @@ class _LiveTripTrackerScreenState extends State<LiveTripTrackerScreen> {
       ),
     );
   }
+  void _showError(String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
 
-  void _contactOwner() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening chat with ${widget.booking.ownerName}...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+
+ Future<void> _contactOwner() async {
+  final currentUserId = await _getCurrentUserId();
+
+  if (currentUserId.isEmpty) {
+    _showError("User not logged in");
+    return;
   }
 
-  void _callOwner() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Calling ${widget.booking.ownerName}...'),
-        backgroundColor: Colors.green,
+  final ownerId = widget.booking.ownerId;
+  final bookingId = widget.booking.bookingId;
+
+  // Generate consistent chat ID
+  final chatId = bookingId.toString().compareTo(currentUserId) < 0
+      ? "${bookingId}_$currentUserId\_$ownerId"
+      : "${bookingId}_$ownerId\_$currentUserId";
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ChatDetailScreen(
+        chatId: chatId,
+        peerId: ownerId.toString(),
+        peerName: widget.booking.ownerName,
+        peerAvatar: widget.booking.ownerAvatar, // make sure this exists
       ),
-    );
+    ),
+  );
+}
+
+
+ Future<void> _callOwner() async {
+  final phone = widget.booking.ownerPhone;
+
+  if (phone.isEmpty) {
+    _showError("Owner phone number not available");
+    return;
   }
+
+  final uri = Uri.parse("tel:$phone");
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    _showError("Could not open phone dialer");
+  }
+}
+
 
   void _callSupport() {
     ScaffoldMessenger.of(context).showSnackBar(

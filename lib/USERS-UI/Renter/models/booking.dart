@@ -3,6 +3,9 @@ class Booking {
   final int carId;
   final int ownerId;
   final String carName;
+  final String ownerAvatar;
+  final String ownerPhone;
+
   final String carImage;
   final String location;
   final String pickupDate;
@@ -16,8 +19,12 @@ class Booking {
   Booking({
     required this.bookingId,
     required this.carId,
+    required this.ownerAvatar,
     required this.ownerId,
+  
+
     required this.carName,
+      required this.ownerPhone,
     required this.carImage,
     required this.location,
     required this.pickupDate,
@@ -33,6 +40,9 @@ class Booking {
   return Booking(
     bookingId: json['bookingId'],
     carId: json['carId'],
+    ownerAvatar: json['ownerAvatar'] ?? '',
+ownerPhone: json['ownerPhone'] ?? '',
+
     ownerId: json['ownerId'],
     carName: json['carName'] ?? '',
     carImage: json['carImage'] ?? '',
