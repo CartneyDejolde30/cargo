@@ -5,26 +5,41 @@ import './api_constants.dart';
 
 class CarService {
   /* ---------------- FETCH CARS ---------------- */
-  Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
-    try {
-      final response = await http
-          .get(Uri.parse("${ApiConstants.carsApi}?owner_id=$ownerId"))
-          .timeout(ApiConstants.apiTimeout);
+Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
+  try {
+    final response = await http
+        .get(Uri.parse("${ApiConstants.carsApi}?owner_id=$ownerId"))
+        .timeout(ApiConstants.apiTimeout);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
 
-        if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
-        }
+      if (data is List) {
+        return data.map<Map<String, dynamic>>((car) {
+          const String baseUrl = ApiConstants.baseUrl;
+
+          String imagePath = car['image']?.toString() ?? "";
+
+          // Convert Windows/server path to web path
+          if (imagePath.contains("uploads")) {
+            imagePath = imagePath.split("uploads").last;
+            imagePath = "uploads$imagePath";
+          }
+
+          return {
+            ...Map<String, dynamic>.from(car),
+            "image": "$baseUrl/$imagePath",
+          };
+        }).toList();
       }
-    } catch (e) {
-      debugPrint("❌ Error fetching cars: $e");
-      rethrow;
     }
-
-    return [];
+  } catch (e) {
+    debugPrint("❌ Error fetching cars: $e");
   }
+
+  return [];
+}
+
 
   /* ---------------- DELETE CAR ---------------- */
   Future<bool> deleteCar(int carId) async {

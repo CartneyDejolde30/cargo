@@ -4,6 +4,7 @@ class NotificationModel {
   final int id;
   final String title;
   final String message;
+  final String type;
   final String createdAt;
   final String readStatus; // "read" or "unread"
 
@@ -11,6 +12,7 @@ class NotificationModel {
     required this.id,
     required this.title,
     required this.message,
+    required this.type,
     required this.createdAt,
     required this.readStatus,
   });
@@ -20,6 +22,7 @@ class NotificationModel {
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       title: json['title']?.toString() ?? 'Notification',
       message: json['message']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'info',
       createdAt: json['created_at']?.toString() ?? '',
       readStatus: json['read_status']?.toString() ?? 'unread',
     );
@@ -27,10 +30,13 @@ class NotificationModel {
 
   bool get isUnread => readStatus.toLowerCase() == 'unread';
 
-  // Get icon based on title
+  // ===============================
+  // ICON & COLOR HELPERS
+  // ===============================
+
   IconData get icon {
     final lowerTitle = title.toLowerCase();
-    
+
     if (lowerTitle.contains('booking') || lowerTitle.contains('request')) {
       return Icons.bookmark_outline;
     } else if (lowerTitle.contains('payment') || lowerTitle.contains('paid')) {
@@ -46,10 +52,9 @@ class NotificationModel {
     }
   }
 
-  // Get color based on title
   Color get color {
     final lowerTitle = title.toLowerCase();
-    
+
     if (lowerTitle.contains('booking') || lowerTitle.contains('request')) {
       return Colors.blue;
     } else if (lowerTitle.contains('payment')) {
@@ -65,12 +70,35 @@ class NotificationModel {
     }
   }
 
+  // ===============================
+  // DATE FORMATTERS
+  // ===============================
+
   // Format time (HH:mm)
   String get formattedTime {
     try {
-      return createdAt.substring(11, 16);
+      final date = DateTime.parse(createdAt);
+      return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
     } catch (e) {
       return '';
     }
+  }
+
+  // Format date (January 22, 2026)
+  String get formattedDate {
+    try {
+      final date = DateTime.parse(createdAt);
+      return "${_monthName(date.month)} ${date.day}, ${date.year}";
+    } catch (e) {
+      return '';
+    }
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return months[month - 1];
   }
 }

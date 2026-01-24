@@ -123,7 +123,11 @@ class RequestDialogs {
                         );
 
                         final url = Uri.parse(
-                          "http://10.77.127.141/carGOAdmin/api/reject_request.php",
+<<<<<<< Updated upstream
+                          "http://10.77.127.2/carGOAdmin/api/reject_request.php",
+=======
+                          "http://10.77.127.2/carGOAdmin/api/reject_request.php",
+>>>>>>> Stashed changes
                         );
 
                         try {

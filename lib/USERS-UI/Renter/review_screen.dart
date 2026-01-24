@@ -41,7 +41,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   Future<void> _fetchReviews() async {
     final url = Uri.parse(
-        "http://10.77.127.141/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
+        "http://10.77.127.2/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
 
     final response = await http.get(url);
 
@@ -201,15 +201,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
-  double _calculateAverageRating() {
-    if (_filteredReviews.isEmpty) return 0;
-    double total = 0;
-    for (var r in _filteredReviews) {
-      total += r["rating"];
-    }
-    return (total / _filteredReviews.length);
-  }
-
+  
   Widget _buildReviewCard({
     required String name,
     required String avatar,
