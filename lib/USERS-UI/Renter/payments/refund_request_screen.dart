@@ -250,7 +250,11 @@ print("TOKEN FROM STORAGE: $token");
                 Navigator.pop(context, true); // Return to previous screen with success
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -273,9 +277,9 @@ print("TOKEN FROM STORAGE: $token");
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -284,7 +288,10 @@ print("TOKEN FROM STORAGE: $token");
         title: Text(
           'Request Refund',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -555,7 +562,10 @@ print("TOKEN FROM STORAGE: $token");
               icon: const Icon(Icons.keyboard_arrow_down),
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
               ),
               items: _refundReasons.map((reason) {
                 return DropdownMenuItem(
@@ -678,7 +688,8 @@ print("TOKEN FROM STORAGE: $token");
           onChanged: (value) {
             setState(() => _hasAgreedToTerms = value ?? false);
           },
-          activeColor: Colors.black,
+          activeColor: Theme.of(context).iconTheme.color,
+
         ),
         Expanded(
           child: GestureDetector(
@@ -774,7 +785,11 @@ print("TOKEN FROM STORAGE: $token");
                 ? null 
                 : _submitRefundRequest,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               disabledBackgroundColor: Colors.grey.shade400,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(

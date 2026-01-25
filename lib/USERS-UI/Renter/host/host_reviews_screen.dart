@@ -106,13 +106,16 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -126,7 +129,10 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
         title: Text(
           'Reviews',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),

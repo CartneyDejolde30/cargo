@@ -428,12 +428,15 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
               ),
               const SizedBox(width: 12),
@@ -513,7 +516,9 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
+                      foregroundColor: Theme.of(context).iconTheme.color,
+
+
                       side: BorderSide(color: Colors.grey.shade300),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -535,7 +540,11 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
@@ -571,7 +580,10 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
       ],

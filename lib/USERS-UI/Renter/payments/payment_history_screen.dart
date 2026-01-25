@@ -151,7 +151,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -160,7 +160,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       title: Text(
         'Payment History',
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -487,7 +490,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],

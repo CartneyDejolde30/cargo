@@ -85,7 +85,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
       backgroundColor: Colors.grey.shade50,
       
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -97,7 +97,10 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
             Text(
               "${widget.ownerName}'s Cars",
               style: GoogleFonts.poppins(
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -256,7 +259,10 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
                         color: Colors.grey.shade200,
                         child: Center(
                           child: CircularProgressIndicator(
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
                                     loadingProgress.expectedTotalBytes!

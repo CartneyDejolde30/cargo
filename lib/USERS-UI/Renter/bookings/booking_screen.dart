@@ -299,9 +299,9 @@ Future<void> _checkVerificationOnInit() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black),
@@ -310,7 +310,10 @@ Future<void> _checkVerificationOnInit() async {
         title: Text(
           'Booking Details',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -695,7 +698,10 @@ Future<void> _checkVerificationOnInit() async {
                 _calculatePrice();
               });
             },
-            activeThumbColor: Colors.black,
+            activeThumbColor: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ],
       ),
@@ -903,7 +909,10 @@ Future<void> _checkVerificationOnInit() async {
                   time.format(context),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],
@@ -1125,7 +1134,11 @@ Future<void> _checkVerificationOnInit() async {
             }
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
+             backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1317,7 +1330,11 @@ Future<void> _checkVerificationOnInit() async {
               _processPayment();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

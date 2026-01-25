@@ -302,9 +302,9 @@ Widget build(BuildContext context) {
   final bodyStylesList = isMotorcycle ? motorcycleBodyStyles : bodyStyles;
   
   return Scaffold(
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     appBar: AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -325,7 +325,10 @@ Widget build(BuildContext context) {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -423,7 +426,11 @@ Widget build(BuildContext context) {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   disabledBackgroundColor: const Color(0xFFE0E0E0),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

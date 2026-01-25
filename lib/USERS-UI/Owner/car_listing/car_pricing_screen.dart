@@ -62,9 +62,9 @@ void _continue() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -161,7 +161,11 @@ void _continue() {
                 child: ElevatedButton(
                   onPressed: _canContinue ? _continue : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     disabledBackgroundColor: Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

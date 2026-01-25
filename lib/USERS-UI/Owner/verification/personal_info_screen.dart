@@ -197,7 +197,7 @@ Future<void> _loadUserId() async {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -213,7 +213,10 @@ Future<void> _loadUserId() async {
         title: Text(
           'Account Verification',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -536,7 +539,10 @@ Future<void> _loadUserId() async {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: Colors.white, size: 20),

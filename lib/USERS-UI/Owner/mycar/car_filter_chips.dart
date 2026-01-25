@@ -26,9 +26,12 @@ class CarFilterChips extends StatelessWidget {
               label: Text(filter),
               selected: isSelected,
               onSelected: (_) => onFilterChanged(filter),
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               selectedColor: Colors.black.withValues(alpha: 0.1),
-              checkmarkColor: Colors.black,
+              checkmarkColor: Theme.of(context).iconTheme.color,
+
+
+
               side: BorderSide(
                 color: isSelected ? Colors.black : Colors.grey.shade300,
                 width: isSelected ? 1.5 : 1,

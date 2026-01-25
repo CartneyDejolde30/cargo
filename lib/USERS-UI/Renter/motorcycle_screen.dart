@@ -118,7 +118,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 100),
@@ -565,7 +565,10 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 4),

@@ -205,7 +205,10 @@ class _MyCarPageState extends State<MyCarPage> {
       floatingActionButton: _buildFAB(),
       body: RefreshIndicator(
         onRefresh: _initialize,
-        color: Colors.black,
+        color: Theme.of(context).iconTheme.color,
+
+
+
         child: Column(
           children: [
             // Stats Section
@@ -242,13 +245,16 @@ class _MyCarPageState extends State<MyCarPage> {
   /* ---------------- APP BAR ---------------- */
   AppBar _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Text(
         "My Cars",
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontWeight: FontWeight.bold,
           fontSize: 22,
           letterSpacing: -0.5,

@@ -54,7 +54,11 @@ class CarDetailPage extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 280,
       pinned: true,
-      backgroundColor: Colors.black,
+       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
@@ -527,7 +531,11 @@ class CarDetailPage extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

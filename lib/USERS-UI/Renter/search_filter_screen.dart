@@ -85,7 +85,11 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Location set to: ${_locationController.text}'),
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               duration: const Duration(seconds: 2),
             ),
           );
@@ -108,7 +112,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   void _showVehicleTypeModal() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -125,7 +129,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 IconButton(
@@ -193,7 +200,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   void _showDeliveryMethodModal() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -210,7 +217,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 IconButton(
@@ -255,7 +265,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
               ),
             ),
@@ -306,16 +319,19 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 1,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -328,7 +344,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         title: Text(
           'Search a car',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -351,7 +370,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                         'Pickup Location',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -370,14 +392,20 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               onPressed: _useCurrentLocation,
                               icon: Icon(
                                 Icons.my_location,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                                 size: 18,
                               ),
                               label: Text(
                                 'Cars Near Me',
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
-                                  color: Colors.black,
+                                  color: Theme.of(context).iconTheme.color,
+
+
+
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -401,7 +429,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                         children: [
                           Icon(
                             Icons.location_on,
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                             size: 24,
                           ),
                           const SizedBox(width: 12),
@@ -429,7 +460,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                     'Vehicle Type',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -457,7 +491,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                                     : _selectedVehicleType == 'Motorcycle'
                                     ? Icons.two_wheeler
                                     : Icons.category,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
@@ -476,7 +513,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           ),
                           Icon(
                             Icons.keyboard_arrow_down,
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                           ),
                         ],
                       ),
@@ -489,7 +529,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                     'Price Range',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -511,7 +554,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                               ),
                             ),
                             Text(
@@ -519,7 +565,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                               ),
                             ),
                           ],
@@ -529,7 +578,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           min: 0,
                           max: 2000,
                           divisions: 40,
-                          activeColor: Colors.black,
+                          activeColor: Theme.of(context).iconTheme.color,
+
                           inactiveColor: Colors.grey.shade300,
                           onChanged: (RangeValues values) {
                             setState(() {
@@ -547,7 +597,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                     'Delivery Method',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -582,7 +635,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           ),
                           Icon(
                             Icons.keyboard_arrow_down,
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                           ),
                         ],
                       ),
@@ -619,7 +675,10 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                   ),
@@ -630,7 +689,11 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   child: ElevatedButton(
                     onPressed: _search,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -794,7 +857,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Location set to $municipality'),
-          backgroundColor: Colors.black,
+           backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
           duration: const Duration(seconds: 2),
         ),
       );
@@ -834,7 +901,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         point: pos,
         radius: _radius * 1000,
         color: Colors.black.withAlpha((0.05 * 255).round()),
-        borderColor: Colors.black,
+        borderColor: Theme.of(context).iconTheme.color!,
+
+
         borderStrokeWidth: 2,
         useRadiusInMeter: true,
       ),
@@ -854,16 +923,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 1,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -876,7 +948,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         title: Text(
           'Where do you want to go?',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -900,7 +975,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   decoration: InputDecoration(
                     prefixIcon: Icon(
                       Icons.location_on,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                     suffixIcon: _showMunicipalitiesList
                         ? IconButton(
@@ -973,7 +1051,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 children: [
                                   Icon(
                                     Icons.location_city,
-                                    color: Colors.black,
+                                    color: Theme.of(context).iconTheme.color,
+
+
+
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
@@ -986,7 +1067,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.black,
+                                            color: Theme.of(context).iconTheme.color,
+
+
+
                                           ),
                                         ),
                                         Text(
@@ -1014,7 +1098,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 Slider(
@@ -1023,7 +1110,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   max: 100,
                   divisions: 20,
                   label: '${_radius.round()} km',
-                  activeColor: Colors.black,
+                  activeColor: Theme.of(context).iconTheme.color,
+
                   inactiveColor: Colors.grey.shade300,
                   onChanged: (value) {
                     setState(() {
@@ -1072,7 +1160,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   right: 16,
                   child: FloatingActionButton(
                     onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     child: _isLoadingLocation
                         ? const SizedBox(
                             width: 24,
@@ -1104,7 +1196,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: ElevatedButton(
                 onPressed: _continue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

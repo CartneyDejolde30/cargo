@@ -180,15 +180,18 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
     final avgOwnerRating = _calculateAverageOwnerRating();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
@@ -198,7 +201,10 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
         title: Text(
           'Rate Your Experience',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -683,7 +689,11 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                     child: ElevatedButton(
                       onPressed: isSubmitting ? null : _submitReviews,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                         backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

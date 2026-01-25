@@ -108,7 +108,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // Modern App Bar
@@ -116,13 +116,16 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
             expandedHeight: 120,
             floating: false,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -142,7 +145,10 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
               title: Text(
                 'Pending Requests',
                 style: GoogleFonts.outfit(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   fontWeight: FontWeight.w700,
                   fontSize: 22,
                 ),
@@ -157,7 +163,10 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
               Container(
                 margin: const EdgeInsets.only(right: 16),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
@@ -202,7 +211,10 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      color: Colors.black,
+      color: Theme.of(context).iconTheme.color,
+
+
+
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: _requests.length,
@@ -225,8 +237,11 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Colors.black,
+          CircularProgressIndicator(
+            color: Theme.of(context).iconTheme.color,
+
+
+
             strokeWidth: 2,
           ),
           const SizedBox(height: 16),
@@ -255,7 +270,10 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
               "Oops!",
               style: GoogleFonts.outfit(
                 fontSize: 24,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -274,7 +292,11 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(

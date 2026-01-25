@@ -162,7 +162,7 @@ void initState() {
     final newlyListed = _cars.length > 3 ? _cars.skip(_cars.length - 3).toList() : _cars;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 100),
@@ -600,7 +600,10 @@ void initState() {
                         style: GoogleFonts.poppins(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                         ),
                       ),
                     ),
@@ -621,7 +624,10 @@ void initState() {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 4),

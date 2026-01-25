@@ -86,7 +86,10 @@ class BookingCardWidget extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -187,7 +190,10 @@ class BookingCardWidget extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                   ],
@@ -364,7 +370,11 @@ Widget _buildActionButton(BuildContext context) {
           });
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+           backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -412,7 +422,11 @@ Widget _buildActionButton(BuildContext context) {
           });
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+           backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

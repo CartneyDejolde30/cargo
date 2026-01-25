@@ -293,7 +293,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     final advanceNotice = carData?["advance_notice"] ?? "1 hour";
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -619,7 +619,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                       feature,
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
-                                        color: Colors.black,
+                                        color: Theme.of(context).iconTheme.color,
+
+
+
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -885,7 +888,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -1100,7 +1106,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
       ],
@@ -1270,7 +1279,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1298,7 +1311,11 @@ class FullscreenImageViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

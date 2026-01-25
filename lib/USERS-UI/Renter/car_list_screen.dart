@@ -149,7 +149,8 @@ class _CarListScreenState extends State<CarListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('All filters cleared'),
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+
         duration: const Duration(seconds: 2),
       ),
     );
@@ -167,7 +168,8 @@ class _CarListScreenState extends State<CarListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: _loading
@@ -220,7 +222,8 @@ class _CarListScreenState extends State<CarListScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -257,7 +260,8 @@ class _CarListScreenState extends State<CarListScreen> {
                 Text(
                   'Clear All',
                   style: GoogleFonts.poppins(
-                    color: Colors.black,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
+
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -272,7 +276,8 @@ class _CarListScreenState extends State<CarListScreen> {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+
       elevation: 0,
       pinned: false,
       floating: true,
@@ -283,7 +288,8 @@ class _CarListScreenState extends State<CarListScreen> {
       title: Text(
         widget.title,
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).textTheme.titleLarge?.color,
+
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -321,7 +327,8 @@ class _CarListScreenState extends State<CarListScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Filters applied - ${_filteredCars.length} cars found'),
-              backgroundColor: Colors.black,
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+
               duration: const Duration(seconds: 2),
             ),
           );
@@ -364,7 +371,8 @@ class _CarListScreenState extends State<CarListScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -464,7 +472,8 @@ class _CarListScreenState extends State<CarListScreen> {
                 ElevatedButton(
                   onPressed: _clearAllFilters,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -590,7 +599,8 @@ class _CarListScreenState extends State<CarListScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
+
                         ),
                       ),
                     ),
@@ -608,7 +618,8 @@ class _CarListScreenState extends State<CarListScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
+
                       ),
                     ),
                     const SizedBox(height: 4),

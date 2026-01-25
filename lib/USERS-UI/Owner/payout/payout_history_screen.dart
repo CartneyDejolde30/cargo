@@ -73,7 +73,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -82,7 +82,10 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
         title: Text(
           'Payout History',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -251,7 +254,10 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],

@@ -19,7 +19,7 @@ class RequestDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
@@ -37,15 +37,15 @@ class RequestDetailsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStatusSection(),
+                    _buildStatusSection(context),
                     const SizedBox(height: 24),
-                    _buildRenterSection(),
+                    _buildRenterSection(context),
                     const SizedBox(height: 20),
-                    _buildBookingSection(),
+                    _buildBookingSection(context),
                     const SizedBox(height: 20),
-                    _buildCarDetailsSection(),
+                    _buildCarDetailsSection(context),
                     const SizedBox(height: 20),
-                    _buildLocationSection(),
+                    _buildLocationSection(context),
                     const SizedBox(height: 30),
                     _buildActionButtons(context),
                     const SizedBox(height: 20),
@@ -64,7 +64,7 @@ class RequestDetailsPage extends StatelessWidget {
       expandedHeight: 300,
       floating: false,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
@@ -182,7 +182,10 @@ class RequestDetailsPage extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -203,7 +206,7 @@ class RequestDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusSection() {
+  Widget _buildStatusSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -231,7 +234,10 @@ class RequestDetailsPage extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -250,8 +256,9 @@ class RequestDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRenterSection() {
+  Widget _buildRenterSection(BuildContext context) {
     return _buildModernSection(
+      context,
       'Renter Information',
       Icons.person_outline,
       Colors.blue,
@@ -265,8 +272,9 @@ class RequestDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBookingSection() {
+  Widget _buildBookingSection(BuildContext context) {
     return _buildModernSection(
+      context,
       'Booking Details',
       Icons.event_note_outlined,
       Colors.purple,
@@ -283,8 +291,9 @@ class RequestDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCarDetailsSection() {
+  Widget _buildCarDetailsSection(BuildContext context) {
     return _buildModernSection(
+      context,
       'Car Specifications',
       Icons.directions_car_outlined,
       Colors.green,
@@ -296,8 +305,9 @@ class RequestDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLocationSection() {
+  Widget _buildLocationSection(BuildContext context) {
     return _buildModernSection(
+      context,
       'Pickup & Return Location',
       Icons.location_on_outlined,
       Colors.red,
@@ -330,6 +340,7 @@ class RequestDetailsPage extends StatelessWidget {
   }
 
   Widget _buildModernSection(
+    BuildContext context,
       String title, IconData icon, Color color, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +361,10 @@ class RequestDetailsPage extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
               ),
             ),
           ],
@@ -439,8 +453,10 @@ class RequestDetailsPage extends StatelessWidget {
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                foregroundColor: Colors.black,
-                backgroundColor: Colors.white,
+                foregroundColor: Theme.of(context).iconTheme.color,
+
+
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

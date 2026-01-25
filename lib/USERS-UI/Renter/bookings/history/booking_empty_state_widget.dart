@@ -25,7 +25,10 @@ class BookingEmptyStateWidget extends StatelessWidget {
                 // Map background
                 CustomPaint(
                   size: Size(280, 280),
-                  painter: MapBackgroundPainter(),
+                  painter: MapBackgroundPainter(
+  lineColor: Theme.of(context).dividerColor,
+),
+
                 ),
                 // Character
                 Positioned(
@@ -34,7 +37,10 @@ class BookingEmptyStateWidget extends StatelessWidget {
                     width: 120,
                     height: 140,
                     child: CustomPaint(
-                      painter: CharacterPainter(),
+                     painter: CharacterPainter(
+                      faceColor: Theme.of(context).cardColor,
+                    ),
+
                     ),
                   ),
                 ),
@@ -62,7 +68,10 @@ class BookingEmptyStateWidget extends StatelessWidget {
           ElevatedButton(
             onPressed: onBrowseCars,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
               padding: EdgeInsets.symmetric(horizontal: 48, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -86,65 +95,43 @@ class BookingEmptyStateWidget extends StatelessWidget {
 
 // Custom painter for the map background
 class MapBackgroundPainter extends CustomPainter {
+  final Color lineColor;
+
+  MapBackgroundPainter({required this.lineColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.grey.shade200
       ..style = PaintingStyle.fill;
 
-    // Draw circular background
+    // Background circle
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
       size.width / 2,
       paint,
     );
 
-    // Draw map lines
     final linePaint = Paint()
-      ..color = Colors.white
+      ..color = lineColor
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
 
     // Horizontal lines
-    canvas.drawLine(
-      Offset(0, size.height * 0.3),
-      Offset(size.width, size.height * 0.3),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(0, size.height * 0.5),
-      Offset(size.width, size.height * 0.5),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(0, size.height * 0.7),
-      Offset(size.width, size.height * 0.7),
-      linePaint,
-    );
+    canvas.drawLine(Offset(0, size.height * 0.3), Offset(size.width, size.height * 0.3), linePaint);
+    canvas.drawLine(Offset(0, size.height * 0.5), Offset(size.width, size.height * 0.5), linePaint);
+    canvas.drawLine(Offset(0, size.height * 0.7), Offset(size.width, size.height * 0.7), linePaint);
 
     // Vertical lines
-    canvas.drawLine(
-      Offset(size.width * 0.3, 0),
-      Offset(size.width * 0.3, size.height),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.5, 0),
-      Offset(size.width * 0.5, size.height),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.7, 0),
-      Offset(size.width * 0.7, size.height),
-      linePaint,
-    );
+    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.3, size.height), linePaint);
+    canvas.drawLine(Offset(size.width * 0.5, 0), Offset(size.width * 0.5, size.height), linePaint);
+    canvas.drawLine(Offset(size.width * 0.7, 0), Offset(size.width * 0.7, size.height), linePaint);
 
-    // Draw small building rectangles
+    // Buildings
     final buildingPaint = Paint()
       ..color = Colors.grey.shade300
       ..style = PaintingStyle.fill;
 
-    // Buildings
     canvas.drawRect(Rect.fromLTWH(size.width * 0.35, size.height * 0.55, 15, 20), buildingPaint);
     canvas.drawRect(Rect.fromLTWH(size.width * 0.55, size.height * 0.35, 12, 15), buildingPaint);
     canvas.drawRect(Rect.fromLTWH(size.width * 0.65, size.height * 0.72, 18, 22), buildingPaint);
@@ -156,13 +143,17 @@ class MapBackgroundPainter extends CustomPainter {
 
 // Custom painter for the cute character - using grey tones
 class CharacterPainter extends CustomPainter {
+  final Color faceColor;
+
+  CharacterPainter({required this.faceColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     final characterPaint = Paint()
       ..color = Colors.grey.shade400
       ..style = PaintingStyle.fill;
 
-    // Draw body (teardrop shape)
+    // Body
     final bodyPath = Path();
     bodyPath.moveTo(size.width * 0.5, 0);
     bodyPath.quadraticBezierTo(
@@ -175,7 +166,7 @@ class CharacterPainter extends CustomPainter {
     );
     canvas.drawPath(bodyPath, characterPaint);
 
-    // Draw bottom point
+    // Bottom
     final bottomPath = Path();
     bottomPath.moveTo(size.width * 0.5, size.height * 0.8);
     bottomPath.lineTo(size.width * 0.4, size.height);
@@ -183,36 +174,23 @@ class CharacterPainter extends CustomPainter {
     bottomPath.close();
     canvas.drawPath(bottomPath, characterPaint);
 
-    // Draw white face circle
+    // Face
     final facePaint = Paint()
-      ..color = Colors.white
+      ..color = faceColor
       ..style = PaintingStyle.fill;
+
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.35),
       size.width * 0.25,
       facePaint,
     );
 
-    // Draw eyes
-    final eyePaint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.fill;
+    // Eyes
+    final eyePaint = Paint()..color = Colors.black;
+    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.32), 4, eyePaint);
+    canvas.drawCircle(Offset(size.width * 0.6, size.height * 0.32), 4, eyePaint);
 
-    // Left eye
-    canvas.drawCircle(
-      Offset(size.width * 0.4, size.height * 0.32),
-      4,
-      eyePaint,
-    );
-
-    // Right eye
-    canvas.drawCircle(
-      Offset(size.width * 0.6, size.height * 0.32),
-      4,
-      eyePaint,
-    );
-
-    // Draw sad mouth
+    // Mouth
     final mouthPaint = Paint()
       ..color = Colors.black
       ..strokeWidth = 2

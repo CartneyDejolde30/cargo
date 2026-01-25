@@ -103,7 +103,10 @@ class CarCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                         ),
                       ),
                       if (rating != null)
@@ -130,7 +133,10 @@ class CarCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -223,8 +229,11 @@ class DetailChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: Colors.black,
+            decoration: BoxDecoration(
+              color: Theme.of(context).iconTheme.color,
+
+
+
               shape: BoxShape.circle,
             ),
           ),
@@ -325,7 +334,10 @@ class SectionHeader extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
         if (trailing != null) trailing!,
@@ -357,7 +369,10 @@ class DetailSection extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
         const SizedBox(height: 12),
@@ -532,13 +547,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
@@ -548,7 +566,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontWeight: FontWeight.w600,
           fontSize: 20,
         ),
@@ -594,7 +615,10 @@ class EmptyState extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
               ),
               textAlign: TextAlign.center,
             ),
@@ -612,7 +636,11 @@ class EmptyState extends StatelessWidget {
               ElevatedButton(
                 onPressed: onActionPressed,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -646,8 +674,11 @@ class LoadingIndicator extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Colors.black,
+          CircularProgressIndicator(
+            color: Theme.of(context).iconTheme.color,
+
+
+
             strokeWidth: 3,
           ),
           if (message != null) ...[

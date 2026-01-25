@@ -184,7 +184,10 @@ if (widget.verification.idBackPhoto != null) {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: Colors.white, size: 24),
@@ -267,7 +270,7 @@ if (widget.verification.idBackPhoto != null) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -283,7 +286,10 @@ if (widget.verification.idBackPhoto != null) {
         title: Text(
           'Account Verification',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -501,7 +507,10 @@ if (widget.verification.idBackPhoto != null) {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: Colors.white, size: 20),

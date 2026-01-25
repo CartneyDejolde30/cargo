@@ -99,7 +99,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -108,7 +108,10 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         title: Text(
           'Payment Receipt',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -160,7 +163,11 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
           ElevatedButton(
             onPressed: _fetchReceipt,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: Text('Retry', style: GoogleFonts.poppins()),
@@ -200,7 +207,10 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -308,7 +318,10 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -341,7 +354,11 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+               backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -378,7 +395,10 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
             ),
           ),
           const SizedBox(height: 16),

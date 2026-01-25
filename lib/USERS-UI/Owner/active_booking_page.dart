@@ -107,20 +107,23 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 120,
             floating: false,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -139,7 +142,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               title: Text(
                 'Active Bookings',
                 style: GoogleFonts.outfit(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   fontWeight: FontWeight.w700,
                   fontSize: 22,
                 ),
@@ -183,7 +189,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      color: Colors.black,
+      color: Theme.of(context).iconTheme.color,
+
+
+
       child: _buildBookingsList(),
     );
   }
@@ -220,7 +229,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               "Oops!",
               style: GoogleFonts.outfit(
                 fontSize: 24,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -239,7 +251,11 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -348,7 +364,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                                 ? loadingProgress.cumulativeBytesLoaded /
                                     loadingProgress.expectedTotalBytes!
                                 : null,
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                           ),
                         ),
                       );
@@ -373,7 +392,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -420,7 +442,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: Theme.of(context).iconTheme.color,
+
+
+
                           ),
                         ),
                       ],
@@ -441,7 +466,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -456,7 +484,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
@@ -470,7 +501,10 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -734,12 +768,14 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
     final imageUrl = ApiConfig.getCarImageUrl(widget.booking['car_image']);
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Booking Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: Theme.of(context).iconTheme.color,
+
+
         actions: [
           IconButton(
             onPressed: () {

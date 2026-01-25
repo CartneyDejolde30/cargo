@@ -90,11 +90,14 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             strokeWidth: 3,
           ),
         ),
@@ -110,7 +113,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _selectedIndex,
         children: pages,

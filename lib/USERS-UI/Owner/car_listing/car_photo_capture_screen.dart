@@ -37,9 +37,9 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -48,7 +48,10 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
         title: Text(
           widget.photoLabel,
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -75,7 +78,11 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
                       child: ElevatedButton(
                         onPressed: _confirmImage,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                           backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -99,7 +106,10 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
                       child: Text(
                         'Retake photo',
                         style: GoogleFonts.poppins(
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           fontSize: 14,
                         ),
                       ),
@@ -134,8 +144,11 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
             ),
             child: Container(
               margin: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.black,
+              decoration: BoxDecoration(
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 shape: BoxShape.circle,
               ),
             ),

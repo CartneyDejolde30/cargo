@@ -138,9 +138,9 @@ void _saveAndContinue() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -195,7 +195,8 @@ void _saveAndContinue() {
                         },
                         title: Text(rule, style: GoogleFonts.poppins(fontSize: 14)),
                         controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: Colors.black,
+                        activeColor: Theme.of(context).iconTheme.color,
+
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -255,7 +256,11 @@ void _saveAndContinue() {
                 child: ElevatedButton(
                   onPressed: _canContinue() ? _saveAndContinue : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     disabledBackgroundColor: Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

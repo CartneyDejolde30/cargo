@@ -201,7 +201,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -233,7 +233,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
+
+
+
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -267,7 +274,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
               "Notification deleted",
               style: GoogleFonts.poppins(),
             ),
-            backgroundColor: Colors.black,
+            backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
+
+
+
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -304,15 +318,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final unreadCount = _notifications.where((n) => !n["isRead"]).length;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
           "Notifications",
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -332,7 +349,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
               ),
             ),
@@ -374,7 +394,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
             ),
           ),
           const SizedBox(height: 8),
@@ -392,7 +415,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationsList() {
     return RefreshIndicator(
-      color: Colors.black,
+      color: Theme.of(context).iconTheme.color,
+
+
+
       onRefresh: _loadInitialNotifications,
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
@@ -483,7 +509,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                               ),
                             ),
                           ),
@@ -492,8 +521,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               width: 8,
                               height: 8,
                               margin: const EdgeInsets.only(left: 8),
-                              decoration: const BoxDecoration(
-                                color: Colors.black,
+                              decoration:  BoxDecoration(
+                              color: Theme.of(context).iconTheme.color,
+
+
+
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -595,9 +627,9 @@ class NotificationDetailScreen extends StatelessWidget {
     final backgroundColor = _getBackgroundByType(type);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -629,7 +661,10 @@ class NotificationDetailScreen extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   size: 40,
                 ),
               ),
@@ -640,7 +675,10 @@ class NotificationDetailScreen extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 height: 1.3,
               ),
             ),

@@ -75,12 +75,15 @@ class UpcomingBookingsWidget extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
+                  child: Text(
                     "View All",
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                 ),
