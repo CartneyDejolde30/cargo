@@ -201,13 +201,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
@@ -222,7 +222,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       leading: IconButton(
         icon: _circleIcon(Icons.arrow_back),
         onPressed: () => Navigator.pop(context, _bookingChanged),
@@ -655,9 +655,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           Colors.black,
           () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+             SnackBar(
                 content: Text('Rebooking feature coming soon!'),
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
               ),
             );
           },

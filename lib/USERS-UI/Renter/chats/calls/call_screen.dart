@@ -129,7 +129,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         return false;
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+         backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
         body: SafeArea(
           child: Stack(
             children: [

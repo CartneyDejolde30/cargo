@@ -150,8 +150,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).iconTheme.color,
+
+
         title: const Text("Edit Profile",
             style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
@@ -182,7 +184,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                       onTap: pickImage,
                       child: CircleAvatar(
                         radius: 22,
-                        backgroundColor: Colors.black,
+                         backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                         child: const Icon(Icons.camera_alt,
                             color: Colors.white, size: 19),
                       ),

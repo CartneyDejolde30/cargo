@@ -151,7 +151,7 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -160,7 +160,10 @@ class _OwnerTransactionHistoryScreenState extends State<OwnerTransactionHistoryS
       title: Text(
         'Earnings & Payouts',
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),

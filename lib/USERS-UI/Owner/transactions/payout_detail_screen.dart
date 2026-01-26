@@ -17,16 +17,19 @@ class PayoutDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Transaction Details',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -40,13 +43,13 @@ class PayoutDetailScreen extends StatelessWidget {
           children: [
             _buildEarningsCard(),
             const SizedBox(height: 20),
-            _buildVehicleInfo(),
+            _buildVehicleInfo(context),
             const SizedBox(height: 20),
-            _buildRenterInfo(),
+            _buildRenterInfo(context),
             const SizedBox(height: 20),
-            _buildPaymentBreakdown(),
+            _buildPaymentBreakdown(context),
             const SizedBox(height: 20),
-            _buildTimeline(),
+            _buildTimeline(context),
             const SizedBox(height: 20),
           ],
         ),
@@ -155,8 +158,9 @@ class PayoutDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVehicleInfo() {
+  Widget _buildVehicleInfo(BuildContext context) {
     return _buildSection(
+       context: context,
       title: 'Vehicle Information',
       icon: Icons.directions_car,
       children: [
@@ -218,8 +222,9 @@ class PayoutDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRenterInfo() {
+  Widget _buildRenterInfo(BuildContext context) {
     return _buildSection(
+       context: context,
       title: 'Renter Information',
       icon: Icons.person,
       children: [
@@ -232,12 +237,13 @@ class PayoutDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentBreakdown() {
+  Widget _buildPaymentBreakdown(BuildContext context) {
     final totalAmount = double.tryParse(transaction['total_amount'].toString()) ?? 0;
     final platformFee = double.tryParse(transaction['platform_fee'].toString()) ?? 0;
     final ownerPayout = double.tryParse(transaction['owner_payout'].toString()) ?? 0;
     
     return _buildSection(
+      context: context,
       title: 'Payment Breakdown',
       icon: Icons.receipt_long,
       children: [
@@ -262,10 +268,11 @@ class PayoutDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline(BuildContext context) {
     final events = _buildTimelineEvents();
     
     return _buildSection(
+       context: context,
       title: 'Transaction Timeline',
       icon: Icons.timeline,
       children: events.asMap().entries.map((entry) {
@@ -450,6 +457,7 @@ class PayoutDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSection({
+    required BuildContext context,
     required String title,
     required IconData icon,
     required List<Widget> children,
@@ -479,7 +487,10 @@ class PayoutDetailScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
               ),
             ],

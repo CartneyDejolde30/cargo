@@ -319,7 +319,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -338,13 +338,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Text(
         'My Bookings',
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontSize: 22,
           fontWeight: FontWeight.w600,
         ),
@@ -388,7 +391,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],
@@ -485,7 +491,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   ),
                   child: Text('Retry'),
                 ),

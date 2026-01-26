@@ -131,7 +131,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -140,7 +140,10 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
       title: Text(
         'Refund History',
         style: GoogleFonts.poppins(
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
+
+
+
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -466,7 +469,10 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],

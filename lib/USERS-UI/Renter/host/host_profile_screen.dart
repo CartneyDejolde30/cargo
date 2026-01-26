@@ -238,8 +238,11 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Colors.black,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -261,9 +264,12 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                           color: Colors.grey.shade200,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child:  Icon(
                           Icons.more_horiz,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           size: 20,
                         ),
                       ),
@@ -314,10 +320,13 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                         color: Colors.yellow.shade600,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.person,
                         size: 20,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                   ),
@@ -332,7 +341,10 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                 ),
               ),
 
@@ -399,7 +411,10 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -418,7 +433,10 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -617,7 +635,10 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                   if (subtitle.isNotEmpty)

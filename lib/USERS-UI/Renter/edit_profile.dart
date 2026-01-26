@@ -332,10 +332,10 @@ await prefs.setString("profile_image", finalURL);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -344,9 +344,12 @@ await prefs.setString("profile_image", finalURL);
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               size: 16,
             ),
           ),
@@ -355,7 +358,10 @@ await prefs.setString("profile_image", finalURL);
         title: Text(
           "Edit Profile",
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -577,7 +583,14 @@ await prefs.setString("profile_image", finalURL);
             child: ElevatedButton(
               onPressed: saving || !hasChanges ? null : save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
+
+
+
                 disabledBackgroundColor: Colors.grey.shade300,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),

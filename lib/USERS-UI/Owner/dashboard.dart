@@ -134,7 +134,10 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       backgroundColor: Colors.grey.shade50,
       body: RefreshIndicator(
         onRefresh: _loadData,
-        color: Colors.black,
+        color: Theme.of(context).iconTheme.color,
+
+
+
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -260,7 +263,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             subtitle: "Review and approve bookings",
             count: stats.pendingRequests,
             icon: Icons.pending_actions_outlined,
-            backgroundColor: Colors.black,
+            backgroundColor: Theme.of(context).iconTheme.color ?? Colors.black,
+
             onTap: () {
               Navigator.push(
                 context,

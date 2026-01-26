@@ -6,6 +6,9 @@ import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_1/theme/theme_provider.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -108,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 22,
-                color: Colors.black87,
+                color: Theme.of(context).iconTheme.color,
               ),
             ),
             const SizedBox(height: 12),
@@ -163,7 +166,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     child: Text(
                       'Logout',
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
+
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
@@ -191,7 +195,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
+
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -206,7 +211,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -266,17 +274,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
           "Profile",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+
             fontSize: 22,
           ),
         ),
@@ -335,10 +346,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                           child: Container(
                             padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                           decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
                               shape: BoxShape.circle,
                             ),
+
                             child: CircleAvatar(
                               radius: 50,
                               backgroundColor: Colors.grey.shade200,
@@ -355,7 +367,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).cardColor,
+
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -376,20 +389,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     const SizedBox(height: 16),
 
                     // User Info
-                    Text(
-                      userName,
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
+                   Text(
+                    userName,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white, // ALWAYS WHITE
                     ),
+                  ),
+
                     const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.email_outlined,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -408,7 +426,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.phone_outlined, size: 14, color: Colors.grey.shade300),
+                         Icon(
+                            Icons.phone_outlined,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
+
                           const SizedBox(width: 6),
                           Text(
                             phone,
@@ -440,8 +463,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+                        foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
+
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -466,24 +491,38 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    _buildMenuCard([
-                      _MenuItemData(
-                        icon: Icons.lock_outline_rounded,
-                        title: "Change Password",
-                        subtitle: "Update your password",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
-                          );
-                        },
-                      ),
-                    ]),
+                   _buildMenuCard([
+  _MenuItemData(
+    icon: Icons.lock_outline_rounded,
+    title: "Change Password",
+    subtitle: "Update your password",
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+      );
+    },
+  ),
+
+  // 🌙 DARK MODE TOGGLE
+  _MenuItemData(
+    icon: Icons.dark_mode_outlined,
+    title: "Dark Mode",
+    subtitle: "Toggle light and dark theme",
+    onTap: () {
+      Provider.of<ThemeProvider>(context, listen: false)
+          .toggleTheme();
+    },
+  ),
+]),
 
                     const SizedBox(height: 24),
 
@@ -492,7 +531,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -518,7 +560,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -576,7 +621,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red.shade600,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.onError,
+
+
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -618,7 +665,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildMenuCard(List<_MenuItemData> items) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
+
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
@@ -655,60 +703,85 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 24, color: Colors.black87),
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  required VoidCallback onTap,
+}) {
+  final isDarkMode = title == "Dark Mode"
+      ? Provider.of<ThemeProvider>(context).isDarkMode
+      : null;
+
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
+            child: Icon(
+              icon,
+              size: 24,
+              color: Theme.of(context).iconTheme.color,
+
+
             ),
+
+          ),
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 🌙 Show switch if Dark Mode
+          if (isDarkMode != null)
+            Switch(
+              value: isDarkMode,
+              onChanged: (_) => onTap(),
+            )
+          else
             Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
               color: Colors.grey.shade400,
             ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
 
 class _MenuItemData {

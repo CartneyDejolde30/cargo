@@ -29,9 +29,9 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
     final isMoto = widget.vehicleType == 'motorcycle';
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -41,7 +41,10 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
           isMoto ? "Take Motorcycle Photos" : "Take Car Photos",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
         centerTitle: true,
@@ -85,7 +88,11 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                 child: ElevatedButton(
                   onPressed: _canSubmit() ? _submitListing : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),

@@ -365,7 +365,7 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -374,7 +374,10 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
         title: Text(
           'FAQs & Help',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -448,7 +451,10 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(10),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,

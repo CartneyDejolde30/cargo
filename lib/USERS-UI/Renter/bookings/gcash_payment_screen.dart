@@ -380,7 +380,11 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
                 Navigator.pop(context); // Return to main screen
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -403,9 +407,9 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -414,7 +418,10 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         title: Text(
           'GCash Payment',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -891,7 +898,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           onChanged: (value) {
             setState(() => hasAgreedToTerms = value ?? false);
           },
-          activeColor: Colors.black,
+          activeColor: Theme.of(context).iconTheme.color,
+
         ),
         Expanded(
           child: GestureDetector(

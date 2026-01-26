@@ -208,7 +208,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
                     child: Text(
                       'Clear All',
                       style: GoogleFonts.poppins(
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -223,7 +226,11 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
                       Navigator.pop(context, _getFilters());
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -276,7 +283,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
               fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
             ),
             backgroundColor: Colors.grey[100],
-            selectedColor: Colors.black,
+            selectedColor: Theme.of(context).iconTheme.color,
+
+
+
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         );
@@ -304,7 +314,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
                 color: isSelected ? Colors.white : Colors.black,
               ),
               backgroundColor: Colors.grey[100],
-              selectedColor: Colors.black,
+              selectedColor: Theme.of(context).iconTheme.color,
+
+
+
             ),
           );
         }).toList(),
@@ -333,7 +346,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
               color: isSelected ? Colors.white : Colors.black,
             ),
             backgroundColor: Colors.grey[100],
-            selectedColor: Colors.black,
+            selectedColor: Theme.of(context).iconTheme.color,
+
+
+
           );
         }).toList(),
       ),
@@ -354,7 +370,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
             width: 4,
             height: height,
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               borderRadius: BorderRadius.circular(2),
             ),
           );
@@ -371,7 +390,8 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
           min: 0,
           max: 300,
           divisions: 30,
-          activeColor: Colors.black,
+          activeColor: Theme.of(context).iconTheme.color,
+
           inactiveColor: Colors.grey[300],
           onChanged: (values) {
             setState(() => _priceRange = values);
@@ -408,7 +428,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
               color: isSelected ? Colors.white : Colors.grey[600],
             ),
             backgroundColor: Colors.grey[100],
-            selectedColor: Colors.black,
+            selectedColor: Theme.of(context).iconTheme.color,
+
+
+
           ),
         );
       }).toList(),
@@ -546,7 +569,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
               color: isSelected ? Colors.white : Colors.black,
             ),
             backgroundColor: Colors.grey[100],
-            selectedColor: Colors.black,
+            selectedColor: Theme.of(context).iconTheme.color,
+
+
+
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           ),
         );
@@ -571,7 +597,10 @@ class _VehicleFilterScreenState extends State<VehicleFilterScreen> {
             color: isSelected ? Colors.white : Colors.black,
           ),
           backgroundColor: Colors.grey[100],
-          selectedColor: Colors.black,
+          selectedColor: Theme.of(context).iconTheme.color,
+
+
+
         );
       }).toList(),
     );
@@ -788,7 +817,11 @@ class _CustomDateTimePickerState extends State<CustomDateTimePicker> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   ),
@@ -989,7 +1022,11 @@ class _CustomDateTimePickerState extends State<CustomDateTimePicker> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('OK', style: GoogleFonts.poppins(color: Colors.white)),

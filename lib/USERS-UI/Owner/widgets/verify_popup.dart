@@ -45,7 +45,7 @@ class VerifyPopup {
       barrierDismissible: false,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: SingleChildScrollView(
@@ -83,7 +83,10 @@ class VerifyPopup {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -139,7 +142,11 @@ class VerifyPopup {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.black,
+                       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {

@@ -445,7 +445,9 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
+                      foregroundColor: Theme.of(context).iconTheme.color,
+
+
                       side: BorderSide(color: Colors.grey.shade300),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -467,7 +469,11 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                       backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
@@ -503,7 +509,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
           style: GoogleFonts.outfit(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
       ],

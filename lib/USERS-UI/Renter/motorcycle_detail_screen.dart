@@ -276,7 +276,7 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
     final advanceNotice = motorcycleData?["advance_notice"] ?? "1 hour";
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -591,7 +591,10 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                                       feature,
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
-                                        color: Colors.black,
+                                        color: Theme.of(context).iconTheme.color,
+
+
+
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -852,7 +855,10 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -1085,7 +1091,10 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
       ],
@@ -1255,7 +1264,14 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
+
+
+
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1283,7 +1299,14 @@ class FullscreenImageViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
+
+
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

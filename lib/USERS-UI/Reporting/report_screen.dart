@@ -291,9 +291,9 @@ final result = jsonDecode(response.body);
     final reasons = reportReasons[widget.reportType.toLowerCase().trim()] ?? [];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -309,7 +309,10 @@ final result = jsonDecode(response.body);
         title: Text(
           'Report ${_getTypeLabel()}',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -380,7 +383,10 @@ final result = jsonDecode(response.body);
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                               ),
                             ),
                             if (widget.reportedItemDetails != null)
@@ -406,7 +412,10 @@ final result = jsonDecode(response.body);
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -421,7 +430,10 @@ final result = jsonDecode(response.body);
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -475,7 +487,10 @@ Text(
   style: GoogleFonts.poppins(
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: Colors.black,
+    color: Theme.of(context).iconTheme.color,
+
+
+
   ),
 ),
 const SizedBox(height: 8),

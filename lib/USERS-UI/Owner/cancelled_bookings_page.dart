@@ -69,9 +69,9 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -87,7 +87,10 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
         title: Text(
           'Cancelled Bookings',
           style: GoogleFonts.outfit(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.w700,
             fontSize: 20,
           ),
@@ -242,7 +245,10 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
                   style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],

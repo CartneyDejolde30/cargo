@@ -58,7 +58,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(25.0),
@@ -71,12 +71,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     Image.asset('assets/cargo.png', width: 50, height: 50),
                     const SizedBox(width: 10),
-                    const Text(
+                     Text(
                       'CarGo',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                   ],
@@ -222,7 +225,11 @@ const SizedBox(height: 15),
                         child: ElevatedButton(
                           onPressed: _register,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                             backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -241,10 +248,13 @@ const SizedBox(height: 15),
                               style: TextStyle(color: Colors.black54)),
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
-                            child: const Text(
+                            child:  Text(
                               'Login',
                               style: TextStyle(
-                                color: Colors.black,
+                                color: Theme.of(context).iconTheme.color,
+
+
+
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

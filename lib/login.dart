@@ -36,8 +36,11 @@ void setUserStatus(String userId, bool online) {
       title: 'CarGo Login',
       theme: ThemeData(
         brightness: Brightness.light,
-        primaryColor: Colors.black,
-        scaffoldBackgroundColor: Colors.white,
+        primaryColor: Theme.of(context).iconTheme.color,
+
+
+
+        scaffoldBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       home: const LoginPage(),
     );
@@ -379,7 +382,11 @@ if (data["token"] != null) {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   ),
                   child: const Text('Continue'),
                 ),
@@ -543,7 +550,11 @@ if (data["token"] != null) {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   ),
                   child: const Text('Continue'),
                 ),
@@ -639,7 +650,7 @@ if (data["token"] != null) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -655,12 +666,15 @@ if (data["token"] != null) {
                     height: 40,
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                   Text(
                     'CarGo',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Theme.of(context).iconTheme.color,
+
+
+
                     ),
                   ),
                 ],
@@ -668,11 +682,14 @@ if (data["token"] != null) {
               const SizedBox(height: 40),
 
               // Welcome Text
-              const Text(
+              Text(
                 'Welcome Back',
                 style: TextStyle(
                   fontSize: 28,
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -749,7 +766,8 @@ if (data["token"] != null) {
                           onChanged: (value) {
                             setState(() => _rememberMe = value!);
                           },
-                          activeColor: Colors.black,
+                          activeColor: Theme.of(context).iconTheme.color,
+
                           checkColor: Colors.white,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -784,7 +802,11 @@ if (data["token"] != null) {
                 child: ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                     backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -823,7 +845,9 @@ if (data["token"] != null) {
                   onPressed: _isFacebookSigningIn ? null : _handleFacebookSignIn,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black26, width: 1),
-                    foregroundColor: Colors.black,
+                    foregroundColor: Theme.of(context).iconTheme.color,
+
+
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -862,7 +886,9 @@ if (data["token"] != null) {
                   onPressed: _isGoogleSigningIn ? null : _handleGoogleSignIn,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black26, width: 1),
-                    foregroundColor: Colors.black,
+                    foregroundColor: Theme.of(context).iconTheme.color,
+
+
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -919,10 +945,13 @@ if (data["token"] != null) {
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
+                      child:  Text(
                         'Sign Up',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Theme.of(context).iconTheme.color,
+
+
+
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),

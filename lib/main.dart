@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'onboarding.dart';
 import 'login.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/renters.dart'; 
-import 'package:flutter_application_1/USERS-UI/Renter/car_list_screen.dart'; 
-import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_list_screen.dart'; 
-import 'package:flutter_application_1/USERS-UI/Renter/profile_screen.dart'; 
-import 'package:flutter_application_1/USERS-UI/Owner/mycar_page.dart'; 
+import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/car_list_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_list_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/profile_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Owner/mycar_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart'; 
+import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
+import 'package:provider/provider.dart';
+import 'theme/theme_provider.dart';
 
-final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+final FlutterLocalNotificationsPlugin _localNotifications =
+    FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -20,7 +23,9 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Permissions for Android/iOS
   await FirebaseMessaging.instance.requestPermission(
@@ -49,7 +54,8 @@ void main() async {
 
   // Create channel
   await _localNotifications
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
   // Foreground listener
@@ -59,7 +65,7 @@ void main() async {
         message.notification.hashCode,
         message.notification!.title,
         message.notification!.body,
-        NotificationDetails(
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'carGo_channel',
             'CarGO Notifications',
@@ -71,7 +77,13 @@ void main() async {
     }
   });
 
-  runApp(const MyApp());
+  // 🔥 WRAP APP WITH THEME PROVIDER
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -79,9 +91,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CarGO',
+
+      // 🌙 LIGHT & DARK THEMES
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: themeProvider.isDarkMode
+          ? ThemeMode.dark
+          : ThemeMode.light,
+
       home: const OnboardingScreen(),
       routes: {
         '/login': (context) => const LoginPage(),
@@ -89,15 +111,15 @@ class MyApp extends StatelessWidget {
         '/car_list': (context) => const CarListScreen(),
         '/chat_list': (context) => const ChatListScreen(),
         "/profile": (context) => const ProfileScreen(),
-        '/mycars': (context) {
-  final ownerId = ModalRoute.of(context)!.settings.arguments as int;
-  return MyCarPage(ownerId: ownerId);
-},
 
-        '/my_bookings': (context) => const MyBookingsScreen(), // ✅ Changed this to MyBookingsScreen
-        // You might also want to add a route for the booking form if needed:
-        // '/booking': (context) => const BookingScreen(...), // This needs parameters though
-        
+        '/mycars': (context) {
+          final ownerId =
+              ModalRoute.of(context)!.settings.arguments as int;
+          return MyCarPage(ownerId: ownerId);
+        },
+
+        '/my_bookings': (context) =>
+            const MyBookingsScreen(),
       },
     );
   }

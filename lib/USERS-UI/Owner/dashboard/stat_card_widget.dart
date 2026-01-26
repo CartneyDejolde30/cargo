@@ -56,7 +56,10 @@ class StatCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // Reduced vertical padding
                       decoration: BoxDecoration(
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(

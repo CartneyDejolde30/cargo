@@ -24,23 +24,23 @@ class PaymentStatusTracker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Payment Status Header
-        _buildSectionHeader('Payment Status', Icons.payment),
+        _buildSectionHeader(context,'Payment Status', Icons.payment),
         const SizedBox(height: 16),
         
         // Payment Status Card
-        _buildPaymentStatusCard(paymentStatus),
+        _buildPaymentStatusCard(context,paymentStatus),
         
         // Escrow Information (if applicable)
         if (hasEscrow) ...[
           const SizedBox(height: 16),
-          _buildSectionHeader('Escrow Status', Icons.lock_clock),
+          _buildSectionHeader(context,'Escrow Status', Icons.lock_clock),
           const SizedBox(height: 16),
           _buildEscrowStatusCard(escrowStatus),
         ],
 
         // Transaction Timeline
         const SizedBox(height: 24),
-        _buildSectionHeader('Transaction Timeline', Icons.timeline),
+        _buildSectionHeader(context,'Transaction Timeline', Icons.timeline),
         const SizedBox(height: 16),
         _buildTransactionTimeline(),
 
@@ -51,7 +51,7 @@ class PaymentStatusTracker extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(BuildContext context,String title, IconData icon) {
     return Row(
       children: [
         Icon(icon, size: 20, color: Colors.grey.shade700),
@@ -61,14 +61,17 @@ class PaymentStatusTracker extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPaymentStatusCard(String status) {
+  Widget _buildPaymentStatusCard(BuildContext context,String status) {
     final statusInfo = _getPaymentStatusInfo(status);
     
     return Container(
@@ -108,7 +111,10 @@ class PaymentStatusTracker extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).iconTheme.color,
+
+
+
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -409,7 +415,11 @@ class PaymentStatusTracker extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

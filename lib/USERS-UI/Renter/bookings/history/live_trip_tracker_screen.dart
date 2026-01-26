@@ -4,7 +4,6 @@ import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LiveTripTrackerScreen extends StatefulWidget {
   final Booking booking;
@@ -31,7 +30,7 @@ Future<String> _getCurrentUserId() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
@@ -59,7 +58,7 @@ Future<String> _getCurrentUserId() async {
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
@@ -760,7 +759,9 @@ Future<String> _getCurrentUserId() async {
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black,
+                  foregroundColor: Theme.of(context).iconTheme.color,
+
+
                   side: const BorderSide(color: Colors.black),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -779,7 +780,11 @@ Future<String> _getCurrentUserId() async {
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

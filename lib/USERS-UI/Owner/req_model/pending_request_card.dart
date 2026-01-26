@@ -39,7 +39,7 @@ class PendingRequestCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageSection(),
+            _buildImageSection(context),
             _buildContentSection(context),
           ],
         ),
@@ -47,7 +47,7 @@ class PendingRequestCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(BuildContext context) {
     return Stack(
       children: [
         ClipRRect(
@@ -161,7 +161,10 @@ class PendingRequestCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: Theme.of(context).iconTheme.color,
+
+
+
                   ),
                 ),
               ],
@@ -184,7 +187,10 @@ class PendingRequestCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -199,7 +205,10 @@ class PendingRequestCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).iconTheme.color,
+
+
+
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.arrow_forward_ios,
@@ -213,7 +222,10 @@ class PendingRequestCard extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               letterSpacing: -0.5,
             ),
           ),
@@ -267,8 +279,10 @@ class PendingRequestCard extends StatelessWidget {
                     onPressed: onReject,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).iconTheme.color,
+
+
+                      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                       side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

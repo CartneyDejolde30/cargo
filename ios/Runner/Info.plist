@@ -4,6 +4,10 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+<string>We need access to your photo library to send images</string>
+<key>NSCameraUsageDescription</key>
+<string>We need access to your camera to take photos</string>
 	<key>CFBundleDisplayName</key>
 	<string>Flutter Application 1</string>
 	<key>CFBundleExecutable</key>

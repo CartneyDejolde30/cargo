@@ -129,7 +129,7 @@ class _NotificationPageState extends State<NotificationPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -334,7 +334,7 @@ class _NotificationPageState extends State<NotificationPage>
 
   AppBar _buildAppBar(int unreadCount) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
@@ -346,7 +346,10 @@ class _NotificationPageState extends State<NotificationPage>
           Text(
             "Notifications",
             style: GoogleFonts.poppins(
-              color: Colors.black,
+              color: Theme.of(context).iconTheme.color,
+
+
+
               fontWeight: FontWeight.bold,
               fontSize: 20,
               letterSpacing: -0.5,
@@ -375,7 +378,9 @@ class _NotificationPageState extends State<NotificationPage>
                 style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               style: TextButton.styleFrom(
-                foregroundColor: Colors.black,
+                foregroundColor: Theme.of(context).iconTheme.color,
+
+
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -439,7 +444,11 @@ class _NotificationPageState extends State<NotificationPage>
               icon: const Icon(Icons.refresh_rounded),
               label: Text('Try Again', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                 backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -484,7 +493,10 @@ class _NotificationPageState extends State<NotificationPage>
       opacity: _fadeAnimation,
       child: RefreshIndicator(
         onRefresh: _loadNotifications,
-        color: Colors.black,
+        color: Theme.of(context).iconTheme.color,
+
+
+
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: groupedNotifications.entries.map((section) {
@@ -706,7 +718,7 @@ class NotificationDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
@@ -715,7 +727,10 @@ class NotificationDetailScreen extends StatelessWidget {
         title: Text(
           "Notification Details",
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),

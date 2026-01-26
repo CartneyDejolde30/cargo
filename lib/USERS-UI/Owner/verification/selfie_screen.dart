@@ -164,7 +164,10 @@ class _SelfieScreenState extends State<SelfieScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: Theme.of(context).iconTheme.color,
+
+
+
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: Colors.white, size: 24),
@@ -319,7 +322,11 @@ Future<void> _submitVerification() async {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -367,7 +374,7 @@ Future<void> _submitVerification() async {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
@@ -383,7 +390,10 @@ Future<void> _submitVerification() async {
         title: Text(
           'Account Verification',
           style: GoogleFonts.poppins(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -598,7 +608,7 @@ Future<void> _submitVerification() async {
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: canSubmit
-                                          ? Colors.white
+                                          ? Theme.of(context).cardColor
                                           : Colors.grey.shade500,
                                     ),
                                   ),
@@ -606,7 +616,7 @@ Future<void> _submitVerification() async {
                                   Icon(
                                     Icons.check_circle_outline,
                                     color: canSubmit
-                                        ? Colors.white
+                                        ? Theme.of(context).cardColor
                                         : Colors.grey.shade500,
                                     size: 20,
                                   ),
@@ -635,7 +645,10 @@ Future<void> _submitVerification() async {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
+
+
+
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: Colors.white, size: 20),
@@ -683,7 +696,7 @@ Future<void> _submitVerification() async {
                     '$step',
                     style: GoogleFonts.poppins(
                       color: active || completed
-                          ? Colors.white
+                          ? Theme.of(context).cardColor
                           : Colors.grey.shade400,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,

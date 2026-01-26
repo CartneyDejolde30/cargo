@@ -55,9 +55,13 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text("🚘 Car successfully submitted!"),
-          backgroundColor: Colors.black,
+           backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
         ),
       );
 
@@ -110,7 +114,11 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
               child: ElevatedButton(
                 onPressed: isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                   backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),

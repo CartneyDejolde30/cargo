@@ -147,7 +147,7 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
     ) ?? 0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Active Rental',
@@ -156,9 +156,11 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
             fontSize: 20,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: Theme.of(context).iconTheme.color,
+
+
         actions: [
           // GPS Status Indicator
           Container(
@@ -383,7 +385,11 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                         backgroundColor: Theme.of(context).iconTheme.color,
+
+
+
+
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
