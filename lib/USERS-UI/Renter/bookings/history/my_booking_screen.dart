@@ -1,3 +1,4 @@
+// lib/USERS-UI/Renter/bookings/history/my_booking_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,8 +9,11 @@ import 'booking_tabs_widget.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
-
 import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_history_screen.dart';
+
+// GPS Tracking imports
+import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -19,7 +23,7 @@ class MyBookingsScreen extends StatefulWidget {
 }
 
 class _MyBookingsScreenState extends State<MyBookingsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final TabController _tabController;
 
   int _currentTabIndex = 0;
@@ -36,18 +40,41 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   int _completedCount = 0;
   int _rejectedCount = 0;
 
-  // Tab labels - UPDATED with 4 tabs
+  // GPS Service
+  final RenterGpsService _gpsService = renterGpsService;
+  bool _hasCheckedGpsTracking = false;
+
+  // Tab labels
   final List<String> _tabLabels = ['Active', 'Pending', 'Completed', 'Rejected'];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
-    // UPDATED: Changed to 4 tabs
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
 
     _loadUserIdAndFetchBookings();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Continue GPS tracking even when app goes to background
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('📱 App resumed, checking GPS tracking status...');
+      if (!_gpsService.isTracking && _hasCheckedGpsTracking) {
+        _autoStartGpsForActiveBookings();
+      }
+    }
   }
 
   Future<void> _loadUserIdAndFetchBookings() async {
@@ -82,7 +109,96 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // UPDATED: Calculate badge counts including rejected bookings
+  // NEW: Auto-start GPS tracking for active bookings
+  Future<void> _autoStartGpsForActiveBookings() async {
+    if (_hasCheckedGpsTracking) {
+      debugPrint('ℹ️ GPS tracking already checked');
+      return;
+    }
+
+    try {
+      final bookings = await _bookingFuture;
+      if (bookings == null) return;
+
+      final now = DateTime.now();
+      
+      // Find active bookings
+      final activeBookings = bookings.where((b) {
+        if (b.status.toLowerCase() != 'approved') return false;
+        final pickup = _parseDate(b.pickupDate);
+        final returnDate = _parseDate(b.returnDate);
+        return pickup != null && returnDate != null && 
+               !pickup.isAfter(now) && !returnDate.isBefore(now);
+      }).toList();
+
+      if (activeBookings.isEmpty) {
+        debugPrint('ℹ️ No active bookings found');
+        _hasCheckedGpsTracking = true;
+        return;
+      }
+
+      debugPrint('📍 Found ${activeBookings.length} active booking(s)');
+
+      // Start GPS for the first active booking
+      final firstActiveBooking = activeBookings.first;
+      debugPrint('🚀 Auto-starting GPS for booking: ${firstActiveBooking.bookingId}');
+
+      // Check permissions first
+      if (!mounted) return;
+      
+      final hasPermission = await LocationPermissionHelper.showPermissionDialog(context);
+      
+      if (!hasPermission) {
+        debugPrint('❌ Location permission not granted');
+        _hasCheckedGpsTracking = true;
+        return;
+      }
+
+      // Start tracking
+      final success = await _gpsService.startTracking(
+        firstActiveBooking.bookingId.toString()
+      );
+
+      _hasCheckedGpsTracking = true;
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.gps_fixed, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'GPS tracking started for ${firstActiveBooking.carName}',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () {
+                setState(() {
+                  _currentTabIndex = 0; // Switch to Active tab
+                  _tabController.animateTo(0);
+                });
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error auto-starting GPS: $e');
+      _hasCheckedGpsTracking = true;
+    }
+  }
+
   void _updateBadgeCountsFromBookings(List<Booking> bookings) {
     final now = DateTime.now();
     
@@ -123,13 +239,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     );
   }
 
-  @override
-  void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
-  }
-
   void _onTabChanged() {
     if (_currentTabIndex != _tabController.index) {
       setState(() {
@@ -138,44 +247,41 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // UPDATED: Filter bookings for 4 tabs
   List<Booking> _filterBookings(List<Booking> all) {
-  switch (_currentTabIndex) {
-    case 0: // Active
-      return all.where((b) => b.status == 'approved').toList();
+    switch (_currentTabIndex) {
+      case 0: // Active
+        return all.where((b) => b.status == 'approved').toList();
 
-    case 1: // Pending
-      return all.where((b) => b.status == 'pending').toList();
+      case 1: // Pending
+        return all.where((b) => b.status == 'pending').toList();
 
-    case 2: // Completed
-      return all.where((b) => b.status == 'completed').toList();
+      case 2: // Completed
+        return all.where((b) => b.status == 'completed').toList();
 
-    case 3: // Rejected (NEWEST → OLDEST)
-  final rejected = all.where((b) =>
-    b.status.toLowerCase() == 'cancelled' ||
-    b.status.toLowerCase() == 'rejected'
-  ).toList();
+      case 3: // Rejected (NEWEST → OLDEST)
+        final rejected = all.where((b) =>
+          b.status.toLowerCase() == 'cancelled' ||
+          b.status.toLowerCase() == 'rejected'
+        ).toList();
 
-  // 🔥 Sort by pickup date (newest first)
-  rejected.sort((a, b) {
-    final dateA = _parseDate(a.pickupDate);
-    final dateB = _parseDate(b.pickupDate);
+        // Sort by pickup date (newest first)
+        rejected.sort((a, b) {
+          final dateA = _parseDate(a.pickupDate);
+          final dateB = _parseDate(b.pickupDate);
 
-    if (dateA == null && dateB == null) return 0;
-    if (dateA == null) return 1;
-    if (dateB == null) return -1;
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1;
+          if (dateB == null) return -1;
 
-    return dateB.compareTo(dateA); // DESC = newest first
-  });
+          return dateB.compareTo(dateA); // DESC = newest first
+        });
 
-  return rejected;
+        return rejected;
 
-
-    default:
-      return [];
+      default:
+        return [];
+    }
   }
-}
-
 
   DateTime? _parseDate(String dateStr) {
     try {
@@ -187,23 +293,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // UPDATED: Map status for UI including rejected
   String _mapStatusForUI(String status) {
-  switch (status) {
-    case 'approved':
-      return 'active';
-    case 'pending':
-      return 'pending';
-    case 'completed':
-      return 'completed'; // show completed
-    case 'cancelled':
-      return 'cancelled'; // show cancelled
-    case 'rejected':
-      return 'rejected'; // show rejected
-    default:
-      return 'pending';
+    switch (status) {
+      case 'approved':
+        return 'active';
+      case 'pending':
+        return 'pending';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      case 'rejected':
+        return 'rejected';
+      default:
+        return 'pending';
+    }
   }
-}
 
   void _handleNavigation(int index) {
     if (_selectedNavIndex != index) {
@@ -246,6 +351,18 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       ),
       centerTitle: false,
       actions: [
+        // GPS Status Indicator
+        if (_gpsService.isTracking)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: LocationPermissionHelper.buildGpsStatusBadge(
+              isTracking: _gpsService.isTracking,
+              successCount: _gpsService.successCount,
+              failCount: _gpsService.failCount,
+              lastUpdate: _gpsService.lastUpdate,
+            ),
+          ),
+        
         IconButton(
           onPressed: () {
             Navigator.push(
@@ -386,11 +503,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         }
 
         final allBookings = snapshot.data!;
+        
+        // Auto-start GPS tracking for active bookings
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _updateBadgeCountsFromBookings(allBookings);
             });
+            
+            // Check and start GPS tracking
+            _autoStartGpsForActiveBookings();
           }
         });
 
@@ -408,6 +530,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           onRefresh: () async {
             setState(() {
               _bookingFuture = BookingService.getMyBookings(userId!);
+              _hasCheckedGpsTracking = false; // Reset to check again
             });
           },
           child: ListView.builder(
@@ -422,6 +545,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                   onReviewSubmitted: () {
                     setState(() {
                       _bookingFuture = BookingService.getMyBookings(userId!);
+                      _hasCheckedGpsTracking = false;
                     });
                   },
                 ),
@@ -433,7 +557,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     );
   }
 
-  // UPDATED: Now shows 4 badge counts
   Widget _buildTabBar() {
     return BookingTabsWidget(
       currentTabIndex: _currentTabIndex,

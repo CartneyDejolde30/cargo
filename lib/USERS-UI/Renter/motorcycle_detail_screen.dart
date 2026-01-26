@@ -48,7 +48,7 @@ class _MotorcycleDetailScreenState
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();

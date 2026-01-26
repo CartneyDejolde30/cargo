@@ -6,10 +6,6 @@ import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.d
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
-
-
-
 class LiveTripTrackerScreen extends StatefulWidget {
   final Booking booking;
 

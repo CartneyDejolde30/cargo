@@ -1,15 +1,18 @@
+// lib/USERS-UI/Renter/bookings/history/booking_detail_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_status_tracker.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
-
+import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -31,13 +34,95 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isLoadingPayment = true;
   Map<String, dynamic>? _paymentData;
   bool _bookingChanged = false;
+  
+  // GPS Tracking
+  final RenterGpsService _gpsService = renterGpsService;
+  bool _isGpsTracking = false;
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
 
   @override
   void initState() {
     super.initState();
     _loadUserIdAndPayment();
+    _checkAndStartGpsTracking();
+  }
+
+  @override
+  void dispose() {
+    // Only stop GPS if booking is not active anymore
+    if (widget.booking.status.toLowerCase() != 'approved') {
+      _gpsService.stopTracking();
+    }
+    super.dispose();
+  }
+
+  Future<void> _checkAndStartGpsTracking() async {
+    // Start GPS only for approved/active bookings
+    if (widget.booking.status.toLowerCase() == 'approved' ||
+        widget.status.toLowerCase() == 'active') {
+      await _startGpsTracking();
+    }
+  }
+
+  Future<void> _startGpsTracking() async {
+    debugPrint('🚀 Checking GPS tracking for booking: ${widget.booking.bookingId}');
+
+    // Check if already tracking this booking
+    if (_gpsService.isTracking && 
+        _gpsService.activeBookingId == widget.booking.bookingId.toString()) {
+      debugPrint('✓ Already tracking this booking');
+      setState(() => _isGpsTracking = true);
+      return;
+    }
+
+    // Request permissions
+    final hasPermission = await LocationPermissionHelper.showPermissionDialog(context);
+    
+    if (!hasPermission) {
+      debugPrint('❌ Location permission not granted');
+      return;
+    }
+
+    // Start tracking
+    final success = await _gpsService.startTracking(widget.booking.bookingId.toString());
+
+    if (mounted) {
+      setState(() => _isGpsTracking = success);
+
+      if (success) {
+        debugPrint('✅ GPS tracking started successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.location_on, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'GPS tracking started for your rental',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  void _stopGpsTracking() {
+    debugPrint('🛑 Stopping GPS tracking');
+    _gpsService.stopTracking();
+    
+    if (mounted) {
+      setState(() => _isGpsTracking = false);
+    }
   }
 
   Future<void> _loadUserIdAndPayment() async {
@@ -142,6 +227,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         icon: _circleIcon(Icons.arrow_back),
         onPressed: () => Navigator.pop(context, _bookingChanged),
       ),
+      actions: [
+        // GPS Status Indicator for Active Bookings
+        if (widget.status.toLowerCase() == 'active')
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: LocationPermissionHelper.buildGpsStatusBadge(
+              isTracking: _isGpsTracking,
+              successCount: _gpsService.successCount,
+              failCount: _gpsService.failCount,
+              lastUpdate: _gpsService.lastUpdate,
+            ),
+          ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -169,6 +267,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _carInfo(),
         _rentalPeriod(),
         const SizedBox(height: 20),
+        
+        // GPS Tracking Section - Only for Active Bookings
+        if (widget.status.toLowerCase() == 'active') ...[
+          _buildGpsTrackingSection(),
+          const SizedBox(height: 20),
+        ],
+        
         _locationCard(),
         const SizedBox(height: 20),
         
@@ -225,6 +330,168 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _helpSection(),
         const SizedBox(height: 120),
       ],
+    );
+  }
+
+  // NEW: GPS Tracking Section
+  Widget _buildGpsTrackingSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isGpsTracking
+                ? [Colors.green.shade50, Colors.green.shade100]
+                : [Colors.orange.shade50, Colors.orange.shade100],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isGpsTracking 
+                ? Colors.green.shade200 
+                : Colors.orange.shade200,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _isGpsTracking ? Colors.green : Colors.orange,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _isGpsTracking ? Icons.gps_fixed : Icons.gps_off,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GPS Tracking',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isGpsTracking
+                            ? 'Your location is being shared with the owner'
+                            : 'Start GPS tracking to share your location',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            if (_isGpsTracking) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Icon(Icons.cloud_upload, 
+                              size: 20, color: Colors.green.shade700),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_gpsService.successCount}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Updates Sent',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(width: 1, height: 40, color: Colors.grey.shade300),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Icon(Icons.error_outline, 
+                              size: 20, color: Colors.red.shade700),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_gpsService.failCount}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Failed',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 16),
+            
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isGpsTracking ? _stopGpsTracking : _startGpsTracking,
+                icon: Icon(
+                  _isGpsTracking ? Icons.location_off : Icons.location_on,
+                  size: 18,
+                ),
+                label: Text(
+                  _isGpsTracking ? 'Stop GPS Tracking' : 'Start GPS Tracking',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isGpsTracking 
+                      ? Colors.red.shade600 
+                      : Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -631,7 +898,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Cancel Booking?'),
         content: const Text(
-          'Are you sure you want to cancel this booking? This action cannot be undone.',
+          'Are you sure you want to cancel this booking? GPS tracking will be stopped. This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -667,6 +934,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               );
 
+              // Stop GPS tracking
+              _stopGpsTracking();
+
               final success = await BookingService.cancelBooking(
                 bookingId: widget.booking.bookingId,
                 userId: userId!,
@@ -677,7 +947,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Booking cancelled successfully'),
+                    content: Text('Booking cancelled successfully. GPS tracking stopped.'),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -852,7 +1122,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  // ✅ UPDATED: Only ONE _twoButtons method with optional right action
   Widget _twoButtons(
     BuildContext context,
     String leftLabel,

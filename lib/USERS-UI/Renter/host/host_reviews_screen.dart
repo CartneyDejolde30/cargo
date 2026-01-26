@@ -25,7 +25,7 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
   List<Map<String, dynamic>> filteredReviews = [];
   int? selectedRating; // null means "All"
   
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
 
   @override
   void initState() {
