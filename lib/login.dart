@@ -9,25 +9,24 @@ import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/Google/google_sign_in_service.dart';
-import 'package:flutter_application_1/Facebook/facebook_sign_in_service.dart';
-
+// ❌ REMOVED: Facebook import
 
 class CarGoApp extends StatelessWidget {
   const CarGoApp({super.key});
 
-void setUserStatus(String userId, bool online) {
-  final ref = FirebaseDatabase.instance.ref("status/$userId");
+  void setUserStatus(String userId, bool online) {
+    final ref = FirebaseDatabase.instance.ref("status/$userId");
 
-  ref.set({
-    "isOnline": online,
-    "lastSeen": ServerValue.timestamp,
-  });
+    ref.set({
+      "isOnline": online,
+      "lastSeen": ServerValue.timestamp,
+    });
 
-  ref.onDisconnect().set({
-    "isOnline": false,
-    "lastSeen": ServerValue.timestamp,
-  });
-}
+    ref.onDisconnect().set({
+      "isOnline": false,
+      "lastSeen": ServerValue.timestamp,
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +36,12 @@ void setUserStatus(String userId, bool online) {
       theme: ThemeData(
         brightness: Brightness.light,
         primaryColor: Theme.of(context).iconTheme.color,
-
-
-
         scaffoldBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       home: const LoginPage(),
     );
   }
 }
-
-
-
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -61,28 +54,27 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GoogleSignInService _googleSignInService = GoogleSignInService();
-  final FacebookSignInService _facebookSignInService = FacebookSignInService();
+  // ❌ REMOVED: FacebookSignInService
   
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isGoogleSigningIn = false;
-  bool _isFacebookSigningIn = false;
+  // ❌ REMOVED: _isFacebookSigningIn
 
   @override
-void initState() {
-  super.initState();
-  _loadSavedCredentials();
-  _setupNotifications();
-}
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+    _setupNotifications();
+  }
 
-Future<void> _setupNotifications() async {
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-}
-
+  Future<void> _setupNotifications() async {
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
 
   void _loadSavedCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -112,30 +104,27 @@ Future<void> _setupNotifications() async {
     }
   }
 
- Future<void> _createFirestoreUser(Map<String, dynamic> data) async {
-  final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+  Future<void> _createFirestoreUser(Map<String, dynamic> data) async {
+    final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
 
-  if (!(await userRef.get()).exists) {
-    
-    // GET TOKEN HERE
-    final token = await FirebaseMessaging.instance.getToken();
+    if (!(await userRef.get()).exists) {
+      final token = await FirebaseMessaging.instance.getToken();
 
-    await userRef.set({
-      "uid": data["id"].toString(),
-      "fullname": data["fullname"],
-      "email": data["email"],
-      "profile_image": data["profile_image"] ?? "",
-      "role": data["role"],
-      "online": true,
-      "created_at": FieldValue.serverTimestamp(),
-      "vehicles": [],
-      "rating": 0,
-      "status": "active",
-      "fcm": token,   // <-- Save token for new user also
-    });
+      await userRef.set({
+        "uid": data["id"].toString(),
+        "fullname": data["fullname"],
+        "email": data["email"],
+        "profile_image": data["profile_image"] ?? "",
+        "role": data["role"],
+        "online": true,
+        "created_at": FieldValue.serverTimestamp(),
+        "vehicles": [],
+        "rating": 0,
+        "status": "active",
+        "fcm": token,
+      });
+    }
   }
-}
-
 
   void _login() async {
     final email = _emailController.text.trim();
@@ -175,15 +164,13 @@ Future<void> _setupNotifications() async {
             SnackBar(content: Text(data["message"])),
           );
 
-// 🔐 SAVE AUTH TOKEN
-if (data["token"] != null) {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString("auth_token", data["token"]);
-  print("🔐 TOKEN SAVED: ${data["token"]}");
-} else {
-  print("❌ NO TOKEN RECEIVED FROM SERVER");
-}
-
+          if (data["token"] != null) {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setString("auth_token", data["token"]);
+            print("🔐 TOKEN SAVED: ${data["token"]}");
+          } else {
+            print("❌ NO TOKEN RECEIVED FROM SERVER");
+          }
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString("user_id", data["id"].toString());  
@@ -194,38 +181,35 @@ if (data["token"] != null) {
           await prefs.setString("address", data["address"] ?? "");
           await prefs.setString("profile_image", data["profile_image"] ?? "");
 
-          ///  FIX: Ensure user exists inside Firestore in correct format
-              final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+          final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
 
-              if (!(await userRef.get()).exists) {
-                await userRef.set({
-                  "uid": data["id"].toString(),
-                  "name": data["fullname"],               
-                  "avatar": data["profile_image"] ?? "",  
-                  "email": data["email"],
-                  "role": data["role"],
-                  "online": true,
-                  "createdAt": FieldValue.serverTimestamp(),
-                });
-                print("🔥 Firestore user CREATED");
-              } else {
-                print("✔ Firestore user already exists → updating status");
-                        await userRef.update({
-                          "online": true,
-                          "avatar": data["profile_image"] ?? "",
-                          "name": data["fullname"],
-                        });
+          if (!(await userRef.get()).exists) {
+            await userRef.set({
+              "uid": data["id"].toString(),
+              "name": data["fullname"],               
+              "avatar": data["profile_image"] ?? "",  
+              "email": data["email"],
+              "role": data["role"],
+              "online": true,
+              "createdAt": FieldValue.serverTimestamp(),
+            });
+            print("🔥 Firestore user CREATED");
+          } else {
+            print("✔ Firestore user already exists → updating status");
+            await userRef.update({
+              "online": true,
+              "avatar": data["profile_image"] ?? "",
+              "name": data["fullname"],
+            });
 
-                        // 🔥 Save FCM Token for Push Notifications
-                        try {
-                          final token = await FirebaseMessaging.instance.getToken();
-                          await userRef.update({"fcm": token});
-                          print("📩 FCM Token Updated: $token");
-                        } catch (e) {
-                          print("❌ Failed to save FCM Token: $e");
-                        }
-
-                                      }
+            try {
+              final token = await FirebaseMessaging.instance.getToken();
+              await userRef.update({"fcm": token});
+              print("📩 FCM Token Updated: $token");
+            } catch (e) {
+              print("❌ Failed to save FCM Token: $e");
+            }
+          }
 
           String role = data["role"];
           if (role == "Renter") {
@@ -261,7 +245,6 @@ if (data["token"] != null) {
     }
   }
 
-  // 🆕 GOOGLE SIGN-IN HANDLER
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isGoogleSigningIn = true);
 
@@ -269,7 +252,6 @@ if (data["token"] != null) {
       final result = await _googleSignInService.signInWithGoogle();
 
       if (result == null) {
-        // User canceled
         setState(() => _isGoogleSigningIn = false);
         return;
       }
@@ -283,11 +265,9 @@ if (data["token"] != null) {
       }
 
       if (result['isNewUser'] == true) {
-        // New user - show role selection dialog
         setState(() => _isGoogleSigningIn = false);
         _showRoleSelectionDialog(result);
       } else {
-        // Existing user - navigate to home
         final userData = result['user'];
         _navigateToHome(userData['role']);
       }
@@ -300,7 +280,6 @@ if (data["token"] != null) {
     }
   }
 
-  //  SHOW ROLE SELECTION DIALOG (Google)
   void _showRoleSelectionDialog(Map<String, dynamic> googleData) {
     String? selectedRole;
     String? selectedMunicipality;
@@ -326,7 +305,6 @@ if (data["token"] != null) {
                     Text('Welcome ${googleData['fullName']}!'),
                     const SizedBox(height: 20),
                     
-                    // Role selection
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'I am a',
@@ -343,7 +321,6 @@ if (data["token"] != null) {
                     
                     const SizedBox(height: 16),
                     
-                    // Municipality selection
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Municipality',
@@ -382,11 +359,7 @@ if (data["token"] != null) {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+                    backgroundColor: Theme.of(context).iconTheme.color,
                   ),
                   child: const Text('Continue'),
                 ),
@@ -398,7 +371,6 @@ if (data["token"] != null) {
     );
   }
 
-  //  COMPLETE GOOGLE REGISTRATION
   Future<void> _completeGoogleRegistration(
     Map<String, dynamic> googleData,
     String role,
@@ -429,176 +401,11 @@ if (data["token"] != null) {
     }
   }
 
-  //  FACEBOOK SIGN-IN HANDLER
-  Future<void> _handleFacebookSignIn() async {
-    setState(() => _isFacebookSigningIn = true);
+  // ❌ REMOVED: All Facebook-related methods
+  // - _handleFacebookSignIn()
+  // - _showFacebookRoleSelectionDialog()
+  // - _completeFacebookRegistration()
 
-    try {
-      final result = await _facebookSignInService.signInWithFacebook();
-
-      if (result == null) {
-        // User canceled
-        setState(() => _isFacebookSigningIn = false);
-        return;
-      }
-
-      if (result.containsKey('error')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Facebook Sign-In failed: ${result['error']}')),
-        );
-        setState(() => _isFacebookSigningIn = false);
-        return;
-      }
-
-      if (result['isNewUser'] == true) {
-        // New user - show role selection dialog
-        setState(() => _isFacebookSigningIn = false);
-        _showFacebookRoleSelectionDialog(result);
-      } else {
-        // Existing user - navigate to home
-        final userData = result['user'];
-        _navigateToHome(userData['role']);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-in error: $e')),
-      );
-    } finally {
-      setState(() => _isFacebookSigningIn = false);
-    }
-  }
-
-  //  SHOW ROLE SELECTION DIALOG (Facebook)
-  void _showFacebookRoleSelectionDialog(Map<String, dynamic> facebookData) {
-    String? selectedRole;
-    String? selectedMunicipality;
-
-    final municipalities = [
-      'Bayugan', 'Bunawan', 'Esperanza', 'La Paz', 'Loreto', 
-      'Prosperidad', 'Rosario', 'San Francisco', 'San Luis', 
-      'Santa Josefa', 'Sibagat', 'Talacogon', 'Trento', 'Veruela'
-    ];
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Complete Your Profile'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Welcome ${facebookData['fullName']}!'),
-                    const SizedBox(height: 20),
-                    
-                    // Role selection
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'I am a',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Renter', child: Text('Renter')),
-                        DropdownMenuItem(value: 'Owner', child: Text('Owner')),
-                      ],
-                      onChanged: (value) {
-                        setDialogState(() => selectedRole = value);
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Municipality selection
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Municipality',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: municipalities.map((municipality) {
-                        return DropdownMenuItem(
-                          value: municipality,
-                          child: Text(municipality),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setDialogState(() => selectedMunicipality = value);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _facebookSignInService.signOut();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: (selectedRole != null && selectedMunicipality != null)
-                      ? () async {
-                          Navigator.pop(context);
-                          await _completeFacebookRegistration(
-                            facebookData,
-                            selectedRole!,
-                            selectedMunicipality!,
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                  ),
-                  child: const Text('Continue'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // 🆕 COMPLETE FACEBOOK REGISTRATION
-  Future<void> _completeFacebookRegistration(
-    Map<String, dynamic> facebookData,
-    String role,
-    String municipality,
-  ) async {
-    setState(() => _isFacebookSigningIn = true);
-
-    final result = await _facebookSignInService.registerFacebookUser(
-      email: facebookData['email'],
-      fullName: facebookData['fullName'],
-      role: role,
-      municipality: municipality,
-      photoUrl: facebookData['photoUrl'],
-      firebaseUid: facebookData['firebaseUid'],
-      facebookId: facebookData['facebookId'],
-    );
-
-    setState(() => _isFacebookSigningIn = false);
-
-    if (result != null && result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully!')),
-      );
-      _navigateToHome(role);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration failed. Please try again.')),
-      );
-    }
-  }
-
-  //  NAVIGATE TO HOME BASED ON ROLE
   void _navigateToHome(String role) {
     if (role == "Renter") {
       Navigator.pushReplacement(
@@ -657,7 +464,6 @@ if (data["token"] != null) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo and Brand Name
               Row(
                 children: [
                   Image.asset(
@@ -666,30 +472,23 @@ if (data["token"] != null) {
                     height: 40,
                   ),
                   const SizedBox(width: 10),
-                   Text(
+                  Text(
                     'CarGo',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).iconTheme.color,
-
-
-
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 40),
 
-              // Welcome Text
               Text(
                 'Welcome Back',
                 style: TextStyle(
                   fontSize: 28,
                   color: Theme.of(context).iconTheme.color,
-
-
-
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -703,7 +502,6 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 30),
 
-              // Email/Phone Input
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.black),
@@ -721,7 +519,6 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 16),
 
-              // Password Input
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -752,7 +549,6 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 12),
 
-              // Remember Me and Forgot Password
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -767,7 +563,6 @@ if (data["token"] != null) {
                             setState(() => _rememberMe = value!);
                           },
                           activeColor: Theme.of(context).iconTheme.color,
-
                           checkColor: Colors.white,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -795,18 +590,13 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 24),
 
-              // Login Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+                    backgroundColor: Theme.of(context).iconTheme.color,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -821,7 +611,6 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 24),
 
-              // OR Divider
               Row(
                 children: const [
                   Expanded(child: Divider(color: Colors.black26, thickness: 1)),
@@ -837,46 +626,7 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 24),
 
-              // Facebook Login Button (UPDATED)
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: _isFacebookSigningIn ? null : _handleFacebookSignIn,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.black26, width: 1),
-                    foregroundColor: Theme.of(context).iconTheme.color,
-
-
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isFacebookSigningIn
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
-                            SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                'Continue with Facebook',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              // ❌ REMOVED: Facebook Login Button
 
               // Google Login Button
               SizedBox(
@@ -887,8 +637,6 @@ if (data["token"] != null) {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black26, width: 1),
                     foregroundColor: Theme.of(context).iconTheme.color,
-
-
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -923,7 +671,6 @@ if (data["token"] != null) {
               ),
               const SizedBox(height: 24),
 
-              // Sign Up Link at bottom
               Center(
                 child: Wrap(
                   alignment: WrapAlignment.center,
@@ -945,13 +692,10 @@ if (data["token"] != null) {
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child:  Text(
+                      child: Text(
                         'Sign Up',
                         style: TextStyle(
                           color: Theme.of(context).iconTheme.color,
-
-
-
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),

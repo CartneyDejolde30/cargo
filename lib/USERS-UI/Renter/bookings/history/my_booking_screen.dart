@@ -43,6 +43,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   // GPS Service
   final RenterGpsService _gpsService = renterGpsService;
   bool _hasCheckedGpsTracking = false;
+  bool _isCheckingGps = false; // ✅ NEW: Prevent concurrent GPS checks
 
   // Tab labels
   final List<String> _tabLabels = ['Active', 'Pending', 'Completed', 'Rejected'];
@@ -71,7 +72,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     // Continue GPS tracking even when app goes to background
     if (state == AppLifecycleState.resumed) {
       debugPrint('📱 App resumed, checking GPS tracking status...');
-      if (!_gpsService.isTracking && _hasCheckedGpsTracking) {
+      // Only restart if tracking was active and now stopped
+      if (!_gpsService.isTracking && _hasCheckedGpsTracking && !_isCheckingGps) {
+        _hasCheckedGpsTracking = false; // Reset to allow recheck
         _autoStartGpsForActiveBookings();
       }
     }
@@ -109,16 +112,29 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  // NEW: Auto-start GPS tracking for active bookings
+  // ✅ FIXED: Better GPS tracking initialization with safeguards
   Future<void> _autoStartGpsForActiveBookings() async {
+    // Prevent multiple concurrent calls
+    if (_isCheckingGps) {
+      debugPrint('⏸️ GPS check already in progress, skipping');
+      return;
+    }
+
     if (_hasCheckedGpsTracking) {
       debugPrint('ℹ️ GPS tracking already checked');
       return;
     }
 
     try {
+      _isCheckingGps = true;
+      debugPrint('🔍 Checking for active bookings to start GPS tracking...');
+
       final bookings = await _bookingFuture;
-      if (bookings == null) return;
+      if (bookings == null || bookings.isEmpty) {
+        debugPrint('ℹ️ No bookings found');
+        _hasCheckedGpsTracking = true;
+        return;
+      }
 
       final now = DateTime.now();
       
@@ -139,12 +155,23 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
       debugPrint('📍 Found ${activeBookings.length} active booking(s)');
 
-      // Start GPS for the first active booking
+      // Check if already tracking one of these bookings
       final firstActiveBooking = activeBookings.first;
+      if (_gpsService.isTracking && 
+          _gpsService.activeBookingId == firstActiveBooking.bookingId.toString()) {
+        debugPrint('✅ Already tracking booking ${firstActiveBooking.bookingId}');
+        _hasCheckedGpsTracking = true;
+        return;
+      }
+
+      // Start GPS for the first active booking
       debugPrint('🚀 Auto-starting GPS for booking: ${firstActiveBooking.bookingId}');
 
       // Check permissions first
-      if (!mounted) return;
+      if (!mounted) {
+        _hasCheckedGpsTracking = true;
+        return;
+      }
       
       final hasPermission = await LocationPermissionHelper.showPermissionDialog(context);
       
@@ -184,10 +211,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
               label: 'View',
               textColor: Colors.white,
               onPressed: () {
-                setState(() {
-                  _currentTabIndex = 0; // Switch to Active tab
-                  _tabController.animateTo(0);
-                });
+                if (mounted) {
+                  setState(() {
+                    _currentTabIndex = 0; // Switch to Active tab
+                    _tabController.animateTo(0);
+                  });
+                }
               },
             ),
           ),
@@ -196,6 +225,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     } catch (e) {
       debugPrint('❌ Error auto-starting GPS: $e');
       _hasCheckedGpsTracking = true;
+    } finally {
+      _isCheckingGps = false;
     }
   }
 
@@ -241,9 +272,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   void _onTabChanged() {
     if (_currentTabIndex != _tabController.index) {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
+      if (mounted) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+      }
     }
   }
 
@@ -312,7 +345,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   void _handleNavigation(int index) {
     if (_selectedNavIndex != index) {
-      setState(() => _selectedNavIndex = index);
+      if (mounted) {
+        setState(() => _selectedNavIndex = index);
+      }
     }
   }
 
@@ -345,9 +380,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         'My Bookings',
         style: GoogleFonts.poppins(
           color: Theme.of(context).iconTheme.color,
-
-
-
           fontSize: 22,
           fontWeight: FontWeight.w600,
         ),
@@ -392,9 +424,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).iconTheme.color,
-
-
-
                   ),
                 ),
               ],
@@ -486,16 +515,14 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      _bookingFuture = BookingService.getMyBookings(userId!);
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _bookingFuture = BookingService.getMyBookings(userId!);
+                      });
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+                    backgroundColor: Theme.of(context).iconTheme.color,
                   ),
                   child: Text('Retry'),
                 ),
@@ -514,17 +541,24 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
         final allBookings = snapshot.data!;
         
-        // Auto-start GPS tracking for active bookings
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
+        // ✅ FIXED: Only auto-start GPS once after data loads
+        if (!_hasCheckedGpsTracking && !_isCheckingGps) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
               _updateBadgeCountsFromBookings(allBookings);
-            });
-            
-            // Check and start GPS tracking
-            _autoStartGpsForActiveBookings();
-          }
-        });
+              _autoStartGpsForActiveBookings();
+            }
+          });
+        } else {
+          // Just update badge counts without GPS check
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _updateBadgeCountsFromBookings(allBookings);
+              });
+            }
+          });
+        }
 
         final bookings = _filterBookings(allBookings);
 
@@ -538,10 +572,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {
-              _bookingFuture = BookingService.getMyBookings(userId!);
-              _hasCheckedGpsTracking = false; // Reset to check again
-            });
+            if (mounted) {
+              setState(() {
+                _bookingFuture = BookingService.getMyBookings(userId!);
+                _hasCheckedGpsTracking = false; // Reset to check again
+                _isCheckingGps = false;
+              });
+            }
           },
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
@@ -553,10 +590,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                   booking: bookings[index],
                   status: _mapStatusForUI(bookings[index].status),
                   onReviewSubmitted: () {
-                    setState(() {
-                      _bookingFuture = BookingService.getMyBookings(userId!);
-                      _hasCheckedGpsTracking = false;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _bookingFuture = BookingService.getMyBookings(userId!);
+                        _hasCheckedGpsTracking = false;
+                        _isCheckingGps = false;
+                      });
+                    }
                   },
                 ),
               );

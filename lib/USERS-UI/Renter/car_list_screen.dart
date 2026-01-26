@@ -55,17 +55,23 @@ class _CarListScreenState extends State<CarListScreen> {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['status'] == 'success') {
-          setState(() {
-            _allCars = List<Map<String, dynamic>>.from(data['cars']);
-            _applyFilters();
-          });
+          // ✅ FIX: Check if widget is still mounted before calling setState
+          if (mounted) {
+            setState(() {
+              _allCars = List<Map<String, dynamic>>.from(data['cars']);
+              _applyFilters();
+            });
+          }
         }
       }
     } catch (e) {
       print("❌ ERROR LOADING CARS: $e");
     }
 
-    setState(() => _loading = false);
+    // ✅ FIX: Check if widget is still mounted before calling setState
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   void _applyFilters() {
@@ -115,10 +121,13 @@ class _CarListScreenState extends State<CarListScreen> {
       }).toList();
     }
 
-    setState(() {
-      _filteredCars = filtered;
-      _calculateActiveFilters();
-    });
+    // ✅ FIX: Check if widget is still mounted before calling setState
+    if (mounted) {
+      setState(() {
+        _filteredCars = filtered;
+        _calculateActiveFilters();
+      });
+    }
   }
 
   void _calculateActiveFilters() {
@@ -139,6 +148,8 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   void _clearAllFilters() {
+    if (!mounted) return;
+    
     setState(() {
       _activeFilters = null;
       _activeFilterCount = 0;
@@ -150,13 +161,14 @@ class _CarListScreenState extends State<CarListScreen> {
       SnackBar(
         content: Text('All filters cleared'),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
   void _handleNavigation(int index) {
+    if (!mounted) return;
+    
     setState(() => _selectedNavIndex = index);
 
     if (index == 0) Navigator.pop(context);
@@ -169,7 +181,6 @@ class _CarListScreenState extends State<CarListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: _loading
@@ -223,7 +234,6 @@ class _CarListScreenState extends State<CarListScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: Theme.of(context).textTheme.titleLarge?.color,
-
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -261,7 +271,6 @@ class _CarListScreenState extends State<CarListScreen> {
                   'Clear All',
                   style: GoogleFonts.poppins(
                     color: Theme.of(context).textTheme.titleLarge?.color,
-
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -277,7 +286,6 @@ class _CarListScreenState extends State<CarListScreen> {
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-
       elevation: 0,
       pinned: false,
       floating: true,
@@ -289,7 +297,6 @@ class _CarListScreenState extends State<CarListScreen> {
         widget.title,
         style: GoogleFonts.poppins(
           color: Theme.of(context).textTheme.titleLarge?.color,
-
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -318,7 +325,7 @@ class _CarListScreenState extends State<CarListScreen> {
           ),
         );
 
-        if (result != null && result is Map<String, dynamic>) {
+        if (result != null && result is Map<String, dynamic> && mounted) {
           setState(() {
             _activeFilters = result;
             _applyFilters();
@@ -328,7 +335,6 @@ class _CarListScreenState extends State<CarListScreen> {
             SnackBar(
               content: Text('Filters applied - ${_filteredCars.length} cars found'),
               backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-
               duration: const Duration(seconds: 2),
             ),
           );
@@ -372,7 +378,6 @@ class _CarListScreenState extends State<CarListScreen> {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: Theme.of(context).textTheme.titleLarge?.color,
-
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -402,6 +407,7 @@ class _CarListScreenState extends State<CarListScreen> {
 
           return GestureDetector(
             onTap: () {
+              if (!mounted) return;
               setState(() {
                 _selectedCategory = category;
                 _applyFilters();
@@ -473,7 +479,6 @@ class _CarListScreenState extends State<CarListScreen> {
                   onPressed: _clearAllFilters,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -600,7 +605,6 @@ class _CarListScreenState extends State<CarListScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).textTheme.titleLarge?.color,
-
                         ),
                       ),
                     ),
@@ -619,7 +623,6 @@ class _CarListScreenState extends State<CarListScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).textTheme.titleLarge?.color,
-
                       ),
                     ),
                     const SizedBox(height: 4),

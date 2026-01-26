@@ -497,7 +497,6 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
-<<<<<<< HEAD
                 ),
                 const SizedBox(height: 12),
                 
@@ -581,33 +580,10 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                             bookingId: booking['booking_id'].toString(),
                             carName: booking['car_full_name'] ?? 'Car',
                             renterName: booking['renter_name'] ?? 'Unknown',
-=======
-                  child: Image.network(
-                    imageUrl,
-                    height: 220,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 220,
-                        color: Colors.grey.shade200,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: Theme.of(context).iconTheme.color,
-
-
-
->>>>>>> c4b2b7dfae1615733889abbe7e8f09845f19e0e2
                           ),
                         ),
                       );
                     },
-<<<<<<< HEAD
                     icon: const Icon(Icons.map, size: 20),
                     label: Text(
                       isUpcoming ? 'View Trip Details' : 'Track Car Location',
@@ -624,253 +600,13 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-=======
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 220,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.grey.shade300, Colors.grey.shade200],
-                          ),
-                        ),
-                        child: const Icon(Icons.directions_car, size: 80, color: Colors.white),
-                      );
-                    },
-                  ),
-                ),
-                
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).iconTheme.color,
-
-
-
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Active',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.schedule, color: Colors.grey.shade700, size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$daysRemaining days left',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).iconTheme.color,
-
-
-
-                          ),
-                        ),
-                      ],
->>>>>>> c4b2b7dfae1615733889abbe7e8f09845f19e0e2
                     ),
                   ),
                 ),
               ],
             ),
-<<<<<<< HEAD
           ),
         ],
-=======
-            
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).iconTheme.color,
-
-
-
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '₱${booking['price_per_day']}/day',
-                          style: GoogleFonts.outfit(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).iconTheme.color,
-
-
-
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Text(
-                    booking['car_full_name'] ?? 'Car',
-                    style: GoogleFonts.outfit(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).iconTheme.color,
-
-
-
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildInfoRow(Icons.person_outline, 'Renter', booking['renter_name'] ?? 'Unknown'),
-                        const Divider(height: 24),
-                        _buildInfoRow(Icons.calendar_today_outlined, 'Started', booking['pickup_date'] ?? ''),
-                        const Divider(height: 24),
-                        _buildInfoRow(Icons.event_outlined, 'End Date', booking['return_date'] ?? ''),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Trip Progress',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '${progress.toStringAsFixed(0)}%',
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: progress / 100,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              progress < 33 ? Colors.green :
-                              progress < 66 ? Colors.orange : Colors.red
-                            ),
-                            minHeight: 8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // NEW: Live Tracking Button
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LiveTrackingScreen(
-                              bookingId: booking['booking_id'].toString(),
-                              carName: booking['car_full_name'] ?? 'Car',
-                              renterName: booking['renter_name'] ?? 'Unknown',
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.map, size: 20),
-                      label: Text(
-                        'Track Car Location',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
->>>>>>> c4b2b7dfae1615733889abbe7e8f09845f19e0e2
       ),
     ),
   );
