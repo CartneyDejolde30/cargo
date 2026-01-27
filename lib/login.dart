@@ -104,28 +104,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _createFirestoreUser(Map<String, dynamic> data) async {
-    final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
-
-    if (!(await userRef.get()).exists) {
-      final token = await FirebaseMessaging.instance.getToken();
-
-      await userRef.set({
-        "uid": data["id"].toString(),
-        "fullname": data["fullname"],
-        "email": data["email"],
-        "profile_image": data["profile_image"] ?? "",
-        "role": data["role"],
-        "online": true,
-        "created_at": FieldValue.serverTimestamp(),
-        "vehicles": [],
-        "rating": 0,
-        "status": "active",
-        "fcm": token,
-      });
-    }
-  }
-
   void _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();

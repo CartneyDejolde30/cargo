@@ -339,21 +339,11 @@ class _MessagePageState extends State<MessagePage> {
                         );
                       }
 
-                      // Filter chats based on search
-                      final filteredChats = searchQuery.isEmpty
-                          ? chats
-                          : chats.where((chat) {
-                              final userId = extractOtherUser(chat["members"]);
-                              // This is simplified - in production, you'd need to
-                              // fetch user data to filter by name
-                              return true;
-                            }).toList();
-
                       return ListView.builder(
-                        itemCount: filteredChats.length,
+                        itemCount: chats.length,
                         padding: const EdgeInsets.only(top: 8),
                         itemBuilder: (_, index) {
-                          final chatDoc = filteredChats[index];
+                          final chatDoc = chats[index];
                           final userId = extractOtherUser(chatDoc["members"]);
                           final lastMessage = chatDoc["lastMessage"] ?? "";
                           final timestamp = chatDoc["lastTimestamp"];
