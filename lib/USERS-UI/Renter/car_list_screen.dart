@@ -43,11 +43,11 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-    return "http://10.244.29.49/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
+    return "http://10.77.127.2/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
   }
 
   Future<void> fetchCars() async {
-    const url = "http://10.244.29.49/carGOAdmin/api/get_cars.php";
+    const url = "http://10.77.127.2/carGOAdmin/api/get_cars.php";
 
     try {
       final res = await http.get(Uri.parse(url));

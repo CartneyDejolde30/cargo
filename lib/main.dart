@@ -13,6 +13,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
 import 'package:provider/provider.dart';
 import 'theme/theme_provider.dart';
+import 'theme/app_theme.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -98,8 +99,8 @@ class MyApp extends StatelessWidget {
       title: 'CarGO',
 
       // 🌙 LIGHT & DARK THEMES
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.isDarkMode
           ? ThemeMode.dark
           : ThemeMode.light,

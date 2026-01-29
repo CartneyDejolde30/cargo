@@ -31,15 +31,23 @@ class CarGoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'CarGo Login',
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Theme.of(context).iconTheme.color,
-        scaffoldBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      ),
-      home: const LoginPage(),
-    );
+  debugShowCheckedModeBanner: false,
+  title: 'CarGo Login',
+  theme: ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+  ),
+  darkTheme: ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.blue,
+      brightness: Brightness.dark,
+    ),
+  ),
+  themeMode: ThemeMode.system,
+  home: const LoginPage(),
+);
+
   }
 }
 
@@ -139,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
 
     _saveCredentials();
 
-    final url = Uri.parse("http://10.244.29.49/carGOAdmin/login.php");
+    final url = Uri.parse("http://10.77.127.2/carGOAdmin/login.php");
 
     print("Sending JSON -> email: $email, password: $password");
 
@@ -359,7 +367,9 @@ class _LoginPageState extends State<LoginPage> {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).iconTheme.color,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+
                   ),
                   child: const Text('Continue'),
                 ),
@@ -493,23 +503,23 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Ready to hit the road.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black54,
+                  color: Theme.of(context).hintColor,
                 ),
               ),
               const SizedBox(height: 30),
 
               TextField(
                 controller: _emailController,
-                style: const TextStyle(color: Colors.black),
+                style: TextStyle(color: Theme.of(context).iconTheme.color),
                 decoration: InputDecoration(
                   hintText: 'Email/Phone Number',
-                  hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
+                  hintStyle:  TextStyle(color: Theme.of(context).disabledColor, fontSize: 14),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: Theme.of(context).colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -522,12 +532,12 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                style: const TextStyle(color: Colors.black),
+                style:  TextStyle(color: Theme.of(context).iconTheme.color),
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
+                  hintStyle:  TextStyle(color: Theme.of(context).disabledColor, fontSize: 14),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: Theme.of(context).colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -536,7 +546,7 @@ class _LoginPageState extends State<LoginPage> {
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.black38,
+                      color: Theme.of(context).disabledColor,
                       size: 20,
                     ),
                     onPressed: () {
@@ -563,14 +573,14 @@ class _LoginPageState extends State<LoginPage> {
                             setState(() => _rememberMe = value!);
                           },
                           activeColor: Theme.of(context).iconTheme.color,
-                          checkColor: Colors.white,
+                          checkColor: Theme.of(context).colorScheme.onPrimary,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                       Text(
                         'Remember Me',
-                        style: TextStyle(color: Colors.black87, fontSize: 13),
+                        style: TextStyle(color: Theme.of(context).iconTheme.color, fontSize: 13),
                       ),
                     ],
                   ),
@@ -581,9 +591,9 @@ class _LoginPageState extends State<LoginPage> {
                       minimumSize: const Size(0, 0),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
+                    child:  Text(
                       'Forgot Password',
-                      style: TextStyle(color: Colors.black87, fontSize: 13),
+                      style: TextStyle(color: Theme.of(context).iconTheme.color, fontSize: 13),
                     ),
                   ),
                 ],
@@ -596,8 +606,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).iconTheme.color,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -612,16 +622,16 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 24),
 
               Row(
-                children: const [
-                  Expanded(child: Divider(color: Colors.black26, thickness: 1)),
+                children:  [
+                  Expanded(child: Divider(color: Theme.of(context).dividerColor, thickness: 1)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'Or',
-                      style: TextStyle(color: Colors.black38, fontSize: 13),
+                      style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 13),
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.black26, thickness: 1)),
+                  Expanded(child: Divider(color: Theme.of(context).dividerColor, thickness: 1)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -635,7 +645,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: OutlinedButton(
                   onPressed: _isGoogleSigningIn ? null : _handleGoogleSignIn,
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.black26, width: 1),
+                    side:  BorderSide(color: Theme.of(context).dividerColor, width: 1),
                     foregroundColor: Theme.of(context).iconTheme.color,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -643,10 +653,14 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   child: _isGoogleSigningIn
-                      ? const SizedBox(
+                      ?  SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).iconTheme.color,
+                                ),
+
                         )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -676,9 +690,9 @@ class _LoginPageState extends State<LoginPage> {
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "Don't have an account? ",
-                      style: TextStyle(color: Colors.black54, fontSize: 13),
+                      style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
                     ),
                     TextButton(
                       onPressed: () {

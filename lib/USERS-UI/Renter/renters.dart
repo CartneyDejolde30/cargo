@@ -41,7 +41,7 @@ Future<void> saveFcmToken() async {
 
   if (userId == null) return;
 
-  final url = Uri.parse("http://10.244.29.49/carGOAdmin/api/save_fcm_token.php");
+  final url = Uri.parse("http://10.77.127.2/carGOAdmin/api/save_fcm_token.php");
 
   await http.post(url, body: {
     "user_id": userId,
@@ -72,7 +72,7 @@ void initState() {
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
 
     final cleanPath = path.replaceFirst("uploads/", "");
-    return "http://10.244.29.49/carGOAdmin/uploads/$cleanPath";
+    return "http://10.77.127.2/carGOAdmin/uploads/$cleanPath";
   }
 
   /// Async resolver that checks whether an image URL exists (via HEAD).
@@ -88,7 +88,7 @@ void initState() {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = "http://10.244.29.49/carGOAdmin/uploads/$clean";
+      candidate = "http://10.77.127.2/carGOAdmin/uploads/$clean";
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -109,7 +109,7 @@ void initState() {
 
 
   Future<void> fetchCars() async {
-    final String apiUrl = "http://10.244.29.49/carGOAdmin/api/get_cars.php";
+    final String apiUrl = "http://10.77.127.2/carGOAdmin/api/get_cars.php";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -196,19 +196,25 @@ void initState() {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
-                        const Icon(Icons.search, color: Colors.grey, size: 22),
-                        const SizedBox(width: 12),
+                                            Icon(
+                      Icons.search,
+                      color: Theme.of(context).iconTheme.color,
+                      size: 22,
+                    ),
+
+                                            const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             "Search vehicle near you...",
                             style: GoogleFonts.poppins(
-                              color: Colors.grey,
+                              color: Theme.of(context).hintColor,
                               fontSize: 14,
                             ),
                           ),
@@ -223,7 +229,8 @@ void initState() {
                  Container(
   padding: const EdgeInsets.all(4),
   decoration: BoxDecoration(
-    color: Colors.grey.shade100,
+    color: Theme.of(context).colorScheme.surfaceVariant,
+
     borderRadius: BorderRadius.circular(25),
   ),
   child: Row(
@@ -350,14 +357,14 @@ void initState() {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: selected ? Colors.black : Colors.transparent,
+        color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: selected ? Colors.white : Colors.black87,
+            color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -419,9 +426,9 @@ void initState() {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,13 +449,13 @@ void initState() {
                       if (progress == null) return child;
                       return Container(
                         height: 110,
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context).dividerColor,
                         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 110,
-                      color: Colors.grey.shade200,
+                      color: Theme.of(context).dividerColor,
                       child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
                     ),
                   );
@@ -481,11 +488,11 @@ void initState() {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.event_seat, size: 14, color: Colors.grey),
+                      Icon(Icons.event_seat, size: 14, color: Theme.of(context).hintColor),
                       const SizedBox(width: 4),
                       Text(
                         "$seats Seats",
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).hintColor),
                       ),
                     ],
                   ),
@@ -537,11 +544,11 @@ void initState() {
         width: 300,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -571,14 +578,14 @@ void initState() {
                           return Container(
                             height: 160,
                             width: 140,
-                            color: Colors.grey.shade200,
+                            color: Theme.of(context).dividerColor,
                             child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           );
                         },
                         errorBuilder: (_, __, ___) => Container(
                           height: 160,
                           width: 140,
-                          color: Colors.grey.shade200,
+                          color: Theme.of(context).dividerColor,
                           child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                         ),
                       );
@@ -592,7 +599,7 @@ void initState() {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -636,7 +643,7 @@ void initState() {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).dividerColor,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -644,14 +651,14 @@ void initState() {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -662,24 +669,24 @@ void initState() {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.event_seat, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.event_seat, size: 14, color: Theme.of(context).hintColor),
                         const SizedBox(width: 4),
                         Text(
                           "$seats-seater",
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).hintColor,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.speed, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.speed, size: 14, color: Theme.of(context).hintColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             transmission,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

@@ -66,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-            "http://10.244.29.49/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
+            "http://10.77.127.2/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
       );
 
       print("📩 RAW RESPONSE: ${res.body}");
@@ -176,15 +176,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Color _getColorByType(String type) {
-    // All icons are black for modern minimalist style
-    return Colors.black;
-  }
+  Color _getColorByType(BuildContext context, String type) {
+  return Theme.of(context).iconTheme.color!;
+}
 
-  Color _getBackgroundByType(String type) {
-    // Subtle grey backgrounds for different notification types
-    return Colors.grey.shade50;
-  }
+
+  Color _getBackgroundByType(BuildContext context, String type) {
+  return Theme.of(context).colorScheme.surfaceVariant;
+}
+
 
   // ---------------- MARK AS READ ---------------- //
 
@@ -233,13 +233,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-
-
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
 
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -249,7 +244,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             child: Text(
               "Delete",
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -351,15 +346,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).iconTheme.color,
 
-
-
                 ),
               ),
             ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.black))
+          ?  Center(child: CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+)
           : grouped.isEmpty
               ? _buildEmptyState()
               : _buildNotificationsList(),
@@ -378,15 +374,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.surfaceVariant,              shape: BoxShape.circle,
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Icon(
               Icons.notifications_none,
               size: 64,
-              color: Colors.grey.shade400,
-            ),
+              color: Theme.of(context).colorScheme.outline,            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -452,18 +446,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationItem(Map<String, dynamic> n) {
     final type = n["type"] ?? "info";
-    final iconColor = _getColorByType(type);
-    final backgroundColor = _getBackgroundByType(type);
+    final iconColor = _getColorByType(context, type);
+
+    final backgroundColor = _getBackgroundByType(context, type);
+
     final icon = _getIconByType(type);
     final isRead = n["isRead"] ?? false;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isRead ? Colors.grey.shade200 : Colors.black.withValues(alpha: 0.2),
+          color: isRead
+          ? Theme.of(context).colorScheme.outlineVariant
+          : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+
           width: isRead ? 1 : 1.5,
         ),
       ),
@@ -548,14 +547,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Icon(
                             Icons.access_time,
                             size: 14,
-                            color: Colors.grey.shade400,
-                          ),
+                            color: Theme.of(context).colorScheme.outline,),
                           const SizedBox(width: 4),
                           Text(
                             n["time"],
                             style: GoogleFonts.poppins(
-                              color: Colors.grey.shade500,
-                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.outline,fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -568,8 +565,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   onPressed: () => _deleteNotification(n),
                   icon: Icon(
                     Icons.delete_outline,
-                    color: Colors.grey.shade400,
-                    size: 20,
+                    color: Theme.of(context).colorScheme.outline,                    size: 20,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -616,15 +612,17 @@ class NotificationDetailScreen extends StatelessWidget {
     }
   }
 
-  Color _getBackgroundByType(String type) {
-    return Colors.grey.shade50;
-  }
+  Color _getBackgroundByType(BuildContext context, String type) {
+  return Theme.of(context).colorScheme.surfaceVariant;
+}
+
 
   @override
   Widget build(BuildContext context) {
     final type = notification["type"] ?? "info";
     final icon = _getIconByType(type);
-    final backgroundColor = _getBackgroundByType(type);
+    final backgroundColor = _getBackgroundByType(context, type);
+
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -632,12 +630,14 @@ class NotificationDetailScreen extends StatelessWidget {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.black),
+            icon: Icon(Icons.delete_outline, color: Theme.of(context).iconTheme.color),
+
             onPressed: onDelete,
           ),
         ],
@@ -688,8 +688,7 @@ class NotificationDetailScreen extends StatelessWidget {
                 Icon(
                   Icons.access_time,
                   size: 16,
-                  color: Colors.grey.shade500,
-                ),
+                  color: Theme.of(context).colorScheme.outline,                ),
                 const SizedBox(width: 6),
                 Text(
                   "${notification["date"]} • ${notification["time"]}",
@@ -706,7 +705,7 @@ class NotificationDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceVariant,                
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),

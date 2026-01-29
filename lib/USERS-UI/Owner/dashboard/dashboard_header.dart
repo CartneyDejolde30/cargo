@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String userName;
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
 
   const DashboardHeader({
     super.key,
     required this.userName,
+    required this.isDarkMode,
+    required this.onToggleTheme,
   });
+
 
   @override
   Widget build(BuildContext context) {

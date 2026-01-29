@@ -65,7 +65,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   bool _isCheckingStatus = false;
 
   final String gcashQRCodeUrl = "assets/gcash.jpg";
-  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
+  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
 
   @override
   void initState() {

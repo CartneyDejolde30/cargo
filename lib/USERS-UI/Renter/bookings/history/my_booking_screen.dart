@@ -193,7 +193,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.gps_fixed, color: Colors.white),
+                Icon(
+                  Icons.gps_fixed,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -203,7 +207,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                 ),
               ],
             ),
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 4),
@@ -410,13 +415,19 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: Theme.of(context).colorScheme.surfaceVariant,
+
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.undo, size: 18, color: Colors.black),
+                Icon(
+                    Icons.undo,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+
                 const SizedBox(width: 6),
                 Text(
                   'Refunds',
@@ -441,13 +452,17 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: Colors.black),
+           CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+
             SizedBox(height: 16),
             Text(
               'Loading bookings...',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.outline,
+
               ),
             ),
           ],
@@ -460,7 +475,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error,),
             SizedBox(height: 16),
             Text(
               'Not logged in',
@@ -474,7 +489,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
               'Please log in to view your bookings',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.outline,
               ),
             ),
           ],
@@ -494,7 +509,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error,),
                 SizedBox(height: 16),
                 Text(
                   'Error loading bookings',
@@ -508,7 +523,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                   snapshot.error.toString(),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -522,7 +537,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).iconTheme.color,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+
                   ),
                   child: Text('Retry'),
                 ),

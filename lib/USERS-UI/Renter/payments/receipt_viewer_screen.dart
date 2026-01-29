@@ -22,7 +22,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   Map<String, dynamic>? _receiptData;
   String? _error;
 
-  final String baseUrl = "http://10.244.29.49/carGOAdmin/";
+  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
 
   @override
   void initState() {

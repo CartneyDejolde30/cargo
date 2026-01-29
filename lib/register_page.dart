@@ -21,7 +21,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      var url = Uri.parse("http://10.244.29.49/carGOAdmin/register.php"); 
+      var url = Uri.parse("http://10.77.127.2/carGOAdmin/register.php"); 
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -86,18 +86,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 20),
 
-                const Text(
+                Text(
                   'Create an Account',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).iconTheme.color,
                   ),
                 ),
                 const SizedBox(height: 5),
-                const Text(
+                 Text(
                   'Join CarGo and start your journey today.',
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                  style: TextStyle(fontSize: 16, color: Theme.of(context).hintColor),
                 ),
                 const SizedBox(height: 30),
 
@@ -225,12 +225,8 @@ const SizedBox(height: 15),
                         child: ElevatedButton(
                           onPressed: _register,
                           style: ElevatedButton.styleFrom(
-                             backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -244,8 +240,8 @@ const SizedBox(height: 15),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Already have an account? ',
-                              style: TextStyle(color: Colors.black54)),
+                          Text('Already have an account? ',
+                              style: TextStyle(color: Theme.of(context).hintColor)),
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
                             child:  Text(

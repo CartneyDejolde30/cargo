@@ -31,17 +31,20 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with SingleTickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
   final DashboardService _dashboardService = DashboardService();
   final BookingService _bookingService = BookingService();
 
+  bool isDarkMode = false;
+
   String userName = "User";
   String ownerId = "0";
-  
+
   DashboardStats stats = DashboardStats.empty();
   List<Booking> recentBookings = [];
   List<Booking> upcomingBookings = [];
-  
+
   bool isLoading = true;
 
   late AnimationController _animationController;
@@ -66,34 +69,37 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
-    
+
     _animationController.forward();
   }
 
+  // =====================
+  // LOAD DATA + THEME
+  // =====================
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      userName = prefs.getString("fullname") ?? "User";
-      
-      // Get owner ID
-      ownerId = prefs.getString("user_id") ?? 
-                prefs.getInt("user_id")?.toString() ?? 
-                "0";
+      final prefs = await SharedPreferences.getInstance();
 
-      // Fetch all data in parallel
+      userName = prefs.getString("fullname") ?? "User";
+      isDarkMode = prefs.getBool("isDarkMode") ?? false;
+
+      ownerId = prefs.getString("user_id") ??
+          prefs.getInt("user_id")?.toString() ??
+          "0";
+
       await Future.wait([
         _fetchDashboardStats(),
         _fetchRecentBookings(),
@@ -106,38 +112,50 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     setState(() => isLoading = false);
   }
 
+  // =====================
+  // THEME TOGGLE
+  // =====================
+  Future<void> _toggleTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = !isDarkMode;
+    });
+    await prefs.setBool("isDarkMode", isDarkMode);
+  }
+
   Future<void> _fetchDashboardStats() async {
-    final fetchedStats = await _dashboardService.fetchDashboardStats(ownerId);
+    final fetchedStats =
+        await _dashboardService.fetchDashboardStats(ownerId);
     debugPrint("👤 OWNER ID => $ownerId");
 
     setState(() => stats = fetchedStats);
   }
 
   Future<void> _fetchRecentBookings() async {
-    final bookings = await _bookingService.fetchRecentBookings(ownerId, limit: 5);
+    final bookings =
+        await _bookingService.fetchRecentBookings(ownerId, limit: 5);
     setState(() => recentBookings = bookings);
   }
 
   Future<void> _fetchUpcomingBookings() async {
-    final bookings = await _bookingService.fetchUpcomingBookings(ownerId);
+    final bookings =
+        await _bookingService.fetchUpcomingBookings(ownerId);
     setState(() => upcomingBookings = bookings);
   }
 
   String _formatCurrency(double amount) {
-    final formatter = NumberFormat.currency(symbol: '₱', decimalDigits: 0);
+    final formatter =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 0);
     return formatter.format(amount);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: RefreshIndicator(
         onRefresh: _loadData,
-        color: Theme.of(context).iconTheme.color,
-
-
-
+        color: Theme.of(context).colorScheme.primary,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -147,52 +165,44 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header (without notification icon)
-                  DashboardHeader(userName: userName),
-                  
+                  // HEADER WITH TOGGLE
+                  DashboardHeader(
+                    userName: userName,
+                    isDarkMode: isDarkMode,
+                    onToggleTheme: _toggleTheme,
+                  ),
+
                   if (isLoading)
                     _buildLoadingIndicator()
                   else ...[
                     const SizedBox(height: 24),
-                    
-                    // Quick Stats Grid (only Total Cars and Total Income)
                     _buildQuickStatsGrid(),
-                    
                     const SizedBox(height: 24),
-                    
-                    // Revenue Overview
                     RevenueOverview(
                       totalIncome: stats.totalIncome,
                       monthlyIncome: stats.monthlyIncome,
                       weeklyIncome: stats.weeklyIncome,
                       todayIncome: stats.todayIncome,
                     ),
-                    
                     const SizedBox(height: 24),
-                    
-                    // Quick Actions (Now includes all 4 actions)
                     _buildQuickActions(),
-                    
                     const SizedBox(height: 24),
-                    
-                    // Upcoming Bookings
                     UpcomingBookingsWidget(
                       upcomingBookings: upcomingBookings,
                       onViewAll: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ActiveBookingsPage(),
+                            builder: (_) =>
+                                const ActiveBookingsPage(),
                           ),
                         );
                       },
                     ),
-                    
                     const SizedBox(height: 24),
-                    
-                    // Recent Activity
-                    RecentActivityWidget(recentBookings: recentBookings),
-                    
+                    RecentActivityWidget(
+                      recentBookings: recentBookings,
+                    ),
                     const SizedBox(height: 80),
                   ],
                 ],
@@ -205,10 +215,12 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   }
 
   Widget _buildLoadingIndicator() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(48.0),
-        child: CircularProgressIndicator(color: Colors.black),
+        padding: const EdgeInsets.all(48.0),
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -234,7 +246,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             title: "Total Income",
             value: _formatCurrency(stats.totalIncome),
             icon: Icons.account_balance_wallet_outlined,
-            iconBackgroundColor: Colors.purple.shade50,
+            iconBackgroundColor:
+                Theme.of(context).colorScheme.primaryContainer,
           ),
         ],
       ),
@@ -247,83 +260,84 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Quick Actions",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
-          
-          // Pending Requests
+
           QuickActionCard(
             title: "Pending Requests",
             subtitle: "Review and approve bookings",
             count: stats.pendingRequests,
             icon: Icons.pending_actions_outlined,
-            backgroundColor: Theme.of(context).iconTheme.color ?? Colors.black,
-
+            backgroundColor:
+                Theme.of(context).colorScheme.primary,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => PendingRequestsPage(ownerId: ownerId),
+                  builder: (_) =>
+                      PendingRequestsPage(ownerId: ownerId),
                 ),
               );
             },
           ),
           const SizedBox(height: 14),
-          
-          // Active Bookings
+
           QuickActionCard(
             title: "Active Bookings",
             subtitle: "Currently rented vehicles",
             count: stats.activeBookings,
             icon: Icons.event_available_outlined,
-            backgroundColor: Colors.grey.shade800,
+            backgroundColor:
+                Theme.of(context).colorScheme.secondary,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ActiveBookingsPage(),
+                  builder: (_) =>
+                      const ActiveBookingsPage(),
                 ),
               );
             },
           ),
           const SizedBox(height: 14),
-          
-          // Cancelled Bookings (NEW)
+
           QuickActionCard(
             title: "Cancelled Bookings",
             subtitle: "Bookings cancelled by renters",
             count: stats.cancelledBookings,
             icon: Icons.cancel_outlined,
-            backgroundColor: Colors.orange.shade700,
+            backgroundColor:
+                Theme.of(context).colorScheme.tertiary,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CancelledBookingsPage(ownerId: ownerId),
+                  builder: (_) =>
+                      CancelledBookingsPage(
+                          ownerId: ownerId),
                 ),
               );
             },
           ),
           const SizedBox(height: 14),
-          
-          // Rejected Bookings (NEW)
+
           QuickActionCard(
             title: "Rejected Bookings",
             subtitle: "Bookings you have rejected",
             count: stats.rejectedBookings,
             icon: Icons.block_outlined,
-            backgroundColor: Colors.red.shade700,
+            backgroundColor:
+                Theme.of(context).colorScheme.error,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RejectedBookingsPage(ownerId: ownerId),
+                  builder: (_) =>
+                      RejectedBookingsPage(
+                          ownerId: ownerId),
                 ),
               );
             },

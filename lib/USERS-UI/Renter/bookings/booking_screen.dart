@@ -136,7 +136,7 @@ Future<void> _checkVerificationOnInit() async {
 
   try {
     final url = Uri.parse(
-      "http://10.244.29.49/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+      "http://10.77.127.2/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
     );
     
     print("📡 Calling API: $url");
@@ -224,7 +224,7 @@ Future<void> _checkVerificationOnInit() async {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Unable to open maps application'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
         }
@@ -304,7 +304,7 @@ Future<void> _checkVerificationOnInit() async {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -331,13 +331,13 @@ Future<void> _checkVerificationOnInit() async {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Colors.black),
+          CircularProgressIndicator(color: Theme.of(context).iconTheme.color),
           SizedBox(height: 16),
           Text(
             'Verifying account...',
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).hintColor,
             ),
           ),
           SizedBox(height: 8),
@@ -345,7 +345,7 @@ Future<void> _checkVerificationOnInit() async {
             debugInfo,
             style: GoogleFonts.poppins(
               fontSize: 10,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).disabledColor,
             ),
           ),
         ],
@@ -364,12 +364,12 @@ Future<void> _checkVerificationOnInit() async {
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Theme.of(context).colorScheme.errorContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.block,
-                color: Colors.red.shade600,
+                color: Theme.of(context).colorScheme.error,
                 size: 64,
               ),
             ),
@@ -387,7 +387,7 @@ Future<void> _checkVerificationOnInit() async {
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).hintColor,
               ),
             ),
             SizedBox(height: 16),
@@ -396,7 +396,7 @@ Future<void> _checkVerificationOnInit() async {
               width: double.infinity,
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: Theme.of(context).iconTheme.color,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -415,7 +415,8 @@ Future<void> _checkVerificationOnInit() async {
                     debugInfo,
                     style: GoogleFonts.poppins(
                       fontSize: 9,
-                      color: Colors.white,
+                     color: Theme.of(context).colorScheme.surface,
+ 
                     ),
                   ),
                   Text(
@@ -432,7 +433,7 @@ Future<void> _checkVerificationOnInit() async {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+                backgroundColor: Theme.of(context).colorScheme.error,
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               ),
               child: Text(
@@ -461,16 +462,16 @@ Future<void> _checkVerificationOnInit() async {
       // Success indicator
       Container(
         padding: EdgeInsets.all(12),
-        color: Colors.green.shade50,
+        color: Theme.of(context).colorScheme.secondaryContainer,
         child: Row(
           children: [
-            Icon(Icons.verified, color: Colors.green.shade700, size: 20),
+            Icon(Icons.verified, color: Theme.of(context).colorScheme.onSecondaryContainer, size: 20),
             SizedBox(width: 8),
             Text(
               'Account Verified ✓',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: Colors.green.shade700,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -596,9 +597,9 @@ Future<void> _checkVerificationOnInit() async {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -641,7 +642,7 @@ Future<void> _checkVerificationOnInit() async {
                         widget.location,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).hintColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -661,9 +662,9 @@ Future<void> _checkVerificationOnInit() async {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -734,12 +735,12 @@ Future<void> _checkVerificationOnInit() async {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
-              color: Colors.grey.shade400,
+              color: Theme.of(context).disabledColor,
               fontSize: 14,
             ),
-            prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 20),
+            prefixIcon: Icon(icon, color: Theme.of(context).disabledColor, size: 20),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),
@@ -815,7 +816,7 @@ Future<void> _checkVerificationOnInit() async {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 9,
-                    color: isSelected ? Colors.green.shade300 : Colors.green.shade700,
+                    color: isSelected ? Colors.green.shade300 : Theme.of(context).colorScheme.onSecondaryContainer,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -848,9 +849,9 @@ Future<void> _checkVerificationOnInit() async {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Row(
               children: [
@@ -897,9 +898,9 @@ Future<void> _checkVerificationOnInit() async {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Row(
               children: [
@@ -926,9 +927,9 @@ Future<void> _checkVerificationOnInit() async {
   Widget _buildLocationWithMap() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -936,14 +937,14 @@ Future<void> _checkVerificationOnInit() async {
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(Icons.location_on, color: Colors.red, size: 20),
+                Icon(Icons.location_on, color: Theme.of(context).colorScheme.error, size: 20),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     widget.location,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: Colors.black87,
+                      color: Theme.of(context).iconTheme.color,
                     ),
                   ),
                 ),
@@ -962,13 +963,13 @@ Future<void> _checkVerificationOnInit() async {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.directions, color: Colors.blue.shade700, size: 20),
+                  Icon(Icons.directions, color: Theme.of(context).colorScheme.primary, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'View Route on Map',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: Colors.blue.shade700,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -987,9 +988,9 @@ Future<void> _checkVerificationOnInit() async {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1046,7 +1047,7 @@ Future<void> _checkVerificationOnInit() async {
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
             ],
@@ -1057,7 +1058,7 @@ Future<void> _checkVerificationOnInit() async {
             'Effective rate: ${PricingCalculator.formatCurrency(priceBreakdown!.effectiveDailyRate)}/day',
             style: GoogleFonts.poppins(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).hintColor,
             ),
           ),
         ],
@@ -1091,7 +1092,7 @@ Future<void> _checkVerificationOnInit() async {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isDiscount ? Colors.green.shade700 : Colors.black,
+                  color: isDiscount ? Theme.of(context).colorScheme.onSecondaryContainer : Colors.black,
                 ),
               ),
             ],
@@ -1103,7 +1104,7 @@ Future<void> _checkVerificationOnInit() async {
                 subtitle,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).hintColor,
                 ),
               ),
             ),
@@ -1116,7 +1117,8 @@ Future<void> _checkVerificationOnInit() async {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+       color: Theme.of(context).colorScheme.surface,
+
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -1153,7 +1155,8 @@ Future<void> _checkVerificationOnInit() async {
                     ? PricingCalculator.formatCurrency(priceBreakdown!.totalAmount)
                     : '₱0.00',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
+
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1161,14 +1164,16 @@ Future<void> _checkVerificationOnInit() async {
               Text(
                 '  •  ',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
+
                   fontSize: 16,
                 ),
               ),
               Text(
                 'Pay Now',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
+
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1216,7 +1221,7 @@ Future<void> _checkVerificationOnInit() async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1281,7 +1286,7 @@ Future<void> _checkVerificationOnInit() async {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: Colors.green.shade700,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
                   ),
                 ],
@@ -1296,7 +1301,7 @@ Future<void> _checkVerificationOnInit() async {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.payment, color: Colors.blue.shade700, size: 20),
+                    Icon(Icons.payment, color: Theme.of(context).colorScheme.primary, size: 20),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1319,7 +1324,7 @@ Future<void> _checkVerificationOnInit() async {
             child: Text(
               'Cancel',
               style: GoogleFonts.poppins(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).hintColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1343,7 +1348,8 @@ Future<void> _checkVerificationOnInit() async {
             child: Text(
               'Proceed to Payment',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
+
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1365,7 +1371,7 @@ Future<void> _checkVerificationOnInit() async {
               label,
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).hintColor,
               ),
             ),
           ),
@@ -1375,7 +1381,7 @@ Future<void> _checkVerificationOnInit() async {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: Theme.of(context).iconTheme.color,
               ),
             ),
           ),
@@ -1392,13 +1398,14 @@ Future<void> _checkVerificationOnInit() async {
         child: Container(
           padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
+
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: Colors.black),
+              CircularProgressIndicator(color: Theme.of(context).iconTheme.color),
               SizedBox(height: 16),
               Text(
                 'Processing booking...',
@@ -1421,7 +1428,7 @@ Future<void> _checkVerificationOnInit() async {
 // Replace your _submitBookingToServer() method with this:
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.244.29.49/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse("http://10.77.127.2/carGOAdmin/api/create_booking.php");
 
   // Validate user_id
   if (widget.userId == null || widget.userId!.isEmpty) {

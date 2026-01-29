@@ -6,6 +6,8 @@ import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_1/theme/theme_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -102,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 22,
-                color: Colors.black87,
+                color: Theme.of(context).textTheme.titleLarge?.color,
               ),
             ),
             const SizedBox(height: 12),
@@ -185,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -200,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -332,8 +334,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                           child: Container(
                             padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
                               shape: BoxShape.circle,
                             ),
                             child: CircleAvatar(
@@ -352,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).cardColor,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -465,7 +467,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -482,6 +484,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           );
                         },
                       ),
+                      // 🌙 DARK MODE TOGGLE
+                      _MenuItemData(
+                        icon: Icons.dark_mode_outlined,
+                        title: "Dark Mode",
+                        subtitle: "Toggle light and dark theme",
+                        onTap: () {
+                          Provider.of<ThemeProvider>(context, listen: false)
+                              .toggleTheme();
+                        },
+                      ),
                     ]),
 
                     const SizedBox(height: 24),
@@ -491,7 +503,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -517,7 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -612,9 +624,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildMenuCard(List<_MenuItemData> items) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Theme.of(context).dividerTheme.color ?? Colors.grey.shade200,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -639,7 +653,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   onTap: item.onTap,
                 ),
                 if (!isLast)
-                  Divider(height: 1, color: Colors.grey.shade200, indent: 68),
+                  Divider(
+                    height: 1,
+                    color: Theme.of(context).dividerTheme.color,
+                    indent: 68,
+                  ),
               ],
             );
           },
@@ -654,6 +672,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isDarkMode = title == "Dark Mode"
+        ? Provider.of<ThemeProvider>(context).isDarkMode
+        : null;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -664,10 +686,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 24, color: Colors.black87),
+              child: Icon(
+                icon,
+                size: 24,
+                color: Theme.of(context).iconTheme.color,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -679,7 +705,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -687,17 +713,24 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 16,
-              color: Colors.grey.shade400,
-            ),
+            // 🌙 Show switch if Dark Mode
+            if (isDarkMode != null)
+              Switch(
+                value: isDarkMode,
+                onChanged: (_) => onTap(),
+              )
+            else
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
           ],
         ),
       ),

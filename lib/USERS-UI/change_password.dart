@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const String baseUrl = "http://10.244.29.49/carGOAdmin";
+const String baseUrl = "http://10.77.127.2/carGOAdmin";
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});

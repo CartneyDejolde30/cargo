@@ -89,7 +89,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentNavIndex,
         onTap: (index) => setState(() => _currentNavIndex = index),
@@ -113,8 +114,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        color: Theme.of(context).colorScheme.surface,        boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
@@ -145,33 +145,33 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _searchBar() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      color: Theme.of(context).colorScheme.surface,      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: FadeInDown(
         duration: const Duration(milliseconds: 400),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F3F5),
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, width: 1),
+            border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1,
+              ),
           ),
           child: TextField(
             controller: _searchController,
             onChanged: searchChats,
             style: GoogleFonts.inter(
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 15,
             ),
             decoration: InputDecoration(
               hintText: "Search conversations...",
               hintStyle: GoogleFonts.inter(
-                color: Colors.grey.shade500,
-                fontSize: 15,
+                color: Theme.of(context).colorScheme.outline,                fontSize: 15,
               ),
               prefixIcon: Icon(
                 Icons.search_rounded,
-                color: Colors.grey.shade600,
-                size: 22,
+                color: Theme.of(context).colorScheme.outline,                size: 22,
               ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -189,8 +189,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (chats.isEmpty) return const SizedBox();
 
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(bottom: 12),
+      color: Theme.of(context).colorScheme.surface,      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -201,8 +200,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
-                letterSpacing: 0.5,
+                color: Theme.of(context).colorScheme.outline,                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -276,8 +274,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         padding: const EdgeInsets.all(2.5),
                         child: CircleAvatar(
                           radius: 28,
-                          backgroundColor: Colors.grey.shade200,
-                          backgroundImage: isValidUrl(img)
+                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,                          backgroundImage: isValidUrl(img)
                               ? CachedNetworkImageProvider(img)
                               : null,
                           child: !isValidUrl(img)
@@ -292,11 +289,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           width: 14,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: Colors.green.shade500,
-                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.primary,                            shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white,
-                              width: 2,
+                              color: Theme.of(context).colorScheme.surface,                              width: 2,
                             ),
                           ),
                         ),
@@ -312,7 +307,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -336,14 +331,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
             Icon(
               Icons.chat_bubble_outline_rounded,
               size: 80,
-              color: Colors.grey.shade300,
-            ),
+              color: Theme.of(context).colorScheme.outlineVariant,            ),
             const SizedBox(height: 16),
             Text(
               "No messages yet",
               style: GoogleFonts.poppins(
-                color: Colors.grey.shade600,
-                fontSize: 18,
+                color: Theme.of(context).colorScheme.outline,                fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -351,8 +344,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             Text(
               "Start a conversation to see it here",
               style: GoogleFonts.inter(
-                color: Colors.grey.shade500,
-                fontSize: 14,
+                color: Theme.of(context).colorScheme.outline,                fontSize: 14,
               ),
             ),
           ],
@@ -393,8 +385,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
@@ -409,12 +400,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: isValidUrl(img)
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,                    backgroundImage: isValidUrl(img)
                         ? CachedNetworkImageProvider(img)
                         : null,
                     child: !isValidUrl(img)
-                        ? Icon(Icons.person, color: Colors.grey.shade600)
+                        ? Icon(
+                            Icons.person,
+                            color: Theme.of(context).colorScheme.outline,
+                          )
+
                         : null,
                   ),
                   Positioned(
@@ -424,11 +418,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.green.shade500,
-                        shape: BoxShape.circle,
+                        color: Theme.of(context).colorScheme.primary,                        shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white,
-                          width: 2,
+                          color: Theme.of(context).colorScheme.surface,width: 2,
                         ),
                       ),
                     ),
@@ -443,7 +435,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -455,8 +447,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                       style: GoogleFonts.inter(
                         fontSize: 11,
-                        color: Colors.grey.shade500,
-                      ),
+                        color: Theme.of(context).colorScheme.outline,                      ),
                     ),
                 ],
               ),
@@ -470,7 +461,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         height: 8,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade600,
+                          color: Theme.of(context).colorScheme.primary,
+
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -481,10 +473,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           color: isTyping
-                              ? Colors.blue.shade600
-                              : isUnread
-                                  ? Colors.black87
-                                  : Colors.grey.shade600,
+                          ? Theme.of(context).colorScheme.primary
+                          : isUnread
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.outline,
+
                           fontSize: 14,
                           fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
                           fontStyle: isTyping ? FontStyle.italic : FontStyle.normal,
@@ -496,7 +489,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ),
               trailing: Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.grey.shade400,
+                color: Theme.of(context).colorScheme.outline,
+
                 size: 24,
               ),
               onTap: () {

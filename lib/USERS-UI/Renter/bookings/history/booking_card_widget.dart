@@ -38,18 +38,21 @@ class BookingCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.04 * 255).round()),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+     decoration: BoxDecoration(
+  color: Theme.of(context).colorScheme.surfaceVariant,
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(
+    color: Theme.of(context).colorScheme.outlineVariant,
+  ),
+  boxShadow: [
+    BoxShadow(
+      color: Theme.of(context).shadowColor.withOpacity(0.25),
+      blurRadius: 8,
+      offset: const Offset(0, 4),
+    ),
+  ],
+),
+
       child: Column(
         children: [
           // =========================
@@ -64,7 +67,8 @@ class BookingCardWidget extends StatelessWidget {
                   width: 100,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ClipRRect(
@@ -95,22 +99,25 @@ class BookingCardWidget extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          _statusBadge(),
+                          _statusBadge(context),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.location_on,
-                              size: 14, color: Colors.grey.shade600),
+                          Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               booking.location,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                                color: Theme.of(context).colorScheme.outline,                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -122,7 +129,8 @@ class BookingCardWidget extends StatelessWidget {
                         'Booking ID: ${booking.bookingId}',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.outline,
+
                         ),
                       ),
                     ],
@@ -132,7 +140,11 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
 
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(
+          height: 1,
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+
 
           // =========================
           // RENTAL PERIOD
@@ -143,6 +155,7 @@ class BookingCardWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildDateInfo(
+                    context,
                     'Pick up',
                     booking.pickupDate,
                     booking.pickupTime,
@@ -150,11 +163,16 @@ class BookingCardWidget extends StatelessWidget {
                 ),
                 SizedBox(
                   width: 40,
-                  child: Icon(Icons.arrow_forward,
-                      size: 20, color: Colors.grey.shade400),
+                  child: Icon(
+                      Icons.arrow_forward,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+
                 ),
                 Expanded(
                   child: _buildDateInfo(
+                    context,
                     'Return',
                     booking.returnDate,
                     booking.returnTime,
@@ -164,7 +182,11 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
 
-          Divider(height: 1, color: Colors.grey.shade200),
+         Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+
 
           // =========================
           // PRICE + ACTION
@@ -181,8 +203,7 @@ class BookingCardWidget extends StatelessWidget {
                       'Total Price',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.grey.shade600,
-                      ),
+                        color: Theme.of(context).colorScheme.outline,                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -210,49 +231,50 @@ class BookingCardWidget extends StatelessWidget {
   // =========================
   // STATUS BADGE
   // =========================
-Widget _statusBadge() {
-  Color badgeColor;
-  Color textColor;
+Widget _statusBadge(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+
+  Color bg;
+  Color fg;
 
   switch (booking.status.toLowerCase()) {
     case 'approved':
-      badgeColor = Colors.black;
-      textColor = Colors.white;
+      bg = scheme.primary;
+      fg = scheme.onPrimary;
       break;
     case 'pending':
-      badgeColor = Colors.grey.shade100;
-      textColor = Colors.grey.shade700;
-      break;
-    case 'rejected':
-      badgeColor = Colors.red.shade100;
-      textColor = Colors.red.shade900;
-      break;
-    case 'cancelled':
-      badgeColor = Colors.orange.shade100;
-      textColor = Colors.orange.shade900;
+      bg = scheme.surfaceVariant;
+      fg = scheme.onSurfaceVariant;
       break;
     case 'completed':
-      badgeColor = Colors.green.shade100;
-      textColor = Colors.green.shade900;
+      bg = Colors.green.shade700;
+      fg = Colors.white;
+      break;
+    case 'cancelled':
+      bg = Colors.orange.shade700;
+      fg = Colors.white;
+      break;
+    case 'rejected':
+      bg = Colors.red.shade700;
+      fg = Colors.white;
       break;
     default:
-      badgeColor = Colors.grey.shade100;
-      textColor = Colors.grey.shade700;
+      bg = scheme.surfaceVariant;
+      fg = scheme.onSurfaceVariant;
   }
 
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: badgeColor,
+      color: bg,
       borderRadius: BorderRadius.circular(8),
-      border: badgeColor == Colors.black ? null : Border.all(color: Colors.grey.shade300),
     ),
     child: Text(
       _getStatusText(),
       style: GoogleFonts.poppins(
         fontSize: 11,
         fontWeight: FontWeight.w600,
-        color: textColor,
+        color: fg,
       ),
     ),
   );
@@ -341,7 +363,7 @@ Widget _buildActionButton(BuildContext context) {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
           ),
         ),
       );
@@ -389,7 +411,7 @@ Widget _buildActionButton(BuildContext context) {
             Text(
               'Rate & Review',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -441,7 +463,7 @@ Widget _buildActionButton(BuildContext context) {
             Text(
               'Rate & Review',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -495,7 +517,7 @@ Widget _buildRefundButton(BuildContext context) {
         Text(
           'Request Refund',
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -515,15 +537,14 @@ Widget _buildRefundButton(BuildContext context) {
     return Image.asset(imagePath, fit: BoxFit.cover);
   }
 
-  Widget _buildDateInfo(String label, String date, String time) {
+  Widget _buildDateInfo(BuildContext context,String label, String date, String time) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
             style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500)),
+                color: Theme.of(context).colorScheme.outline,fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         Text(date,
             style: GoogleFonts.poppins(
@@ -531,13 +552,18 @@ Widget _buildRefundButton(BuildContext context) {
         const SizedBox(height: 2),
         Row(
           children: [
-            Icon(Icons.access_time,
-                size: 12, color: Colors.grey.shade500),
+           Icon(
+              Icons.access_time,
+              size: 12,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+
             const SizedBox(width: 4),
             Text(time,
                 style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Colors.grey.shade600)),
+                    color: Theme.of(context).colorScheme.outline
+)),
           ],
         ),
       ],

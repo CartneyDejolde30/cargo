@@ -231,9 +231,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration:  BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -243,8 +242,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: Theme.of(context).colorScheme.outlineVariant,                borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
@@ -307,9 +305,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration:  BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -319,8 +316,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: Theme.of(context).colorScheme.outlineVariant,                borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
@@ -373,7 +369,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -393,7 +390,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       elevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+       icon: Icon(
+          Icons.arrow_back_ios,
+          color: Theme.of(context).iconTheme.color,
+        ),
+
         onPressed: () => Navigator.pop(context),
       ),
       title: GestureDetector(
@@ -416,12 +417,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: isValidUrl(widget.peerAvatar)
+                  backgroundColor: Theme.of(context).colorScheme.outlineVariant,                  backgroundImage: isValidUrl(widget.peerAvatar)
                       ? CachedNetworkImageProvider(widget.peerAvatar)
                       : null,
                   child: !isValidUrl(widget.peerAvatar)
-                      ? Icon(Icons.person, color: Colors.grey.shade600)
+                      ? Icon(
+                              Icons.person,
+                              color: Theme.of(context).colorScheme.outline,
+                            )
+
                       : null,
                 ),
                 Positioned(
@@ -431,9 +435,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.green.shade500,
+                      color: Theme.of(context).colorScheme.primary,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                     ),
                   ),
                 ),
@@ -449,14 +453,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
+
                     ),
                   ),
                   Text(
                     isPeerTyping ? 'typing...' : 'Active now',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: isPeerTyping ? Colors.blue.shade600 : Colors.grey.shade600,
+                      color: isPeerTyping
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
+
                       fontStyle: isPeerTyping ? FontStyle.italic : FontStyle.normal,
                     ),
                   ),
@@ -468,7 +476,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: Colors.grey.shade200),
+        child: Container(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
       ),
     );
   }
@@ -482,8 +490,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           children: [
             CircleAvatar(
               radius: 12,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: isValidUrl(widget.peerAvatar)
+              backgroundColor: Theme.of(context).colorScheme.outlineVariant,              backgroundImage: isValidUrl(widget.peerAvatar)
                   ? CachedNetworkImageProvider(widget.peerAvatar)
                   : null,
             ),
@@ -491,8 +498,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: Theme.of(context).colorScheme.surface,                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -526,7 +532,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: Colors.grey.shade400.withOpacity(value),
+            color: Theme.of(context)
+    .colorScheme
+    .outline
+    .withOpacity(value),
             shape: BoxShape.circle,
           ),
         );
@@ -540,11 +549,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
         border: Border(
-          left: BorderSide(color: Colors.blue.shade600, width: 3),
-        ),
+            left: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 3,
+            ),
+),
       ),
       child: Row(
         children: [
@@ -556,7 +568,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   'Replying to',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.blue.shade600,
+                    color: Theme.of(context).colorScheme.primary,
+
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -567,7 +580,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -620,7 +633,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   color: Colors.black.withOpacity(0.6),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 20),
+                child:  Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 20),
               ),
             ),
           ),
@@ -659,7 +672,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurface,
+
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -667,7 +681,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   'Send a message to start the conversation',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context).colorScheme.outline,
+
                   ),
                 ),
               ],
@@ -708,7 +723,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       timeago.format((msg["timestamp"] as Timestamp).toDate()),
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                     ),
                   ),
@@ -761,7 +776,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                           placeholder: (context, url) => Container(
                             width: 250,
                             height: 250,
-                            color: Colors.grey.shade200,
+                            color: Theme.of(context).colorScheme.outlineVariant,
                             child: const Center(child: CircularProgressIndicator()),
                           ),
                         ),
@@ -773,7 +788,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                     margin: msg["image"] != "" ? const EdgeInsets.only(top: 8) : null,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isMe ? Colors.black : Colors.white,
+                      color: isMe
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surface,
+
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -797,7 +815,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
                                 left: BorderSide(
-                                  color: isMe ? Colors.white : Colors.grey.shade400,
+                                 color: isMe
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Theme.of(context).colorScheme.outline,
+
                                   width: 2,
                                 ),
                               ),
@@ -817,7 +838,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                         Text(
                           msg["text"],
                           style: GoogleFonts.inter(
-                            color: isMe ? Colors.white : Colors.black87,
+                            color: isMe
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+
                             fontSize: 15,
                             height: 1.4,
                           ),
@@ -834,7 +858,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                         _formatTime((msg["timestamp"] as Timestamp).toDate()),
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                     if (isMe) ...[
@@ -842,7 +866,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       Icon(
                         msg["seen"] ? Icons.done_all : Icons.done,
                         size: 14,
-                        color: msg["seen"] ? Colors.blue.shade600 : Colors.grey.shade500,
+                        color: msg["seen"]
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+
                       ),
                     ],
                   ],
@@ -865,8 +892,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        color: Theme.of(context).colorScheme.surface,        boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
@@ -879,11 +905,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Theme.of(context).colorScheme.surfaceVariant,
+
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.add_photo_alternate_outlined, color: Colors.grey.shade700),
+                icon: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.onSurface),
                 onPressed: _showImagePicker,
               ),
             ),
@@ -891,9 +918,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F3F5),
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 ),
                 child: TextField(
                   controller: _messageController,
@@ -903,7 +932,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: "Type a message...",
-                    hintStyle: GoogleFonts.inter(color: Colors.grey.shade500),
+                    hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.outline),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -938,18 +967,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     child: isUploading
-                        ? const SizedBox(
+                        ?  SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.surface,                              strokeWidth: 2,
                             ),
                           )
                         : Icon(
                             selectedImage != null ? Icons.upload : Icons.send_rounded,
-                            color: Colors.white,
-                            size: 20,
+                            color: Theme.of(context).colorScheme.surface,                            size: 20,
                           ),
                   ),
                 ),
@@ -972,7 +999,8 @@ class FullImageView extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Scaffold(
-         backgroundColor: Theme.of(context).iconTheme.color,
+         backgroundColor: Theme.of(context).colorScheme.surface,
+
 
 
 
@@ -997,10 +1025,9 @@ class FullImageView extends StatelessWidget {
                 placeholder: (context, url) => const Center(
                   child: CircularProgressIndicator(color: Colors.white),
                 ),
-                errorWidget: (context, url, error) => const Icon(
+                errorWidget: (context, url, error) =>  Icon(
                   Icons.error,
-                  color: Colors.white,
-                  size: 50,
+                  color: Theme.of(context).colorScheme.surface,                  size: 50,
                 ),
               ),
             ),
