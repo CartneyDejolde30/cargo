@@ -18,7 +18,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
   String? _userId;
   String _filterStatus = 'all';
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
 
   @override
   void initState() {

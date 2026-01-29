@@ -16,7 +16,7 @@ Future<bool> submitVehicleListing({
       ? "motorcycles_api.php" 
       : "cars_api.php";
   
-  final url = Uri.parse("http://10.77.127.2/carGOAdmin/$endpoint");
+  final url = Uri.parse("http://10.218.197.49/carGOAdmin/$endpoint");
 
   final request = http.MultipartRequest("POST", url);
 

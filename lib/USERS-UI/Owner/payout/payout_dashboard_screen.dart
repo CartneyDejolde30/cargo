@@ -21,7 +21,7 @@ class _PayoutDashboardScreenState extends State<PayoutDashboardScreen> {
   List<Map<String, dynamic>> _recentPayouts = [];
   List<Map<String, dynamic>> _pendingReleases = [];
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
 
   @override
   void initState() {

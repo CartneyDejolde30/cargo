@@ -39,7 +39,7 @@ class BookingCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
      decoration: BoxDecoration(
-  color: Theme.of(context).colorScheme.surfaceVariant,
+  color: Theme.of(context).colorScheme.surfaceContainerHighest,
   borderRadius: BorderRadius.circular(16),
   border: Border.all(
     color: Theme.of(context).colorScheme.outlineVariant,
@@ -67,7 +67,7 @@ class BookingCardWidget extends StatelessWidget {
                   width: 100,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
 
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -130,9 +130,14 @@ class BookingCardWidget extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.outline,
-
                         ),
                       ),
+                      // Show refund badge if applicable
+                      if (booking.refundStatus != null && 
+                          booking.refundStatus != 'not_requested') ...[
+                        const SizedBox(height: 6),
+                        _buildRefundBadge(context),
+                      ],
                     ],
                   ),
                 ),
@@ -243,7 +248,7 @@ Widget _statusBadge(BuildContext context) {
       fg = scheme.onPrimary;
       break;
     case 'pending':
-      bg = scheme.surfaceVariant;
+      bg = scheme.surfaceContainerHighest;
       fg = scheme.onSurfaceVariant;
       break;
     case 'completed':
@@ -259,7 +264,7 @@ Widget _statusBadge(BuildContext context) {
       fg = Colors.white;
       break;
     default:
-      bg = scheme.surfaceVariant;
+      bg = scheme.surfaceContainerHighest;
       fg = scheme.onSurfaceVariant;
   }
 
@@ -279,6 +284,81 @@ Widget _statusBadge(BuildContext context) {
     ),
   );
 }
+
+  // =========================
+  // REFUND BADGE
+  // =========================
+  Widget _buildRefundBadge(BuildContext context) {
+    final refundStatus = booking.refundStatus?.toLowerCase() ?? '';
+    
+    Color badgeColor;
+    IconData badgeIcon;
+    String badgeText;
+    
+    switch (refundStatus) {
+      case 'requested':
+      case 'pending':
+        badgeColor = Colors.orange.shade100;
+        badgeIcon = Icons.schedule;
+        badgeText = 'Refund Pending';
+        break;
+      case 'approved':
+        badgeColor = Colors.blue.shade100;
+        badgeIcon = Icons.check_circle_outline;
+        badgeText = 'Refund Approved';
+        break;
+      case 'processing':
+        badgeColor = Colors.purple.shade100;
+        badgeIcon = Icons.sync;
+        badgeText = 'Processing Refund';
+        break;
+      case 'completed':
+        badgeColor = Colors.green.shade100;
+        badgeIcon = Icons.check_circle;
+        badgeText = 'Refunded';
+        break;
+      case 'rejected':
+        badgeColor = Colors.red.shade100;
+        badgeIcon = Icons.cancel;
+        badgeText = 'Refund Rejected';
+        break;
+      default:
+        badgeColor = Colors.grey.shade100;
+        badgeIcon = Icons.info;
+        badgeText = 'Refund Status';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            badgeIcon,
+            size: 12,
+            color: badgeColor.computeLuminance() > 0.5 
+                ? Colors.grey.shade800 
+                : Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            badgeText,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: badgeColor.computeLuminance() > 0.5 
+                  ? Colors.grey.shade800 
+                  : Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // =========================
   // ACTION BUTTON

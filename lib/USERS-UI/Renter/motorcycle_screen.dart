@@ -34,7 +34,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     if (path.isEmpty) return "https://via.placeholder.com/300";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     final cleanPath = path.replaceFirst("uploads/", "");
-    return "http://10.77.127.2/carGOAdmin/uploads/$cleanPath";
+    return "http://10.218.197.49/carGOAdmin/uploads/$cleanPath";
   }
 
   Future<String> resolveImageUrlCached(String? rawPath) async {
@@ -47,7 +47,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = "http://10.77.127.2/carGOAdmin/uploads/$clean";
+      candidate = "http://10.218.197.49/carGOAdmin/uploads/$clean";
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -65,7 +65,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-  final String apiUrl = "http://10.77.127.2/carGOAdmin/get_motorcycles.php";
+  final String apiUrl = "http://10.218.197.49/carGOAdmin/get_motorcycles.php";
 
   try {
     final response = await http.get(Uri.parse(apiUrl));

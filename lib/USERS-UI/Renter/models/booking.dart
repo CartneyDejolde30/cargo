@@ -15,16 +15,15 @@ class Booking {
   final String totalPrice;
   final String status;
   final String ownerName;
+  final String? refundStatus; // Added for refund tracking
 
   Booking({
     required this.bookingId,
     required this.carId,
     required this.ownerAvatar,
     required this.ownerId,
-  
-
     required this.carName,
-      required this.ownerPhone,
+    required this.ownerPhone,
     required this.carImage,
     required this.location,
     required this.pickupDate,
@@ -34,6 +33,7 @@ class Booking {
     required this.totalPrice,
     required this.status,
     required this.ownerName,
+    this.refundStatus, // Added for refund tracking
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -41,8 +41,7 @@ class Booking {
     bookingId: json['bookingId'],
     carId: json['carId'],
     ownerAvatar: json['ownerAvatar'] ?? '',
-ownerPhone: json['ownerPhone'] ?? '',
-
+    ownerPhone: json['ownerPhone'] ?? '',
     ownerId: json['ownerId'],
     carName: json['carName'] ?? '',
     carImage: json['carImage'] ?? '',
@@ -60,6 +59,7 @@ ownerPhone: json['ownerPhone'] ?? '',
         .toLowerCase(),
 
     ownerName: json['ownerName'] ?? '',
+    refundStatus: json['refund_status']?.toString(), // Added for refund tracking
   );
 }
 

@@ -136,7 +136,7 @@ Future<void> _checkVerificationOnInit() async {
 
   try {
     final url = Uri.parse(
-      "http://10.77.127.2/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+      "http://10.218.197.49/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
     );
     
     print("📡 Calling API: $url");
@@ -1428,7 +1428,7 @@ Future<void> _checkVerificationOnInit() async {
 // Replace your _submitBookingToServer() method with this:
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.77.127.2/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse("http://10.218.197.49/carGOAdmin/api/create_booking.php");
 
   // Validate user_id
   if (widget.userId == null || widget.userId!.isEmpty) {
@@ -1483,23 +1483,23 @@ Future<void> _submitBookingToServer() async {
       final data = jsonDecode(response.body);
 
       if (data["success"] == true) {
-        // PayMongo integration response
+        // Manual GCash payment flow (PayMongo removed)
         final bookingId = data["data"]["booking_id"] as int;
-        final paymentIntentId = data["data"]["payment_intent_id"] as String?;
-        final clientKey = data["data"]["client_key"] as String?;
+        final paymentId = data["data"]["payment_id"] as int;
         final totalAmount = (data["data"]["total_amount"] as num).toDouble();
         
         print("✅ Booking created! ID: $bookingId");
-        print("💳 Payment Intent: $paymentIntentId");
+        print("💳 Payment ID: $paymentId");
+        print("💰 Total Amount: $totalAmount");
 
         Navigator.pop(context); // Close loading dialog
 
-        // Navigate to payment screen with PayMongo details
+        // Navigate directly to GCash payment screen (manual verification)
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => GCashPaymentScreen(
-              bookingId: bookingId, // Now passing as int
+              bookingId: bookingId,
               carId: widget.carId,
               carName: widget.carName,
               carImage: widget.carImage,
@@ -1515,8 +1515,6 @@ Future<void> _submitBookingToServer() async {
               rentalPeriod: selectedPeriod,
               needsDelivery: needsDelivery,
               totalAmount: totalAmount,
-              paymentIntentId: paymentIntentId,
-              clientKey: clientKey,
             ),
           ),
         );

@@ -38,7 +38,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final RenterGpsService _gpsService = renterGpsService;
   bool _isGpsTracking = false;
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
 
   @override
   void initState() {
