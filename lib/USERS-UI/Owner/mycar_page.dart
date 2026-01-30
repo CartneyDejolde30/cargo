@@ -74,7 +74,10 @@ class _MyCarPageState extends State<MyCarPage> {
   Future<void> fetchCars() async {
     setState(() => isLoading = true);
 
+    debugPrint("📱 MyCarPage - Fetching cars for owner_id: ${widget.ownerId}");
     final fetchedCars = await _carService.fetchCars(widget.ownerId);
+    
+    debugPrint("📱 MyCarPage - Received ${fetchedCars.length} cars");
     
     setState(() {
       cars = fetchedCars;

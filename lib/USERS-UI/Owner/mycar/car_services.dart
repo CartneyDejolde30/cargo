@@ -7,12 +7,22 @@ class CarService {
   /* ---------------- FETCH CARS ---------------- */
 Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
   try {
+    final url = "${ApiConstants.carsApi}?owner_id=$ownerId";
+    debugPrint("🚗 Fetching cars from: $url");
+    debugPrint("🚗 Owner ID: $ownerId");
+    
     final response = await http
-        .get(Uri.parse("${ApiConstants.carsApi}?owner_id=$ownerId"))
+        .get(Uri.parse(url))
         .timeout(ApiConstants.apiTimeout);
+
+    debugPrint("🚗 Response status: ${response.statusCode}");
+    debugPrint("🚗 Response body: ${response.body}");
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+
+      debugPrint("🚗 Decoded data type: ${data.runtimeType}");
+      debugPrint("🚗 Data length: ${data is List ? data.length : 'not a list'}");
 
       if (data is List) {
         return data.map<Map<String, dynamic>>((car) {

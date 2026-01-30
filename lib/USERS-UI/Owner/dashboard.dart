@@ -13,7 +13,8 @@ import './dashboard/booking_model.dart';
 // Widgets
 import './dashboard/dashboard_header.dart';
 import './dashboard/stat_card_widget.dart';
-import './dashboard/revenue_overview_widget.dart';
+// import './dashboard/revenue_overview_widget.dart'; // REMOVED - Replaced by revenue_breakdown_widget
+import './dashboard/revenue_breakdown_widget.dart'; // Revenue breakdown with detailed view
 import './dashboard/quick_action_card.dart';
 import './dashboard/recent_activity_widget.dart';
 import './dashboard/upcoming_bookings_widget.dart';
@@ -177,13 +178,15 @@ class _DashboardPageState extends State<DashboardPage>
                   else ...[
                     const SizedBox(height: 24),
                     _buildQuickStatsGrid(),
-                    const SizedBox(height: 24),
-                    RevenueOverview(
-                      totalIncome: stats.totalIncome,
-                      monthlyIncome: stats.monthlyIncome,
-                      weeklyIncome: stats.weeklyIncome,
-                      todayIncome: stats.todayIncome,
-                    ),
+                    
+                    // Revenue Breakdown Widget - Replaces old RevenueOverview
+                    if (stats.revenueBreakdown != null) ...[
+                      const SizedBox(height: 24),
+                      ExpandableRevenueBreakdown(
+                        revenueBreakdown: stats.revenueBreakdown,
+                      ),
+                    ],
+                    
                     const SizedBox(height: 24),
                     _buildQuickActions(),
                     const SizedBox(height: 24),

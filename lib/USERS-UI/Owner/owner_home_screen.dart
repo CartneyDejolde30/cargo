@@ -50,10 +50,14 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                      prefs.getInt("user_id")?.toString() ?? 
                      "0";
       
+      debugPrint("🔑 SharedPreferences user_id: $userId");
+      
       setState(() {
         _ownerId = int.tryParse(userId) ?? 0;
         _loading = false;
       });
+
+      debugPrint("🔑 Parsed owner_id: $_ownerId");
 
       // Load badge counts
       await _loadBadgeCounts();

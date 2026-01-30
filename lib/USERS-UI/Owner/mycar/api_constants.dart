@@ -4,7 +4,7 @@ class ApiConstants {
   // Run 'ipconfig' in Command Prompt to find it
   // Example: 192.168.1.100
   // ========================================
-  static const String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  static const String baseUrl = "http://10.218.197.49/cargoAdmin/";
 
   // APIs
   static const String carsApi = "${baseUrl}cars_api.php";
