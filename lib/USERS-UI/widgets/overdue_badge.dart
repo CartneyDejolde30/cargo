@@ -129,36 +129,38 @@ class OverdueWarningBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Late Fee Accumulated',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Late Fee Accumulated',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₱${lateFee.toStringAsFixed(2)}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      Text(
+                        '₱${lateFee.toStringAsFixed(2)}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                if (onPayNow != null)
+                if (onPayNow != null) ...[
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: onPayNow,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.red[700],
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
+                        horizontal: 16,
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
@@ -169,9 +171,11 @@ class OverdueWarningBanner extends StatelessWidget {
                       'Pay Now',
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
                   ),
+                ],
               ],
             ),
           ),

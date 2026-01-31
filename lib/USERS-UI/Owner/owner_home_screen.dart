@@ -8,6 +8,7 @@ import '../Owner/notification/notification_service.dart';
 import 'dashboard.dart';
 import 'mycar_page.dart';
 import 'notification_page.dart';
+import 'notification/enhanced_notification_page.dart'; // NEW: Enhanced Notifications
 import 'message_page.dart';
 import 'profile_page.dart';
 
@@ -111,7 +112,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     final List<Widget> pages = [
       const DashboardPage(),
       MyCarPage(ownerId: _ownerId),
-      NotificationPage(userId: _ownerId),
+      EnhancedNotificationPage(userId: _ownerId), // NEW: Using Enhanced Notifications
       const MessagePage(),
       const ProfileScreen(),
     ];

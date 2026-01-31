@@ -4,8 +4,12 @@ import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_sc
 import 'booking_detail_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
+import 'package:flutter_application_1/USERS-UI/models/overdue_booking.dart';
+import 'package:flutter_application_1/USERS-UI/services/overdue_service.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/overdue_badge.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
 
-class BookingCardWidget extends StatelessWidget {
+class BookingCardWidget extends StatefulWidget {
   final Booking booking;
   final String status;
   final VoidCallback? onReviewSubmitted;
@@ -17,22 +21,62 @@ class BookingCardWidget extends StatelessWidget {
     this.onReviewSubmitted,
   });
 
-  String _getStatusText() {
-  switch (booking.status.toLowerCase()) {
-    case 'approved':
-      return 'Active';
-    case 'pending':
-      return 'Pending Payment';
-    case 'completed':
-      return 'Completed';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'rejected':
-      return 'Rejected';
-    default:
-      return booking.status;
-  }
+  @override
+  State<BookingCardWidget> createState() => _BookingCardWidgetState();
 }
+
+class _BookingCardWidgetState extends State<BookingCardWidget> {
+  final OverdueService _overdueService = OverdueService();
+  OverdueBooking? _overdueInfo;
+  bool _isCheckingOverdue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for overdue status if booking is active
+    if (widget.status.toLowerCase() == 'active' || 
+        widget.booking.status.toLowerCase() == 'approved') {
+      _checkOverdueStatus();
+    }
+  }
+
+  Future<void> _checkOverdueStatus() async {
+    if (_isCheckingOverdue) return;
+    
+    setState(() => _isCheckingOverdue = true);
+    
+    try {
+      final overdueInfo = await _overdueService.checkBookingOverdue(widget.booking.bookingId);
+      if (mounted) {
+        setState(() {
+          _overdueInfo = overdueInfo;
+          _isCheckingOverdue = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking overdue status: $e');
+      if (mounted) {
+        setState(() => _isCheckingOverdue = false);
+      }
+    }
+  }
+
+  String _getStatusText() {
+    switch (widget.booking.status.toLowerCase()) {
+      case 'approved':
+        return 'Active';
+      case 'pending':
+        return 'Pending Payment';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return widget.booking.status;
+    }
+  }
 
 
   @override
@@ -56,6 +100,41 @@ class BookingCardWidget extends StatelessWidget {
       child: Column(
         children: [
           // =========================
+          // OVERDUE BADGE (if applicable)
+          // =========================
+          if (_overdueInfo != null && _overdueInfo!.hasLateFee)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: OverdueWarningBanner(
+                daysOverdue: _overdueInfo!.daysOverdue,
+                lateFee: _overdueInfo!.lateFeeAmount,
+                onPayNow: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LateFeePaymentScreen(
+                        bookingId: widget.booking.bookingId,
+                        rentalAmount: _overdueInfo!.totalAmount,
+                        lateFee: _overdueInfo!.lateFeeAmount,
+                        hoursOverdue: _overdueInfo!.hoursOverdue,
+                        vehicleName: _overdueInfo!.vehicleName,
+                        isRentalPaid: _overdueInfo!.isRentalPaid,
+                      ),
+                    ),
+                  ).then((result) {
+                    if (result == true) {
+                      // Refresh overdue status after payment
+                      _checkOverdueStatus();
+                      if (widget.onReviewSubmitted != null) {
+                        widget.onReviewSubmitted!();
+                      }
+                    }
+                  });
+                },
+              ),
+            ),
+          
+          // =========================
           // CAR INFO
           // =========================
           Padding(
@@ -73,7 +152,7 @@ class BookingCardWidget extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _buildCarImage(booking.carImage),
+                    child: _buildCarImage(widget.booking.carImage),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -86,7 +165,7 @@ class BookingCardWidget extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              booking.carName,
+                              widget.booking.carName,
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -114,7 +193,7 @@ class BookingCardWidget extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              booking.location,
+                              widget.booking.location,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Theme.of(context).colorScheme.outline,                              ),
@@ -126,15 +205,15 @@ class BookingCardWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Booking ID: ${booking.bookingId}',
+                        'Booking ID: ${widget.booking.bookingId}',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       // Show refund badge if applicable
-                      if (booking.refundStatus != null && 
-                          booking.refundStatus != 'not_requested') ...[
+                      if (widget.booking.refundStatus != null && 
+                          widget.booking.refundStatus != 'not_requested') ...[
                         const SizedBox(height: 6),
                         _buildRefundBadge(context),
                       ],
@@ -162,8 +241,8 @@ class BookingCardWidget extends StatelessWidget {
                   child: _buildDateInfo(
                     context,
                     'Pick up',
-                    booking.pickupDate,
-                    booking.pickupTime,
+                    widget.booking.pickupDate,
+                    widget.booking.pickupTime,
                   ),
                 ),
                 SizedBox(
@@ -179,8 +258,8 @@ class BookingCardWidget extends StatelessWidget {
                   child: _buildDateInfo(
                     context,
                     'Return',
-                    booking.returnDate,
-                    booking.returnTime,
+                    widget.booking.returnDate,
+                    widget.booking.returnTime,
                   ),
                 ),
               ],
@@ -212,7 +291,7 @@ class BookingCardWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₱${booking.totalPrice}',
+                      '₱${widget.booking.totalPrice}',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -242,7 +321,7 @@ Widget _statusBadge(BuildContext context) {
   Color bg;
   Color fg;
 
-  switch (booking.status.toLowerCase()) {
+  switch (widget.booking.status.toLowerCase()) {
     case 'approved':
       bg = scheme.primary;
       fg = scheme.onPrimary;
@@ -289,7 +368,7 @@ Widget _statusBadge(BuildContext context) {
   // REFUND BADGE
   // =========================
   Widget _buildRefundBadge(BuildContext context) {
-    final refundStatus = booking.refundStatus?.toLowerCase() ?? '';
+    final refundStatus = widget.booking.refundStatus?.toLowerCase() ?? '';
     
     Color badgeColor;
     IconData badgeIcon;
@@ -367,12 +446,12 @@ Widget _statusBadge(BuildContext context) {
 
 Widget _buildActionButton(BuildContext context) {
   // 🔥 Always prioritize refund for rejected/cancelled
-  if (booking.status.toLowerCase() == 'rejected' ||
-      booking.status.toLowerCase() == 'cancelled') {
+  if (widget.booking.status.toLowerCase() == 'rejected' ||
+      widget.booking.status.toLowerCase() == 'cancelled') {
     return _buildRefundButton(context);
   }
 
-  switch (status) {
+  switch (widget.status) {
     case 'active':
     case 'upcoming':
       return ElevatedButton(
@@ -381,20 +460,20 @@ Widget _buildActionButton(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (_) => BookingDetailScreen(
-                booking: booking,
-                status: status,
+                booking: widget.booking,
+                status: widget.status,
               ),
             ),
           ).then((result) {
-            if (result == true && onReviewSubmitted != null) {
-              onReviewSubmitted!();
+            if (result == true && widget.onReviewSubmitted != null) {
+              widget.onReviewSubmitted!();
             }
           });
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: status == 'upcoming' ? Colors.white : Colors.black,
-          foregroundColor: status == 'upcoming' ? Colors.black : Colors.white,
-          side: status == 'upcoming'
+          backgroundColor: widget.status == 'upcoming' ? Colors.white : Colors.black,
+          foregroundColor: widget.status == 'upcoming' ? Colors.black : Colors.white,
+          side: widget.status == 'upcoming'
               ? const BorderSide(color: Colors.black)
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -420,13 +499,13 @@ Widget _buildActionButton(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (_) => BookingDetailScreen(
-                booking: booking,
-                status: status,
+                booking: widget.booking,
+                status: widget.status,
               ),
             ),
           ).then((result) {
-            if (result == true && onReviewSubmitted != null) {
-              onReviewSubmitted!();
+            if (result == true && widget.onReviewSubmitted != null) {
+              widget.onReviewSubmitted!();
             }
           });
         },
@@ -456,18 +535,17 @@ Widget _buildActionButton(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (_) => SubmitReviewScreen(
-                bookingId: booking.bookingId.toString(),
-                carId: booking.carId.toString(),
-                carName: booking.carName,
-                carImage: booking.carImage,
-                ownerId: booking.ownerId.toString(),
-                ownerName: booking.ownerName,
+                bookingId: widget.booking.bookingId.toString(),
+                carId: widget.booking.carId.toString(),
+                carName: widget.booking.carName,
+                carImage: widget.booking.carImage,
+                ownerId: widget.booking.ownerId.toString(),
+                ownerName: widget.booking.ownerName,
                 ownerImage: '',
               ),
             ),
           ).then((result) {
-            if (result == true && onReviewSubmitted != null) {
-              onReviewSubmitted!();
+            if (result == true && widget.onReviewSubmitted != null) { widget.onReviewSubmitted!();
             }
           });
         },
@@ -508,18 +586,17 @@ Widget _buildActionButton(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (_) => SubmitReviewScreen(
-                bookingId: booking.bookingId.toString(),
-                carId: booking.carId.toString(),
-                carName: booking.carName,
-                carImage: booking.carImage,
-                ownerId: booking.ownerId.toString(),
-                ownerName: booking.ownerName,
+                bookingId: widget.booking.bookingId.toString(),
+                carId: widget.booking.carId.toString(),
+                carName: widget.booking.carName,
+                carImage: widget.booking.carImage,
+                ownerId: widget.booking.ownerId.toString(),
+                ownerName: widget.booking.ownerName,
                 ownerImage: '',
               ),
             ),
           ).then((result) {
-            if (result == true && onReviewSubmitted != null) {
-              onReviewSubmitted!();
+            if (result == true && widget.onReviewSubmitted != null) { widget.onReviewSubmitted!();
             }
           });
         },
@@ -567,18 +644,17 @@ Widget _buildRefundButton(BuildContext context) {
         context,
         MaterialPageRoute(
           builder: (_) => RefundRequestScreen(
-            bookingId: booking.bookingId,
-            bookingReference: '#BK-${booking.bookingId.toString().padLeft(4, '0')}',
-            totalAmount: double.tryParse(booking.totalPrice.replaceAll(',', '')) ?? 0,
+            bookingId: widget.booking.bookingId,
+            bookingReference: '#BK-${widget.booking.bookingId.toString().padLeft(4, '0')}',
+            totalAmount: double.tryParse(widget.booking.totalPrice.replaceAll(',', '')) ?? 0,
             cancellationDate: DateTime.now().toString(),
             paymentMethod: 'gcash', // Get from booking data if available
-            paymentReference: booking.bookingId.toString(),
+            paymentReference: widget.booking.bookingId.toString(),
           ),
         ),
       );
 
-      if (result == true && onReviewSubmitted != null) {
-        onReviewSubmitted!(); // Refresh bookings
+      if (result == true && widget.onReviewSubmitted != null) { widget.onReviewSubmitted!(); // Refresh bookings
       }
     },
     style: ElevatedButton.styleFrom(

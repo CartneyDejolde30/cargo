@@ -17,6 +17,7 @@ class OverdueBooking {
   final double totalDue;
   final String overdueStatus; // 'overdue' or 'severely_overdue'
   final bool lateFeeCharged;
+  final bool isRentalPaid; // NEW: Check if rental payment is verified
 
   OverdueBooking({
     required this.bookingId,
@@ -37,6 +38,7 @@ class OverdueBooking {
     required this.totalDue,
     required this.overdueStatus,
     required this.lateFeeCharged,
+    this.isRentalPaid = false, // Default to false
   });
 
   bool get isSeverlyOverdue => overdueStatus == 'severely_overdue';
@@ -62,6 +64,8 @@ class OverdueBooking {
       totalDue: double.tryParse(json['total_due']?.toString() ?? '0') ?? 0.0,
       overdueStatus: json['overdue_status']?.toString() ?? 'on_time',
       lateFeeCharged: json['late_fee_charged'] == true || json['late_fee_charged'] == 1,
+      isRentalPaid: json['payment_status']?.toString() == 'paid' || 
+                    json['payment_status']?.toString() == 'verified',
     );
   }
 

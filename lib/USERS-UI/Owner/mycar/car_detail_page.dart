@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import './status_helper.dart';
 import './api_constants.dart';
 import './delete_car_dialog.dart';
+import '../calendar/enhanced_vehicle_calendar.dart';
 
 class CarDetailPage extends StatelessWidget {
   final Map<String, dynamic> car;
@@ -419,7 +420,12 @@ class CarDetailPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    // Rented cars can't be edited or deleted
+    // Get owner_id from car data
+    final ownerId = car['owner_id'];
+    final vehicleId = car['id'];
+    final vehicleName = "${car['brand']} ${car['model']}";
+
+    // Rented cars can't be edited or deleted, but can manage availability
     if (isRented) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -436,20 +442,21 @@ class CarDetailPage extends StatelessWidget {
         child: SafeArea(
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO: Implement contact support or view rental details
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    "Contact support feature coming soon",
-                    style: GoogleFonts.poppins(),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EnhancedVehicleCalendar(
+                    ownerId: ownerId,
+                    vehicleId: vehicleId,
+                    vehicleType: 'car',
+                    vehicleName: vehicleName,
                   ),
-                  behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            icon: const Icon(Icons.support_agent),
+            icon: const Icon(Icons.calendar_month),
             label: Text(
-              "Contact Support",
+              "View Availability",
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -469,7 +476,129 @@ class CarDetailPage extends StatelessWidget {
       );
     }
 
-    // For other statuses, show edit and delete buttons
+    // For approved cars, show manage availability, edit and delete buttons
+    if (isApproved) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Manage Availability Button (Full Width)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EnhancedVehicleCalendar(
+                          ownerId: ownerId,
+                          vehicleId: vehicleId,
+                          vehicleType: 'car',
+                          vehicleName: vehicleName,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.calendar_month),
+                  label: Text(
+                    "Manage Availability",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Edit and Delete Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final confirm = await DeleteCarDialog.show(context);
+                        if (confirm == true && onDelete != null) {
+                          onDelete!();
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(
+                        "Delete",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: BorderSide(color: Colors.red.shade300, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (onEdit != null) {
+                          onEdit!();
+                          Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.edit),
+                      label: Text(
+                        "Edit Details",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).iconTheme.color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // For pending/rejected, show edit and delete buttons only
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -531,11 +660,7 @@ class CarDetailPage extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+                  backgroundColor: Theme.of(context).iconTheme.color,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

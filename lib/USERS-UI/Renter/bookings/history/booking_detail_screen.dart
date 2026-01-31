@@ -12,6 +12,10 @@ import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_sc
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
 import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
 import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:flutter_application_1/USERS-UI/models/overdue_booking.dart';
+import 'package:flutter_application_1/USERS-UI/services/overdue_service.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/overdue_badge.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -38,6 +42,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final RenterGpsService _gpsService = renterGpsService;
   bool _isGpsTracking = false;
 
+  // Overdue tracking
+  final OverdueService _overdueService = OverdueService();
+  OverdueBooking? _overdueInfo;
+  bool _isCheckingOverdue = false;
+
   final String baseUrl = "http://10.218.197.49/carGOAdmin/";
 
   @override
@@ -45,6 +54,34 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     super.initState();
     _loadUserIdAndPayment();
     _checkAndStartGpsTracking();
+    _checkOverdueStatus();
+  }
+
+  Future<void> _checkOverdueStatus() async {
+    if (_isCheckingOverdue) return;
+    
+    // Only check for active/approved bookings
+    if (widget.booking.status.toLowerCase() != 'approved' && 
+        widget.status.toLowerCase() != 'active') {
+      return;
+    }
+    
+    setState(() => _isCheckingOverdue = true);
+    
+    try {
+      final overdueInfo = await _overdueService.checkBookingOverdue(widget.booking.bookingId);
+      if (mounted) {
+        setState(() {
+          _overdueInfo = overdueInfo;
+          _isCheckingOverdue = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking overdue status: $e');
+      if (mounted) {
+        setState(() => _isCheckingOverdue = false);
+      }
+    }
   }
 
   @override
@@ -266,6 +303,39 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _carInfo(),
         _rentalPeriod(),
         const SizedBox(height: 20),
+        
+        // Overdue Badge - Show if booking has late fees
+        if (_overdueInfo != null && _overdueInfo!.hasLateFee) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: OverdueWarningBanner(
+              daysOverdue: _overdueInfo!.daysOverdue,
+              lateFee: _overdueInfo!.lateFeeAmount,
+              onPayNow: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LateFeePaymentScreen(
+                      bookingId: widget.booking.bookingId,
+                      rentalAmount: _overdueInfo!.totalAmount,
+                      lateFee: _overdueInfo!.lateFeeAmount,
+                      hoursOverdue: _overdueInfo!.hoursOverdue,
+                      vehicleName: _overdueInfo!.vehicleName,
+                      isRentalPaid: _overdueInfo!.isRentalPaid,
+                    ),
+                  ),
+                );
+                
+                if (result == true) {
+                  // Refresh overdue status and payment info
+                  await _checkOverdueStatus();
+                  await _fetchPaymentInfo();
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
         
         // GPS Tracking Section - Only for Active Bookings
         if (widget.status.toLowerCase() == 'active') ...[

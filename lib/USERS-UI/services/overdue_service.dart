@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/overdue_booking.dart';
 
 class OverdueService {
-  static const String baseUrl = 'http://10.0.2.2/cargoAdmin'; // Change for production
+  static const String baseUrl = 'http://10.218.197.49/carGOAdmin'; // Production
 
   /// Get overdue bookings for an owner
   Future<List<OverdueBooking>> getOwnerOverdueBookings(int ownerId) async {

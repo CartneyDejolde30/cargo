@@ -19,6 +19,9 @@ import './dashboard/quick_action_card.dart';
 import './dashboard/recent_activity_widget.dart';
 import './dashboard/upcoming_bookings_widget.dart';
 
+// Analytics Dashboard - NEW
+import './analytics/analytics_dashboard_screen.dart';
+
 // Pages
 import 'pending_requests_page.dart';
 import 'active_booking_page.dart';
@@ -269,6 +272,10 @@ class _DashboardPageState extends State<DashboardPage>
           ),
           const SizedBox(height: 16),
 
+          // NEW: Analytics Dashboard Card
+          _buildAnalyticsDashboardCard(),
+          const SizedBox(height: 14),
+
           QuickActionCard(
             title: "Pending Requests",
             subtitle: "Review and approve bookings",
@@ -346,6 +353,90 @@ class _DashboardPageState extends State<DashboardPage>
             },
           ),
         ],
+      ),
+    );
+  }
+
+  // NEW: Analytics Dashboard Card
+  Widget _buildAnalyticsDashboardCard() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AnalyticsDashboardScreen(
+              ownerId: int.parse(ownerId),
+              ownerName: userName,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.purple.shade400,
+              Colors.blue.shade600,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.analytics_outlined,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Analytics Dashboard',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'View detailed business insights',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }

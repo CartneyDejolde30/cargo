@@ -13,6 +13,7 @@ import '../Renter/host/host_profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/motorcycle_booking_screen.dart';
+import 'widgets/renter_availability_calendar.dart'; // NEW: Renter calendar
 
 
 class MotorcycleDetailScreen extends StatefulWidget {
@@ -926,104 +927,187 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                 ),
                 child: SafeArea(
                   top: false,
-                  child: ElevatedButton(
-                    onPressed: isCheckingVerification 
-                        ? null 
-                        : (isVerified 
-                            ? () async {
-                                final userData = await _getUserData();  
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  settings: const RouteSettings(name: 'motorcycle'),
-                                  builder: (_) => MotorcycleBookingScreen(
-                                    motorcycleId: widget.motorcycleId,
-                                    motorcycleName: widget.motorcycleName,
-                                    motorcycleImage: widget.motorcycleImage,
-                                    pricePerDay: price,
-                                    location: location,
-                                    ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
-                                    userId: userData['userId'],
-                                    userFullName: userData['fullName'],
-                                    userEmail: userData['email'],
-                                    userContact: userData['contact'],
-                                    userMunicipality: userData['municipality'],
-                                    ownerLatitude: double.tryParse(
-                                      motorcycleData?["latitude"]?.toString() ?? "",
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // NEW: Check Availability Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RenterAvailabilityCalendar(
+                                  vehicleId: widget.motorcycleId,
+                                  vehicleType: 'motorcycle',
+                                  vehicleName: widget.motorcycleName,
+                                ),
+                              ),
+                            );
+                            
+                            // If dates selected, proceed to booking
+                            if (result != null && result is Map) {
+                              if (!isVerified) {
+                                _showVerificationRequiredDialog();
+                                return;
+                              }
+                              
+                              final userData = await _getUserData();
+                              if (mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    settings: const RouteSettings(name: 'motorcycle'),
+                                    builder: (_) => MotorcycleBookingScreen(
+                                      motorcycleId: widget.motorcycleId,
+                                      motorcycleName: widget.motorcycleName,
+                                      motorcycleImage: widget.motorcycleImage,
+                                      pricePerDay: price,
+                                      location: location,
+                                      ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
+                                      userId: userData['userId'],
+                                      userFullName: userData['fullName'],
+                                      userEmail: userData['email'],
+                                      userContact: userData['contact'],
+                                      userMunicipality: userData['municipality'],
+                                      ownerLatitude: double.tryParse(
+                                        motorcycleData?["latitude"]?.toString() ?? "",
+                                      ),
+                                      ownerLongitude: double.tryParse(
+                                        motorcycleData?["longitude"]?.toString() ?? "",
+                                      ),
                                     ),
-                                    ownerLongitude: double.tryParse(
-                                      motorcycleData?["longitude"]?.toString() ?? "",
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_month, size: 20),
+                          label: Text(
+                            'Check Availability',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: BorderSide(color: Colors.blue, width: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Existing Book Now Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isCheckingVerification 
+                              ? null 
+                              : (isVerified 
+                                  ? () async {
+                                      final userData = await _getUserData();  
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        settings: const RouteSettings(name: 'motorcycle'),
+                                        builder: (_) => MotorcycleBookingScreen(
+                                          motorcycleId: widget.motorcycleId,
+                                          motorcycleName: widget.motorcycleName,
+                                          motorcycleImage: widget.motorcycleImage,
+                                          pricePerDay: price,
+                                          location: location,
+                                          ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
+                                          userId: userData['userId'],
+                                          userFullName: userData['fullName'],
+                                          userEmail: userData['email'],
+                                          userContact: userData['contact'],
+                                          userMunicipality: userData['municipality'],
+                                          ownerLatitude: double.tryParse(
+                                            motorcycleData?["latitude"]?.toString() ?? "",
+                                          ),
+                                          ownerLongitude: double.tryParse(
+                                            motorcycleData?["longitude"]?.toString() ?? "",
+                                          ),
+                                        ),
+                                      ),
+                                    );
+
+                                    }
+                                  : () {
+                                      _showVerificationRequiredDialog();
+                                    }
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isCheckingVerification 
+                                ? Colors.grey.shade400
+                                : (isVerified ? Colors.black : Colors.grey.shade600),
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  if (isCheckingVerification)
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  else if (!isVerified)
+                                    const Icon(Icons.lock, size: 20, color: Colors.white),
+                                  
+                                  if (isCheckingVerification || !isVerified)
+                                    const SizedBox(width: 8),
+                                  
+                                  Text(
+                                    isCheckingVerification 
+                                        ? "Checking..."
+                                        : (isVerified ? "Book Motorcycle" : "Verification Required"),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isVerified && !isCheckingVerification)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "₱$price/day",
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                              );
-
-                              }
-                            : () {
-                                _showVerificationRequiredDialog();
-                              }
-                        ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isCheckingVerification 
-                          ? Colors.grey.shade400
-                          : (isVerified ? Colors.black : Colors.grey.shade600),
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            if (isCheckingVerification)
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            else if (!isVerified)
-                              const Icon(Icons.lock, size: 20, color: Colors.white),
-                            
-                            if (isCheckingVerification || !isVerified)
-                              const SizedBox(width: 8),
-                            
-                            Text(
-                              isCheckingVerification 
-                                  ? "Checking..."
-                                  : (isVerified ? "Book Motorcycle" : "Verification Required"),
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isVerified && !isCheckingVerification)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              "₱$price/day",
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
