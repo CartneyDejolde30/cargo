@@ -429,7 +429,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
             : Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: notification.color.withOpacity(0.1),
+                  color: notification.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(notification.icon, color: notification.color),
@@ -495,7 +495,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

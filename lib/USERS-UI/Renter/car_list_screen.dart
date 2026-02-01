@@ -6,6 +6,10 @@ import '../Renter/search_filter_screen.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_detail_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
+import 'widgets/sort_bottom_sheet.dart';
+import 'services/saved_search_service.dart';
+import 'saved_searches_screen.dart';
+import 'cars_map_view_screen.dart';
 
 class CarListScreen extends StatefulWidget {
   final String title;
@@ -30,6 +34,13 @@ class _CarListScreenState extends State<CarListScreen> {
   // Active filters
   Map<String, dynamic>? _activeFilters;
   int _activeFilterCount = 0;
+  
+  // Sorting
+  String _sortBy = 'created_at';
+  String _sortOrder = 'DESC';
+  
+  // Saved searches
+  final SavedSearchService _savedSearchService = SavedSearchService();
 
   final List<String> _categories = ['All', 'SUV', 'Sedan', 'Sport', 'Coupe', 'Luxury'];
 
@@ -47,7 +58,50 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   Future<void> fetchCars() async {
-    const url = "http://10.218.197.49/carGOAdmin/api/get_cars.php";
+    String url = "http://10.218.197.49/carGOAdmin/api/get_cars_filtered.php";
+    List<String> queryParams = [];
+    
+    // Build query parameters from active filters
+    if (_activeFilters != null) {
+      
+      if (_activeFilters!['location'] != null && _activeFilters!['location'].toString().isNotEmpty) {
+        queryParams.add('location=${Uri.encodeComponent(_activeFilters!['location'])}');
+      }
+      if (_activeFilters!['transmission'] != null && _activeFilters!['transmission'].toString().isNotEmpty) {
+        queryParams.add('transmission=${Uri.encodeComponent(_activeFilters!['transmission'])}');
+      }
+      if (_activeFilters!['fuelType'] != null && _activeFilters!['fuelType'].toString().isNotEmpty) {
+        queryParams.add('fuelType=${Uri.encodeComponent(_activeFilters!['fuelType'])}');
+      }
+      if (_activeFilters!['bodyStyle'] != null && _activeFilters!['bodyStyle'].toString().isNotEmpty) {
+        queryParams.add('bodyStyle=${Uri.encodeComponent(_activeFilters!['bodyStyle'])}');
+      }
+      if (_activeFilters!['brand'] != null && _activeFilters!['brand'].toString().isNotEmpty) {
+        queryParams.add('brand=${Uri.encodeComponent(_activeFilters!['brand'])}');
+      }
+      if (_activeFilters!['year'] != null && _activeFilters!['year'].toString().isNotEmpty) {
+        queryParams.add('year=${Uri.encodeComponent(_activeFilters!['year'])}');
+      }
+      if (_activeFilters!['seats'] != null && _activeFilters!['seats'] > 0) {
+        queryParams.add('seats=${_activeFilters!['seats']}');
+      }
+      if (_activeFilters!['deliveryMethod'] != null && _activeFilters!['deliveryMethod'].toString().isNotEmpty) {
+        queryParams.add('deliveryMethod=${Uri.encodeComponent(_activeFilters!['deliveryMethod'])}');
+      }
+      
+      double minPrice = (_activeFilters!['minPrice'] ?? 0).toDouble();
+      double maxPrice = (_activeFilters!['maxPrice'] ?? 999999).toDouble();
+      queryParams.add('minPrice=$minPrice');
+      queryParams.add('maxPrice=$maxPrice');
+    }
+    
+    // Add sorting parameters
+    queryParams.add('sortBy=$_sortBy');
+    queryParams.add('sortOrder=$_sortOrder');
+    
+    if (queryParams.isNotEmpty) {
+      url += '?${queryParams.join('&')}';
+    }
 
     try {
       final res = await http.get(Uri.parse(url));
@@ -75,49 +129,28 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   void _applyFilters() {
+    // Since we're now filtering on the backend, just use the cars returned from API
     List<Map<String, dynamic>> filtered = List.from(_allCars);
 
-    // Apply category filter
+    // Apply category filter (frontend only)
     if (_selectedCategory != 'All') {
       filtered = filtered.where((car) {
-        String carCategory = (car['category'] ?? '').toString().toLowerCase();
-        return carCategory == _selectedCategory.toLowerCase();
-      }).toList();
-    }
-
-    // Apply search filters if active
-    if (_activeFilters != null) {
-      // Location filter
-      if (_activeFilters!['location'] != null && 
-          _activeFilters!['location'].toString().isNotEmpty) {
-        String searchLocation = _activeFilters!['location'].toString().toLowerCase();
-        filtered = filtered.where((car) {
-          String carLocation = (car['location'] ?? '').toString().toLowerCase();
-          return carLocation.contains(searchLocation) || 
-                 searchLocation.contains(carLocation);
-        }).toList();
-      }
-
-      // Vehicle Type filter (map to category)
-      if (_activeFilters!['vehicleType'] != null && 
-          _activeFilters!['vehicleType'].toString().isNotEmpty) {
-        String vehicleType = _activeFilters!['vehicleType'].toString().toLowerCase();
-        filtered = filtered.where((car) {
-          // Map vehicle types: Car -> All categories, Motorcycle -> Sport
-          if (vehicleType == 'motorcycle') {
-            return (car['category'] ?? '').toString().toLowerCase() == 'sport';
-          }
-          return true; // Car includes all types
-        }).toList();
-      }
-
-      // Price Range filter
-      double minPrice = (_activeFilters!['minPrice'] ?? 0).toDouble();
-      double maxPrice = (_activeFilters!['maxPrice'] ?? 2000).toDouble();
-      
-      filtered = filtered.where((car) {
-        double carPrice = double.tryParse(car['price'].toString()) ?? 0;
-        return carPrice >= minPrice && carPrice <= maxPrice;
+        String bodyStyle = (car['body_style'] ?? '').toString().toLowerCase();
+        String selectedCat = _selectedCategory.toLowerCase();
+        
+        // Map body styles to categories
+        if (selectedCat == 'suv' && (bodyStyle.contains('suv') || bodyStyle.contains('crossover'))) {
+          return true;
+        } else if (selectedCat == 'sedan' && bodyStyle.contains('sedan')) {
+          return true;
+        } else if (selectedCat == 'sport' && (bodyStyle.contains('sport') || bodyStyle.contains('coupe'))) {
+          return true;
+        } else if (selectedCat == 'coupe' && bodyStyle.contains('coupe')) {
+          return true;
+        } else if (selectedCat == 'luxury' && (bodyStyle.contains('luxury') || bodyStyle.contains('executive'))) {
+          return true;
+        }
+        return false;
       }).toList();
     }
 
@@ -139,6 +172,17 @@ class _CarListScreenState extends State<CarListScreen> {
           _activeFilters!['vehicleType'].toString().isNotEmpty) count++;
       if (_activeFilters!['deliveryMethod'] != null && 
           _activeFilters!['deliveryMethod'].toString().isNotEmpty) count++;
+      if (_activeFilters!['transmission'] != null && 
+          _activeFilters!['transmission'].toString().isNotEmpty) count++;
+      if (_activeFilters!['fuelType'] != null && 
+          _activeFilters!['fuelType'].toString().isNotEmpty) count++;
+      if (_activeFilters!['bodyStyle'] != null && 
+          _activeFilters!['bodyStyle'].toString().isNotEmpty) count++;
+      if (_activeFilters!['brand'] != null && 
+          _activeFilters!['brand'].toString().isNotEmpty) count++;
+      if (_activeFilters!['year'] != null && 
+          _activeFilters!['year'].toString().isNotEmpty) count++;
+      if (_activeFilters!['seats'] != null && _activeFilters!['seats'] > 0) count++;
       
       double minPrice = (_activeFilters!['minPrice'] ?? 0).toDouble();
       double maxPrice = (_activeFilters!['maxPrice'] ?? 2000).toDouble();
@@ -154,8 +198,9 @@ class _CarListScreenState extends State<CarListScreen> {
       _activeFilters = null;
       _activeFilterCount = 0;
       _selectedCategory = 'All';
-      _applyFilters();
     });
+    
+    fetchCars(); // Reload without filters
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -175,6 +220,145 @@ class _CarListScreenState extends State<CarListScreen> {
     if (index == 3) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
     }
+  }
+
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SortBottomSheet(
+        currentSortBy: _sortBy,
+        currentSortOrder: _sortOrder,
+        onSortChanged: (sortBy, sortOrder) {
+          if (mounted) {
+            setState(() {
+              // Map generic 'year' to car-specific field
+              if (sortBy == 'year') {
+                _sortBy = 'car_year';
+              } else {
+                _sortBy = sortBy;
+              }
+              _sortOrder = sortOrder;
+            });
+            fetchCars();
+          }
+        },
+      ),
+    );
+  }
+
+  void _showSaveSearchDialog() {
+    if (_activeFilters == null || _activeFilterCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please apply filters before saving')),
+      );
+      return;
+    }
+
+    final TextEditingController nameController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Save Search',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Give your search a name:',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'e.g., Budget SUVs in Bayugan',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+              ),
+              style: GoogleFonts.poppins(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a name')),
+                );
+                return;
+              }
+
+              final success = await _savedSearchService.saveSearch(
+                name,
+                _activeFilters!,
+              );
+
+              if (mounted) {
+                Navigator.pop(context);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Search saved successfully!')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('A search with this name already exists')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+            child: Text('Save', style: GoogleFonts.poppins(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSavedSearches() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedSearchesScreen(
+          onSearchSelected: (filters) {
+            setState(() {
+              _activeFilters = filters;
+            });
+            fetchCars();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showMapView() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CarsMapViewScreen(
+          cars: _filteredCars,
+          title: 'Cars Map View (${_filteredCars.length})',
+        ),
+      ),
+    );
   }
 
   @override
@@ -198,6 +382,8 @@ class _CarListScreenState extends State<CarListScreen> {
                         if (_activeFilterCount > 0) ...[
                           const SizedBox(height: 16),
                           _buildActiveFiltersChip(),
+                          const SizedBox(height: 12),
+                          _buildSavedSearchActions(),
                         ],
                         const SizedBox(height: 24),
                         Row(
@@ -210,6 +396,51 @@ class _CarListScreenState extends State<CarListScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            if (_filteredCars.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _showMapView,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: Icon(Icons.map, size: 20, color: Colors.grey.shade700),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: _showSortOptions,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.sort, size: 18, color: Colors.grey.shade700),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Sort',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -283,6 +514,44 @@ class _CarListScreenState extends State<CarListScreen> {
     );
   }
 
+  Widget _buildSavedSearchActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _showSaveSearchDialog,
+            icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+            label: Text(
+              'Save Search',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              side: BorderSide(color: Theme.of(context).primaryColor),
+              foregroundColor: Theme.of(context).primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _showSavedSearches,
+            icon: const Icon(Icons.bookmarks_outlined, size: 18),
+            label: Text(
+              'View Saved',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              side: BorderSide(color: Colors.grey.shade400),
+              foregroundColor: Colors.grey.shade700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
@@ -328,8 +597,8 @@ class _CarListScreenState extends State<CarListScreen> {
         if (result != null && result is Map<String, dynamic> && mounted) {
           setState(() {
             _activeFilters = result;
-            _applyFilters();
           });
+          fetchCars(); // Reload with new filters
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -506,9 +775,9 @@ class _CarListScreenState extends State<CarListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
+          crossAxisSpacing: 10,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.60,
+          childAspectRatio: 0.65,
         ),
         itemCount: _filteredCars.length,
         itemBuilder: (context, index) {
@@ -613,39 +882,42 @@ class _CarListScreenState extends State<CarListScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       "₱${price}",
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       "$name $year",
                       style: GoogleFonts.poppins(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
+                        Icon(Icons.location_on, size: 11, color: Colors.grey.shade600),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
@@ -654,30 +926,26 @@ class _CarListScreenState extends State<CarListScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.event_seat, size: 12, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
+                        Icon(Icons.event_seat, size: 11, color: Colors.grey.shade600),
+                        const SizedBox(width: 3),
                         Text(
-                          "$seats-seater",
+                          "$seats seats",
                           style: GoogleFonts.poppins(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.speed, size: 12, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            transmission,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const Icon(Icons.star, color: Colors.amber, size: 11),
+                        const SizedBox(width: 3),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],

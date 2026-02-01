@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
+import '../Owner/mycar/api_constants.dart';
 
 class NotificationScreen extends StatefulWidget {
   final int userId;
@@ -66,7 +67,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-            "http://10.218.197.49/carGOAdmin/get_notification_renter.php?user_id=$_loadedUserId"),
+            "${ApiConstants.baseUrl}/get_notification_renter.php?user_id=$_loadedUserId"),
       );
 
       print("📩 RAW RESPONSE: ${res.body}");
@@ -461,7 +462,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         border: Border.all(
           color: isRead
           ? Theme.of(context).colorScheme.outlineVariant
-          : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
 
           width: isRead ? 1 : 1.5,
         ),

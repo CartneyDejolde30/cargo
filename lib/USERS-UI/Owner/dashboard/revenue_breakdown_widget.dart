@@ -46,7 +46,7 @@ class RevenueBreakdownWidget extends StatelessWidget {
         border: Border.all(color: Colors.blue.shade100, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -175,16 +175,16 @@ class RevenueBreakdownWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isTotal ? 16 : 12),
       decoration: BoxDecoration(
-        color: isTotal ? Colors.white : Colors.white.withOpacity(0.7),
+        color: isTotal ? Colors.white : Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isTotal ? color.withOpacity(0.3) : Colors.transparent,
+          color: isTotal ? color.withValues(alpha: 0.3) : Colors.transparent,
           width: isTotal ? 2 : 0,
         ),
         boxShadow: isTotal
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -197,7 +197,7 @@ class RevenueBreakdownWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -358,7 +358,7 @@ class _ExpandableRevenueBreakdownState
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.blue.withOpacity(0.3),
+                      color: Colors.blue.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -428,7 +428,7 @@ class CompactRevenueSummary extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

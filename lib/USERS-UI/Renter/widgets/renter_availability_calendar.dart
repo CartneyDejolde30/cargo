@@ -26,6 +26,8 @@ class RenterAvailabilityCalendar extends StatefulWidget {
 }
 
 class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar> {
+  // Use ApiConstants instead of hardcoded URL
+  // Import: import '../../Owner/mycar/api_constants.dart';
   final String baseUrl = "http://10.218.197.49/carGOAdmin/";
   
   DateTime _focusedDay = DateTime.now();
@@ -80,11 +82,21 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
   }
 
   bool _isDateBlocked(DateTime day) {
-    return _blockedDates.any((d) => isSameDay(d, day));
+    // Compare only date components, ignore time
+    return _blockedDates.any((d) => 
+      d.year == day.year && 
+      d.month == day.month && 
+      d.day == day.day
+    );
   }
 
   bool _isDateBooked(DateTime day) {
-    return _bookedDates.any((d) => isSameDay(d, day));
+    // Compare only date components, ignore time
+    return _bookedDates.any((d) => 
+      d.year == day.year && 
+      d.month == day.month && 
+      d.day == day.day
+    );
   }
 
   bool _isDateAvailable(DateTime day) {
@@ -252,7 +264,7 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
 
   Widget _buildLegend() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -270,19 +282,24 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
           Text(
             'Legend',
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('Available', Colors.green[50]!, Colors.green),
-              _buildLegendItem('Blocked', Colors.red[50]!, Colors.red),
-              _buildLegendItem('Booked', Colors.blue[50]!, Colors.blue),
-              _buildLegendItem('Selected', Colors.orange[50]!, Colors.orange),
+              Flexible(child: _buildLegendItem('Available', Colors.green[50]!, Colors.green)),
+              Flexible(child: _buildLegendItem('Blocked', const Color(0xFFFFCDD2), const Color(0xFFD32F2F))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Flexible(child: _buildLegendItem('Booked', const Color(0xFFBBDEFB), const Color(0xFF1976D2))),
+              Flexible(child: _buildLegendItem('Selected', const Color(0xFFFFE0B2), const Color(0xFFE65100))),
             ],
           ),
         ],
@@ -295,18 +312,21 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 20,
-          height: 20,
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             color: bgColor,
             shape: BoxShape.circle,
             border: Border.all(color: borderColor ?? Colors.transparent, width: 2),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontSize: 12),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(fontSize: 10),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -370,16 +390,58 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
-            if (_isDateBooked(day)) {
-              return _buildDayCell(day, Colors.blue[50]!, Colors.blue, false);
-            } else if (_isDateBlocked(day)) {
-              return _buildDayCell(day, Colors.red[50]!, Colors.red, false);
-            } else if (_isDateAvailable(day)) {
-              return _buildDayCell(day, Colors.green[50]!, Colors.green, true);
+            // Normalize day to midnight for comparison
+            final normalizedDay = DateTime(day.year, day.month, day.day);
+            
+            // Check date status with normalized comparison
+            final isBlocked = _blockedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            final isBooked = _bookedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            final isPast = day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+            
+            if (isBooked) {
+              return _buildDayCell(day, const Color(0xFFBBDEFB), const Color(0xFF1976D2), false); // Blue for booked
+            } else if (isBlocked) {
+              return _buildDayCell(day, const Color(0xFFFFCDD2), const Color(0xFFD32F2F), false); // RED for blocked
+            } else if (isPast) {
+              return _buildDayCell(day, Colors.grey[200]!, Colors.grey[400], false); // Gray for past
+            } else {
+              // Available dates - show in GREEN
+              return _buildDayCell(day, Colors.green[50]!, Colors.green[700]!, true);
             }
-            return null;
           },
           disabledBuilder: (context, day, focusedDay) {
+            // Normalize day to midnight for comparison
+            final normalizedDay = DateTime(day.year, day.month, day.day);
+            
+            // Check if disabled because it's blocked or booked (not just past)
+            final isBlocked = _blockedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            final isBooked = _bookedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            if (isBooked) {
+              return _buildDayCell(day, const Color(0xFFBBDEFB), const Color(0xFF1976D2), false); // Blue for booked
+            } else if (isBlocked) {
+              return _buildDayCell(day, const Color(0xFFFFCDD2), const Color(0xFFD32F2F), false); // RED for blocked
+            }
+            // Past dates or other disabled dates
             return _buildDayCell(day, Colors.grey[200]!, Colors.grey[400], false);
           },
         ),

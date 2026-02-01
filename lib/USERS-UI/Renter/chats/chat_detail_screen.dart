@@ -501,7 +501,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 color: Theme.of(context).colorScheme.surface,                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -535,7 +535,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             color: Theme.of(context)
     .colorScheme
     .outline
-    .withOpacity(value),
+    .withValues(alpha: value),
             shape: BoxShape.circle,
           ),
         );
@@ -605,7 +605,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -630,7 +630,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
                 child:  Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 20),
@@ -795,7 +795,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),
@@ -810,7 +810,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isMe
-                                  ? Colors.white.withOpacity(0.2)
+                                  ? Colors.white.withValues(alpha: 0.2)
                                   : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
@@ -829,7 +829,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                 color: isMe
-                                    ? Colors.white.withOpacity(0.7)
+                                    ? Colors.white.withValues(alpha: 0.7)
                                     : Colors.grey.shade600,
                                 fontSize: 12,
                               ),
@@ -894,7 +894,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,        boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -951,7 +951,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.shade300.withOpacity(0.4),
+                    color: Colors.blue.shade300.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

@@ -26,7 +26,7 @@ class OverdueBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(compact ? 6 : 8),
         boxShadow: [
           BoxShadow(
-            color: (isSevere ? Colors.red : Colors.orange).withOpacity(0.3),
+            color: (isSevere ? Colors.red : Colors.orange).withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -80,7 +80,7 @@ class OverdueWarningBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.3),
+            color: Colors.red.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -113,7 +113,7 @@ class OverdueWarningBanner extends StatelessWidget {
                       '$daysOverdue day${daysOverdue > 1 ? 's' : ''} past return date',
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -125,7 +125,7 @@ class OverdueWarningBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -138,7 +138,7 @@ class OverdueWarningBanner extends StatelessWidget {
                         'Late Fee Accumulated',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       Text(
@@ -184,7 +184,7 @@ class OverdueWarningBanner extends StatelessWidget {
             '⚠️ Late fees continue to accumulate daily. Please return the vehicle or make payment immediately.',
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               height: 1.4,
             ),
           ),

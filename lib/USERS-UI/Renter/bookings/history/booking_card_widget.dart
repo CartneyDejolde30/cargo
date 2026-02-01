@@ -90,7 +90,7 @@ class _BookingCardWidgetState extends State<BookingCardWidget> {
   ),
   boxShadow: [
     BoxShadow(
-      color: Theme.of(context).shadowColor.withOpacity(0.25),
+      color: Theme.of(context).shadowColor.withValues(alpha: 0.25),
       blurRadius: 8,
       offset: const Offset(0, 4),
     ),

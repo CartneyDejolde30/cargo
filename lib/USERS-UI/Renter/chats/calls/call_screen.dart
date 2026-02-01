@@ -123,10 +123,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        _endCall();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _endCall();
+        }
       },
       child: Scaffold(
          backgroundColor: Theme.of(context).iconTheme.color,

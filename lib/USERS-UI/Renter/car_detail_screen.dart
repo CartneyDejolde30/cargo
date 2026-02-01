@@ -270,7 +270,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 }
 
 
-    final imageUrl = formatImage(carData?["image"] ?? "");
+    // Removed unused variable: final imageUrl = formatImage(carData?["image"] ?? "");
     final ownerImage = formatImage(carData?["owner_image"] ?? "");
     final ownerName = carData?["owner_name"] ?? "Unknown Owner";
     final phone = carData?["phone"] ?? "";

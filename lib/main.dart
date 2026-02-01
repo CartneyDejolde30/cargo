@@ -119,8 +119,7 @@ class MyApp extends StatelessWidget {
           return MyCarPage(ownerId: ownerId);
         },
 
-        '/my_bookings': (context) =>
-            const MyBookingsScreen(),
+        '/my_bookings': (context) => const MyBookingsScreen(),
       },
     );
   }

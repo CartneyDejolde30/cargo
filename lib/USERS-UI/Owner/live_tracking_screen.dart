@@ -4,6 +4,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'services/gps_tracking_service.dart';
+import 'package:flutter_application_1/config/maptiler_config.dart';
+import 'package:flutter_application_1/widgets/map_controls.dart';
+import 'package:flutter_application_1/widgets/map_style_switcher.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
   final String bookingId;
@@ -22,7 +25,6 @@ class LiveTrackingScreen extends StatefulWidget {
 }
 
 class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
-  static const String _mapTilerKey = 'YGJxmPnRtlTHI1endzDH';
   
   final MapController _mapController = MapController();
   final GpsTrackingService _trackingService = GpsTrackingService();
@@ -34,6 +36,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   double? _currentSpeed;
   bool _isLoading = true;
   bool _isTracking = true;
+  String _currentMapStyle = MapTilerConfig.defaultStyle;
+  bool _showStyleSwitcher = false;
   
   @override
   void initState() {
@@ -154,6 +158,63 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
         children: [
           _buildMap(),
           _buildTopBar(),
+          
+          // Map Controls (right side)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 100,
+            right: 16,
+            child: MapControls(
+              mapController: _mapController,
+              onCenterLocation: _centerOnCar,
+            ),
+          ),
+          
+          // Style Switcher Button (left side)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 100,
+            left: 16,
+            child: Material(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF1E1E1E) 
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              elevation: 4,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _showStyleSwitcher = !_showStyleSwitcher;
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(
+                    Icons.layers,
+                    color: Theme.of(context).iconTheme.color,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Style Switcher Panel
+          if (_showStyleSwitcher)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 160,
+              left: 16,
+              child: MapStyleSwitcher(
+                currentStyle: _currentMapStyle,
+                onStyleChanged: (newStyle) {
+                  setState(() {
+                    _currentMapStyle = newStyle;
+                    _showStyleSwitcher = false;
+                  });
+                },
+              ),
+            ),
+          
           _buildBottomCard(),
           if (_isLoading) _buildLoadingOverlay(),
         ],
@@ -172,7 +233,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=$_mapTilerKey',
+          urlTemplate: MapTilerConfig.getTileUrl(_currentMapStyle),
           userAgentPackageName: 'com.yourcompany.app',
         ),
         if (_locationHistory.length > 1) _buildTrackingPath(),

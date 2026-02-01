@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import '../mycar/api_constants.dart';
 
 class VehicleAvailabilityCalendar extends StatefulWidget {
   final int ownerId;
@@ -24,10 +25,9 @@ class VehicleAvailabilityCalendar extends StatefulWidget {
 }
 
 class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalendar> {
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = ApiConstants.baseUrl;
   
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
   Set<DateTime> _blockedDates = {};
   Set<DateTime> _bookedDates = {};
   Set<DateTime> _selectedDates = {};
@@ -242,7 +242,7 @@ class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalenda
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -281,7 +281,7 @@ class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalenda
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -327,12 +327,19 @@ class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalenda
                       ),
                       calendarBuilders: CalendarBuilders(
                         defaultBuilder: (context, day, focusedDay) {
+                          // Check if date is in the past
+                          final isPast = day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+                          
                           if (_isDateBooked(day)) {
                             return _buildCalendarDay(day, Colors.blue[50]!, Colors.blue);
                           } else if (_isDateBlocked(day)) {
                             return _buildCalendarDay(day, Colors.red[50]!, Colors.red);
+                          } else if (isPast) {
+                            return _buildCalendarDay(day, Colors.grey[200]!, Colors.grey[400]);
+                          } else {
+                            // Available dates - show in GREEN
+                            return _buildCalendarDay(day, Colors.green[50]!, Colors.green[700]);
                           }
-                          return null;
                         },
                       ),
                       headerStyle: HeaderStyle(
@@ -355,7 +362,7 @@ class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalenda
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, -2),
                         ),

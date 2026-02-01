@@ -4,6 +4,7 @@ import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/bookings/map_route_screen.dart';
 
 class LiveTripTrackerScreen extends StatefulWidget {
   final Booking booking;
@@ -102,7 +103,7 @@ Future<String> _getCurrentUserId() async {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.4),
+                    Colors.black.withValues(alpha: 0.4),
                   ],
                 ),
               ),
@@ -163,7 +164,7 @@ Future<String> _getCurrentUserId() async {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(0.3),
+              color: Colors.blue.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -200,7 +201,7 @@ Future<String> _getCurrentUserId() async {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -241,7 +242,7 @@ Future<String> _getCurrentUserId() async {
                     Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -558,7 +559,7 @@ Future<String> _getCurrentUserId() async {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color),
@@ -610,9 +611,9 @@ Future<String> _getCurrentUserId() async {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -644,9 +645,9 @@ Future<String> _getCurrentUserId() async {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -691,7 +692,7 @@ Future<String> _getCurrentUserId() async {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color),
@@ -740,7 +741,7 @@ Future<String> _getCurrentUserId() async {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -885,9 +886,53 @@ Future<String> _getCurrentUserId() async {
   }
 
   void _openMaps(String location) async {
+    // Use MapTiler integration instead of Google Maps
+    // Parse coordinates from location string or use default
+    double? lat;
+    double? lng;
+    
+    // Try to extract coordinates if location contains them
+    // Format: "latitude,longitude" or similar
+    final coordMatch = RegExp(r'(-?\d+\.?\d*),\s*(-?\d+\.?\d*)').firstMatch(location);
+    if (coordMatch != null) {
+      lat = double.tryParse(coordMatch.group(1) ?? '');
+      lng = double.tryParse(coordMatch.group(2) ?? '');
+    }
+    
+    if (lat != null && lng != null) {
+      // Navigate to MapRouteScreen with MapTiler
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapRouteScreen(
+            destinationLat: lat!,
+            destinationLng: lng!,
+            locationName: location,
+            carName: widget.booking.carName,
+          ),
+        ),
+      );
+    } else {
+      // Fallback: Show error or use geocoding service
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to parse location. Please ensure coordinates are available.'),
+          backgroundColor: Colors.orange,
+          action: SnackBarAction(
+            label: 'Use External Map',
+            onPressed: () => _openExternalMaps(location),
+          ),
+        ),
+      );
+    }
+  }
+  
+  void _openExternalMaps(String location) async {
+    // Fallback option: Open in external maps app
     final url = 'https://www.google.com/maps/search/?api=1&query=$location';
-    if (await canLaunch(url)) {
-      await launch(url);
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:flutter_application_1/config/maptiler_config.dart';
 
 import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
 import 'upload_documents_screen.dart';
@@ -29,7 +30,6 @@ class _CarLocationScreenState extends State<CarLocationScreen> {
   LatLng _currentPosition = LatLng(14.5995, 120.9842);
   List<Marker> _markers = [];
 
-  final String _mapTilerApiKey = 'YGJxmPnRtlTHI1endzDH';
 
   @override
   void initState() {
@@ -267,7 +267,7 @@ void _continue() {
                           children: [
                             TileLayer(
                               urlTemplate:
-                                  'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=$_mapTilerApiKey',
+                                  MapTilerConfig.getTileUrl(MapTilerConfig.defaultStyle),
                             ),
                             MarkerLayer(markers: _markers),
                           ],

@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class LateFeePaymentScreen extends StatefulWidget {
@@ -29,7 +28,6 @@ class LateFeePaymentScreen extends StatefulWidget {
 }
 
 class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
-  bool _isLoading = false;
   String? _userId;
   
   // GCash Payment Fields
@@ -67,17 +65,6 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
       symbol: '₱',
       decimalDigits: 2,
     ).format(amount);
-  }
-  
-  void _copyToClipboard(String text, String label) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label copied'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
   
   void _showQRDialog() {
@@ -168,7 +155,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
                     '$_daysOverdue day(s) past return date',
                     style: GoogleFonts.inter(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -234,7 +221,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
+                color: Colors.blue.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -266,7 +253,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
                         Text(
                           'Tap to scan and pay',
                           style: GoogleFonts.poppins(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,
                           ),
                         ),
@@ -405,7 +392,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

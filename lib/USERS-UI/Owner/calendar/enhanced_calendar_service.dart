@@ -15,28 +15,39 @@ class EnhancedCalendarService {
     required DateTime endDate,
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          '$_baseUrl/api/availability/get_blocked_dates.php?'
+      final url = '$_baseUrl/api/availability/get_blocked_dates.php?'
           'vehicle_id=$vehicleId&'
           'vehicle_type=$vehicleType&'
           'start_date=${_formatDate(startDate)}&'
-          'end_date=${_formatDate(endDate)}',
-        ),
-      ).timeout(ApiConstants.apiTimeout);
+          'end_date=${_formatDate(endDate)}';
+      
+      debugPrint('🔵 Fetching blocked dates: $url');
+      
+      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+
+      debugPrint('🔵 Response status: ${response.statusCode}');
+      debugPrint('🔵 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success']) {
+          final blockedList = data['blocked_dates'] as List;
+          final bookedList = data['booked_dates'] as List;
+          
+          debugPrint('✅ Blocked dates count: ${blockedList.length}');
+          debugPrint('✅ Booked dates count: ${bookedList.length}');
+          
           return {
             'success': true,
-            'blocked_dates': (data['blocked_dates'] as List)
+            'blocked_dates': blockedList
                 .map((date) => DateTime.parse(date))
                 .toSet(),
-            'booked_dates': (data['booked_dates'] as List)
+            'booked_dates': bookedList
                 .map((date) => DateTime.parse(date))
                 .toSet(),
           };
+        } else {
+          debugPrint('❌ API returned success=false: ${data['message']}');
         }
       }
     } catch (e) {

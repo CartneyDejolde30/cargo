@@ -70,6 +70,10 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
         if (result['success']) {
           _blockedDates = result['blocked_dates'] as Set<DateTime>;
           _bookedDates = result['booked_dates'] as Set<DateTime>;
+          
+          debugPrint('📅 Loaded blocked dates: ${_blockedDates.length}');
+          debugPrint('📅 Blocked dates: ${_blockedDates.map((d) => d.toString()).join(", ")}');
+          debugPrint('📅 Loaded booked dates: ${_bookedDates.length}');
         }
         _stats = stats;
         _isLoading = false;
@@ -317,7 +321,7 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -395,19 +399,28 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
 
   Widget _buildLegend() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 8,
+      child: Column(
         children: [
-          _buildLegendItem('Available', Colors.white, Colors.grey[300]!),
-          _buildLegendItem('Blocked', Colors.red[50]!, Colors.red),
-          _buildLegendItem('Booked', Colors.blue[50]!, Colors.blue),
-          _buildLegendItem('Selected', Colors.orange[50]!, Colors.orange),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Flexible(child: _buildLegendItem('Available', Colors.green[50]!, Colors.green[700]!)),
+              Flexible(child: _buildLegendItem('Blocked', const Color(0xFFFFCDD2), const Color(0xFFD32F2F))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Flexible(child: _buildLegendItem('Booked', const Color(0xFFBBDEFB), const Color(0xFF1976D2))),
+              Flexible(child: _buildLegendItem('Selected', const Color(0xFFFFE0B2), const Color(0xFFE65100))),
+            ],
+          ),
         ],
       ),
     );
@@ -418,8 +431,8 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 20,
-          height: 20,
+          width: 18,
+          height: 18,
           decoration: BoxDecoration(
             color: bgColor,
             shape: BoxShape.circle,
@@ -427,7 +440,13 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: GoogleFonts.poppins(fontSize: 12)),
+        Flexible(
+          child: Text(
+            label, 
+            style: GoogleFonts.poppins(fontSize: 11),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -464,16 +483,39 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
             color: Colors.orange,
             shape: BoxShape.circle,
           ),
-          rangeHighlightColor: Colors.orange.withOpacity(0.2),
+          rangeHighlightColor: Colors.orange.withValues(alpha: 0.2),
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
-            if (_bookedDates.contains(day)) {
-              return _buildDayCell(day, Colors.blue[50]!, Colors.blue);
-            } else if (_blockedDates.contains(day)) {
-              return _buildDayCell(day, Colors.red[50]!, Colors.red);
+            // Normalize day to midnight for comparison
+            final normalizedDay = DateTime(day.year, day.month, day.day);
+            
+            // Check if this day is in blocked or booked dates
+            final isBlocked = _blockedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            final isBooked = _bookedDates.any((d) => 
+              d.year == normalizedDay.year && 
+              d.month == normalizedDay.month && 
+              d.day == normalizedDay.day
+            );
+            
+            // Check if date is in the past
+            final isPast = day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+            
+            if (isBooked) {
+              return _buildDayCell(day, const Color(0xFFBBDEFB), const Color(0xFF1976D2)); // Blue for booked
+            } else if (isBlocked) {
+              return _buildDayCell(day, const Color(0xFFFFCDD2), const Color(0xFFD32F2F)); // Red for blocked
+            } else if (isPast) {
+              return _buildDayCell(day, Colors.grey[200]!, Colors.grey[400]); // Gray for past dates
+            } else {
+              // Available dates - show in GREEN
+              return _buildDayCell(day, Colors.green[50]!, Colors.green[700]!); // Green for available
             }
-            return null;
           },
         ),
         headerStyle: HeaderStyle(
@@ -515,7 +557,7 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
