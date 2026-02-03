@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 
 class RefundRequestScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   bool _isSubmitting = false;
   bool _hasAgreedToTerms = false;
 
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   final List<Map<String, String>> _refundReasons = [
     {'value': 'cancelled_by_user', 'label': 'I cancelled my booking'},

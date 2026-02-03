@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import '../../Owner/verification/personal_info_screen.dart';
 
 class VerifyPopup {
@@ -180,7 +181,7 @@ class VerifyPopup {
 
   /// Check verification status from database
   static Future<bool> _checkVerificationFromDatabase(String userId) async {
-    const String baseUrl = "http://10.218.197.49/carGOAdmin/";
+    final String baseUrl = GlobalApiConfig.baseUrl + "/";
     
     try {
       final url = Uri.parse("${baseUrl}api/check_verification.php?user_id=$userId");

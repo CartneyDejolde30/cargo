@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import 'host_cars_screen.dart';
 import 'host_reviews_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
@@ -31,7 +32,7 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   int totalReviews = 0;
   double averageRating = 0.0;
 
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

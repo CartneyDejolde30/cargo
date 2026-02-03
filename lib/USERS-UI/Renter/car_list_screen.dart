@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import '../Renter/search_filter_screen.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_detail_screen.dart';
@@ -54,11 +55,11 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-    return "http://10.218.197.49/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
+    return GlobalApiConfig.getImageUrl(path.replaceFirst("uploads/", ""));
   }
 
   Future<void> fetchCars() async {
-    String url = "http://10.218.197.49/carGOAdmin/api/get_cars_filtered.php";
+    String url = GlobalApiConfig.getCarsFilteredEndpoint;
     List<String> queryParams = [];
     
     // Build query parameters from active filters

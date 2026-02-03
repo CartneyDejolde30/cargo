@@ -1,0 +1,125 @@
+# ========================================
+# Hostinger Deployment - Git Ignore
+# ========================================
+# Add these to your .gitignore to protect sensitive data
+
+# ========================================
+# SENSITIVE CONFIGURATION FILES
+# ========================================
+
+# DO NOT commit database credentials
+cargoAdmin/include/config.php
+
+# DO NOT commit database files
+*.sql
+*.sql.gz
+*.sql.zip
+dbcargo*.sql
+
+# ========================================
+# UPLOAD DIRECTORIES
+# ========================================
+
+# User uploaded content
+cargoAdmin/uploads/**
+!cargoAdmin/uploads/.htaccess
+!cargoAdmin/uploads/index.php
+
+# Specific upload folders
+cargoAdmin/uploads/odometer/*
+!cargoAdmin/uploads/odometer/.htaccess
+!cargoAdmin/uploads/odometer/index.php
+
+cargoAdmin/uploads/profile_images/*
+cargoAdmin/uploads/verification/*
+cargoAdmin/uploads/verifications/**
+cargoAdmin/uploads/reports/*
+cargoAdmin/uploads/payout_proofs/*
+
+# ========================================
+# LOGS & TEMPORARY FILES
+# ========================================
+
+# PHP error logs
+cargoAdmin/logs/*.log
+*.log
+
+# Temporary files
+tmp_rovodev_*
+.tmp
+*.tmp
+
+# ========================================
+# DEVELOPMENT FILES
+# ========================================
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================================
+# BUILD FILES
+# ========================================
+
+# Flutter build
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# Android
+android/app/google-services.json
+android/key.properties
+android/app/release/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# ========================================
+# BACKUP FILES
+# ========================================
+
+*.bak
+*.backup
+*~
+
+# ========================================
+# SECURITY KEYS
+# ========================================
+
+# DO NOT commit API keys or secrets
+*.pem
+*.key
+*.cert
+*.p12
+firebase-adminsdk-*.json
+
+# ========================================
+# VENDOR & DEPENDENCIES
+# ========================================
+
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+
+# ========================================
+# NOTES
+# ========================================
+# Remember to:
+# 1. Never commit database credentials
+# 2. Keep config.php out of version control
+# 3. Use environment variables for sensitive data
+# 4. Create config.example.php as template

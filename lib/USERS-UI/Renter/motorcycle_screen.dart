@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
@@ -33,7 +34,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     if (path.isEmpty) return "https://via.placeholder.com/300";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     final cleanPath = path.replaceFirst("uploads/", "");
-    return "http://10.218.197.49/carGOAdmin/uploads/$cleanPath";
+    return GlobalApiConfig.getImageUrl(cleanPath);
   }
 
   Future<String> resolveImageUrlCached(String? rawPath) async {
@@ -46,7 +47,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = "http://10.218.197.49/carGOAdmin/uploads/$clean";
+      candidate = GlobalApiConfig.getImageUrl(clean);
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -64,7 +65,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-    const String apiUrl = "http://10.218.197.49/carGOAdmin/api/get_motorcycles_filtered.php?sortBy=created_at&sortOrder=DESC";
+    final String apiUrl = "${GlobalApiConfig.getMotorcyclesFilteredEndpoint}?sortBy=created_at&sortOrder=DESC";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));

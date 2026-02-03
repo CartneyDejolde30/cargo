@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -134,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
 
     _saveCredentials();
 
-    final url = Uri.parse("http://10.218.197.49/carGOAdmin/login.php");
+    final url = Uri.parse(GlobalApiConfig.loginEndpoint);
 
     print("Sending JSON -> email: $email, password: $password");
 

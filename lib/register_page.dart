@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,7 +22,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      var url = Uri.parse("http://10.218.197.49/carGOAdmin/register.php"); 
+      var url = Uri.parse(GlobalApiConfig.registerEndpoint); 
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},

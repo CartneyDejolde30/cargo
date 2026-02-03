@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -15,7 +16,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> with SingleTickerProviderStateMixin {
-  final String apiUrl = "http://10.218.197.49s/carGOAdmin/update.php";
+  final String apiUrl = GlobalApiConfig.updateProfileEndpoint;
 
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
@@ -278,7 +279,7 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
         await prefs.setString("fullname", updated["fullname"]);
         await prefs.setString("phone", updated["phone"] ?? "");
         await prefs.setString("address", updated["address"] ?? "");
-        String baseURL = "http://10.218.197.49/carGOAdmin/uploads/";
+        String baseURL = GlobalApiConfig.uploadsUrl + "/";
         String img = updated["profile_image"] ?? "";
 
 

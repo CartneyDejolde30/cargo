@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
 import '../Reporting/submit_review_screen.dart';  // ⭐ ADDED
@@ -49,7 +50,7 @@ class _MotorcycleDetailScreenState
   bool isCheckingVerification = true;
   String verificationMessage = '';
 
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   Future<Map<String, String?>> _getUserData() async {
     final prefs = await SharedPreferences.getInstance();

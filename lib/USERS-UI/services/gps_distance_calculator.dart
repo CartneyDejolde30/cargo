@@ -2,11 +2,12 @@ import 'dart:math';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_application_1/config/api_config.dart';
 
 /// GPS-based distance calculator service
 /// Calculates distance traveled using GPS coordinates
 class GpsDistanceCalculator {
-  static const String _apiUrl = "http://10.218.197.49/carGOAdmin/api/mileage/update_gps_distance.php";
+  static String get _apiUrl => GlobalApiConfig.updateGpsDistanceEndpoint;
   
   Position? _lastPosition;
   double _totalDistance = 0.0; // in kilometers

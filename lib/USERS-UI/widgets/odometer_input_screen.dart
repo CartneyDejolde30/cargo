@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class OdometerInputScreen extends StatefulWidget {
   final int bookingId;
@@ -156,8 +157,8 @@ class _OdometerInputScreenState extends State<OdometerInputScreen> {
 
     try {
       final apiUrl = widget.isStartOdometer
-          ? "http://10.218.197.49/carGOAdmin/api/mileage/record_start_odometer.php"
-          : "http://10.218.197.49/carGOAdmin/api/mileage/record_end_odometer.php";
+          ? GlobalApiConfig.recordStartOdometerEndpoint
+          : GlobalApiConfig.recordEndOdometerEndpoint;
 
       var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
       

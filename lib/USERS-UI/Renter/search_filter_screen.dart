@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_application_1/config/maptiler_config.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_application_1/widgets/map_controls.dart';
@@ -71,7 +72,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   
   Future<void> _loadFilterOptions() async {
     try {
-      const url = "http://10.218.197.49/carGOAdmin/api/get_filter_options.php";
+      final url = GlobalApiConfig.getFilterOptionsEndpoint;
       final response = await http.get(Uri.parse(url));
       
       if (response.statusCode == 200) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import '../bookings/pricing/pricing_calculator.dart';
 import 'map_route_screen.dart'; 
 import 'dart:convert';
@@ -167,7 +168,7 @@ Future<void> _checkVerificationOnInit() async {
 
   try {
     final url = Uri.parse(
-      "http://10.218.197.49/carGOAdmin/api/check_verification.php?user_id=${widget.userId}"
+      "${GlobalApiConfig.checkVerificationEndpoint}?user_id=${widget.userId}"
     );
     
     print("📡 Calling API: $url");
@@ -1577,7 +1578,7 @@ Future<void> _checkVerificationOnInit() async {
 // Replace your _submitBookingToServer() method with this:
 
 Future<void> _submitBookingToServer() async {
-  final url = Uri.parse("http://10.218.197.49/carGOAdmin/api/create_booking.php");
+  final url = Uri.parse(GlobalApiConfig.createBookingEndpoint);
 
   // Validate user_id
   if (widget.userId == null || widget.userId!.isEmpty) {

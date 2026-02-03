@@ -6,7 +6,7 @@ import 'notification_model.dart';
 
 /// Enhanced Notification Service with advanced features
 class EnhancedNotificationService {
-  static const String _baseUrl = ApiConstants.baseUrl;
+  static String get _baseUrl => ApiConstants.baseUrl;
 
   /// Fetch notifications with filtering
   Future<Map<String, dynamic>> fetchNotifications({

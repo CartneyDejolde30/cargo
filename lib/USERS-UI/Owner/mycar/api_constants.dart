@@ -1,29 +1,25 @@
+import 'package:flutter_application_1/config/api_config.dart';
+
 class ApiConstants {
   // ========================================
-  // ⚠️ CHANGE THIS TO YOUR COMPUTER'S IP!
-  // Run 'ipconfig' in Command Prompt to find it
-  // Example: 192.168.1.100
+  // CENTRALIZED CONFIGURATION
+  // All URLs now come from GlobalApiConfig
+  // Change environment in lib/config/api_config.dart
   // ========================================
-  static const String baseUrl = "http://10.218.197.49/cargoAdmin/";
+  
+  static String get baseUrl => GlobalApiConfig.baseUrl + '/';
 
   // APIs
-  static const String carsApi = "${baseUrl}cars_api.php";
-  static const String checkVerificationApi =
-      "${baseUrl}api/check_verification.php";
+  static String get carsApi => GlobalApiConfig.carsApiEndpoint;
+  static String get checkVerificationApi => GlobalApiConfig.checkVerificationEndpoint;
 
   // IMAGES
-  static const String imageBaseUrl = "${baseUrl}uploads";
+  static String get imageBaseUrl => GlobalApiConfig.uploadsUrl;
 
   static String getCarImageUrl(String imagePath) {
-    if (imagePath.isEmpty) return "";
-
-    final cleanPath = imagePath.startsWith("/")
-        ? imagePath.substring(1)
-        : imagePath;
-
-    return "$imageBaseUrl/$cleanPath";
+    return GlobalApiConfig.getCarImageUrl(imagePath);
   }
 
   // TIMEOUT
-  static const Duration apiTimeout = Duration(seconds: 10);
+  static Duration get apiTimeout => GlobalApiConfig.apiTimeout;
 }

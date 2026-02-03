@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import '../req_model/booking_request.dart';
 import '../req_model/request_dialog.dart';
 import '../pending_requests_page.dart';
@@ -510,7 +511,7 @@ class RequestDetailsPage extends StatelessWidget {
 
   Future<void> _handleApprove(BuildContext context) async {
     final url =
-        Uri.parse("http://10.218.197.49/carGOAdmin/api/approve_request.php");
+        Uri.parse(GlobalApiConfig.approveRequestEndpoint);
 
     try {
       // Show loading

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 class OwnerReviewsScreen extends StatefulWidget {
   final String ownerId;
@@ -25,7 +26,7 @@ class _OwnerReviewsScreenState extends State<OwnerReviewsScreen> {
   List<Map<String, dynamic>> filteredReviews = [];
   int? selectedRating; // null means "All"
   
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'payout_history_screen.dart';
 import 'payout_settings_screen.dart';
 
@@ -21,7 +22,7 @@ class _PayoutDashboardScreenState extends State<PayoutDashboardScreen> {
   List<Map<String, dynamic>> _recentPayouts = [];
   List<Map<String, dynamic>> _pendingReleases = [];
 
-  final String baseUrl = "http://10.218.197.49/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {
