@@ -39,7 +39,7 @@ class BookingCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
      decoration: BoxDecoration(
-  color: Theme.of(context).colorScheme.surfaceVariant,
+  color: Theme.of(context).cardColor,
   borderRadius: BorderRadius.circular(16),
   border: Border.all(
   color: Theme.of(context).brightness == Brightness.dark
@@ -70,7 +70,7 @@ class BookingCardWidget extends StatelessWidget {
                   width: 100,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).cardColor,
 
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -93,8 +93,7 @@ class BookingCardWidget extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).iconTheme.color,
-
+                                color: Theme.of(context).textTheme.titleLarge?.color,
 
 
                               ),
@@ -111,8 +110,7 @@ class BookingCardWidget extends StatelessWidget {
                           Icon(
                                 Icons.location_on,
                                 size: 14,
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
+                                color: Theme.of(context).hintColor,                              ),
 
                           const SizedBox(width: 4),
                           Expanded(
@@ -120,7 +118,7 @@ class BookingCardWidget extends StatelessWidget {
                               booking.location,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: Theme.of(context).colorScheme.outline,                              ),
+                                color: Theme.of(context).hintColor,                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -132,8 +130,7 @@ class BookingCardWidget extends StatelessWidget {
                         'Booking ID: ${booking.bookingId}',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: Theme.of(context).colorScheme.outline,
-
+                          color: Theme.of(context).hintColor,
                         ),
                       ),
                     ],
@@ -145,7 +142,7 @@ class BookingCardWidget extends StatelessWidget {
 
           Divider(
           height: 1,
-          color: Theme.of(context).colorScheme.outlineVariant,
+          color: Theme.of(context).dividerColor,
         ),
 
 
@@ -169,8 +166,7 @@ class BookingCardWidget extends StatelessWidget {
                   child: Icon(
                       Icons.arrow_forward,
                       size: 20,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                      color: Theme.of(context).hintColor,                    ),
 
                 ),
                 Expanded(
@@ -187,7 +183,7 @@ class BookingCardWidget extends StatelessWidget {
 
          Divider(
                   height: 1,
-                  color: Theme.of(context).colorScheme.outlineVariant,
+                  color: Theme.of(context).dividerColor,
                 ),
 
 
@@ -206,7 +202,7 @@ class BookingCardWidget extends StatelessWidget {
                       'Total Price',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Theme.of(context).colorScheme.outline,                      ),
+                        color: Theme.of(context).hintColor,                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -214,8 +210,7 @@ class BookingCardWidget extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).iconTheme.color,
-
+                        color: Theme.of(context).textTheme.titleLarge?.color,
 
 
                       ),
@@ -246,7 +241,7 @@ Widget _statusBadge(BuildContext context) {
       fg = scheme.onPrimary;
       break;
     case 'pending':
-      bg = scheme.surfaceVariant;
+      bg = Theme.of(context).cardColor;
       fg = scheme.onSurfaceVariant;
       break;
     case 'completed':
@@ -262,7 +257,7 @@ Widget _statusBadge(BuildContext context) {
       fg = Colors.white;
       break;
     default:
-      bg = scheme.surfaceVariant;
+      bg = Theme.of(context).cardColor;
       fg = scheme.onSurfaceVariant;
   }
 
@@ -366,7 +361,7 @@ Widget _buildActionButton(BuildContext context) {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.surface,
+            color: Colors.white,
           ),
         ),
       );
@@ -395,8 +390,7 @@ Widget _buildActionButton(BuildContext context) {
           });
         },
         style: ElevatedButton.styleFrom(
-           backgroundColor: Theme.of(context).iconTheme.color,
-
+           backgroundColor: Theme.of(context).primaryColor,
 
 
 
@@ -414,7 +408,7 @@ Widget _buildActionButton(BuildContext context) {
             Text(
               'Rate & Review',
               style: GoogleFonts.poppins(
-                color: Theme.of(context).colorScheme.surface,
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -447,8 +441,7 @@ Widget _buildActionButton(BuildContext context) {
           });
         },
         style: ElevatedButton.styleFrom(
-           backgroundColor: Theme.of(context).iconTheme.color,
-
+           backgroundColor: Theme.of(context).primaryColor,
 
 
 
@@ -466,7 +459,7 @@ Widget _buildActionButton(BuildContext context) {
             Text(
               'Rate & Review',
               style: GoogleFonts.poppins(
-                color: Theme.of(context).colorScheme.surface,
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -520,7 +513,7 @@ Widget _buildRefundButton(BuildContext context) {
         Text(
           'Request Refund',
           style: GoogleFonts.poppins(
-            color: Theme.of(context).colorScheme.surface,
+            color: Colors.white,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -547,7 +540,7 @@ Widget _buildRefundButton(BuildContext context) {
         Text(label,
             style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: Theme.of(context).colorScheme.outline,fontWeight: FontWeight.w500)),
+                color: Theme.of(context).hintColor,fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         Text(date,
             style: GoogleFonts.poppins(
@@ -558,14 +551,14 @@ Widget _buildRefundButton(BuildContext context) {
            Icon(
               Icons.access_time,
               size: 12,
-              color: Theme.of(context).colorScheme.outline,
-            ),
+              color: Theme.of(context).hintColor,            ),
 
             const SizedBox(width: 4),
             Text(time,
                 style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Theme.of(context).colorScheme.outline
+                    color: Theme.of(context).hintColor
+
 )),
           ],
         ),

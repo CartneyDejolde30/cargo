@@ -196,8 +196,7 @@ void initState() {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -205,7 +204,7 @@ void initState() {
                       children: [
                                             Icon(
                       Icons.search,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                       size: 22,
                     ),
 
@@ -229,8 +228,7 @@ void initState() {
                  Container(
   padding: const EdgeInsets.all(4),
   decoration: BoxDecoration(
-    color: Theme.of(context).colorScheme.surfaceVariant,
-
+    color: Theme.of(context).cardColor,
     borderRadius: BorderRadius.circular(25),
   ),
   child: Row(
@@ -267,7 +265,11 @@ void initState() {
                 const SizedBox(height: 8),
                 Text(
                   "Available",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                 style: GoogleFonts.poppins(
+  fontSize: 12,
+  color: Theme.of(context).hintColor,
+),
+
                 ),
                 const SizedBox(height: 12),
 
@@ -357,14 +359,20 @@ void initState() {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
+        color: selected
+    ? Theme.of(context).primaryColor
+    : Colors.transparent,
+
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
+            color: selected
+    ? Colors.white
+    : Theme.of(context).hintColor,
+
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -379,7 +387,12 @@ void initState() {
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+  color: Theme.of(context).textTheme.titleLarge?.color,
+),
+
         ),
         GestureDetector(
           onTap: () => Navigator.push(
@@ -426,7 +439,7 @@ void initState() {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
   color: Theme.of(context).brightness == Brightness.dark
@@ -454,14 +467,12 @@ void initState() {
                       if (progress == null) return child;
                       return Container(
                         height: 110,
-                        color: Theme.of(context).dividerColor,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        color: Theme.of(context).dividerColor,                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 110,
-                      color: Theme.of(context).dividerColor,
-                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                      color: Theme.of(context).dividerColor,                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
                     ),
                   );
                 },
@@ -549,7 +560,7 @@ void initState() {
         width: 300,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -583,15 +594,13 @@ void initState() {
                           return Container(
                             height: 160,
                             width: 140,
-                            color: Theme.of(context).dividerColor,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            color: Theme.of(context).dividerColor,                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           );
                         },
                         errorBuilder: (_, __, ___) => Container(
                           height: 160,
                           width: 140,
-                          color: Theme.of(context).dividerColor,
-                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                          color: Theme.of(context).dividerColor,                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                         ),
                       );
                     },
@@ -604,7 +613,7 @@ void initState() {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -612,7 +621,7 @@ void initState() {
                         style: GoogleFonts.poppins(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).iconTheme.color,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
 
 
 
@@ -636,7 +645,7 @@ void initState() {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).iconTheme.color,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
 
 
 
@@ -648,8 +657,7 @@ void initState() {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).dividerColor,
-                      ),
+                        color: Theme.of(context).dividerColor,                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

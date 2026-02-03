@@ -12,6 +12,10 @@ import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_sc
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
 import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
 import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:flutter_application_1/USERS-UI/models/overdue_booking.dart';
+import 'package:flutter_application_1/USERS-UI/services/overdue_service.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/overdue_badge.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -38,6 +42,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final RenterGpsService _gpsService = renterGpsService;
   bool _isGpsTracking = false;
 
+  // Overdue tracking
+  final OverdueService _overdueService = OverdueService();
+  OverdueBooking? _overdueInfo;
+  bool _isCheckingOverdue = false;
+
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
 
   @override
@@ -45,6 +54,34 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     super.initState();
     _loadUserIdAndPayment();
     _checkAndStartGpsTracking();
+    _checkOverdueStatus();
+  }
+
+  Future<void> _checkOverdueStatus() async {
+    if (_isCheckingOverdue) return;
+    
+    // Only check for active/approved bookings
+    if (widget.booking.status.toLowerCase() != 'approved' && 
+        widget.status.toLowerCase() != 'active') {
+      return;
+    }
+    
+    setState(() => _isCheckingOverdue = true);
+    
+    try {
+      final overdueInfo = await _overdueService.checkBookingOverdue(widget.booking.bookingId);
+      if (mounted) {
+        setState(() {
+          _overdueInfo = overdueInfo;
+          _isCheckingOverdue = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking overdue status: $e');
+      if (mounted) {
+        setState(() => _isCheckingOverdue = false);
+      }
+    }
   }
 
   @override
@@ -182,9 +219,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Color _getStatusColor() {
     switch (widget.booking.status) {
       case 'approved':
-        return Colors.green;
+        return Theme.of(context).colorScheme.primary;
       case 'pending':
-        return Colors.orange;
+        return Theme.of(context).colorScheme.tertiary;
       case 'completed':
         return Colors.grey;
       case 'cancelled':
@@ -201,7 +238,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+        body: Center(child: CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+),
       );
     }
 
@@ -267,6 +307,39 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _rentalPeriod(),
         const SizedBox(height: 20),
         
+        // Overdue Badge - Show if booking has late fees
+        if (_overdueInfo != null && _overdueInfo!.hasLateFee) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: OverdueWarningBanner(
+              daysOverdue: _overdueInfo!.daysOverdue,
+              lateFee: _overdueInfo!.lateFeeAmount,
+              onPayNow: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LateFeePaymentScreen(
+                      bookingId: widget.booking.bookingId,
+                      rentalAmount: _overdueInfo!.totalAmount,
+                      lateFee: _overdueInfo!.lateFeeAmount,
+                      hoursOverdue: _overdueInfo!.hoursOverdue,
+                      vehicleName: _overdueInfo!.vehicleName,
+                      isRentalPaid: _overdueInfo!.isRentalPaid,
+                    ),
+                  ),
+                );
+                
+                if (result == true) {
+                  // Refresh overdue status and payment info
+                  await _checkOverdueStatus();
+                  await _fetchPaymentInfo();
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+        
         // GPS Tracking Section - Only for Active Bookings
         if (widget.status.toLowerCase() == 'active') ...[
           _buildGpsTrackingSection(),
@@ -318,7 +391,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Center(
-              child: CircularProgressIndicator(color: Colors.black),
+              child: CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+,
             ),
           ),
           const SizedBox(height: 20),
@@ -364,8 +440,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                   child: Icon(
                     _isGpsTracking ? Icons.gps_fixed : Icons.gps_off,
-                    color: Colors.white,
-                    size: 24,
+                    color: Theme.of(context).cardColor,                    size: 24,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -401,8 +476,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).cardColor,                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
@@ -423,13 +497,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             'Updates Sent',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Container(width: 1, height: 40, color: Colors.grey.shade300),
+                   Container(
+  width: 1,
+  height: 40,
+  color: Theme.of(context).dividerColor,
+),
+
                     Expanded(
                       child: Column(
                         children: [
@@ -447,7 +526,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             'Failed',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                           ),
                         ],
@@ -479,8 +558,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   backgroundColor: _isGpsTracking 
                       ? Colors.red.shade600 
                       : Colors.green.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: Theme.of(context).cardColor,                  padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -507,11 +585,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.receipt_long, size: 16, color: Colors.grey.shade600),
+              Icon(Icons.receipt_long, size: 16, color: Theme.of(context).hintColor),
               const SizedBox(width: 6),
               Text(
                 'Booking ID: ${widget.booking.bookingId}',
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+                style: GoogleFonts.poppins(fontSize: 13, color: Theme.of(context).hintColor),
               ),
             ],
           ),
@@ -526,9 +604,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.shade100),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           children: [
@@ -622,8 +700,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+              color: Theme.of(context).cardColor,            ),
           ),
         );
 
@@ -678,7 +755,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
@@ -721,9 +798,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Column(
               children: [
@@ -785,8 +862,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        color: Theme.of(context).cardColor,        boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha((0.08 * 255).round()),
             blurRadius: 12,
@@ -863,8 +939,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              foregroundColor: Theme.of(context).cardColor,              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -919,13 +994,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      color: Theme.of(context).cardColor,                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(color: Colors.black),
+                       CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+,
                         const SizedBox(height: 16),
                         Text(
                           'Cancelling booking...',
@@ -976,10 +1053,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   Widget _circleIcon(IconData icon) => Container(
         padding: const EdgeInsets.all(8),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
+       decoration: BoxDecoration(
+  color: Theme.of(context).cardColor,
+  shape: BoxShape.circle,
+),
+
         child: Icon(icon),
       );
 
@@ -1032,7 +1110,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1117,8 +1195,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Text(
         label,
         style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontSize: 16,
+          color: Theme.of(context).cardColor,          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1169,8 +1246,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             child: Text(
               rightLabel,
               style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+                color: Theme.of(context).cardColor,                fontWeight: FontWeight.w600,
               ),
             ),
           ),

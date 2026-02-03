@@ -62,6 +62,8 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
     phoneController.text = prefs.getString("phone") ?? "";
     addressController.text = prefs.getString("address") ?? "";
     storedImage = prefs.getString("profile_image") ?? "";
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -222,6 +224,8 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
       imageFile = File(file.path);
     }
 
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => hasChanges = true);
   }
 
@@ -300,6 +304,8 @@ await prefs.setString("profile_image", finalURL);
       _showSnackBar("Network error. Please try again.", isError: true);
     }
 
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => saving = false);
   }
 

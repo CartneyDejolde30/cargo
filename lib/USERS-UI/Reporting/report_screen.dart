@@ -164,7 +164,6 @@ final streamedResponse = await request.send().timeout(
 );
 
 final response = await http.Response.fromStream(streamedResponse);
-final result = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);

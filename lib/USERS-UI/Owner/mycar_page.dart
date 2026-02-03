@@ -251,13 +251,13 @@ class _MyCarPageState extends State<MyCarPage> {
       BuildContext context, ColorScheme colors, bool isDark) {
     return AppBar(
       backgroundColor:
-          isDark ? const Color(0xFF121212) : colors.background,
+          isDark ? const Color(0xFF121212) : colors.surface,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Text(
         "My Cars",
         style: GoogleFonts.poppins(
-          color: colors.onBackground,
+          color: colors.onSurface,
           fontWeight: FontWeight.bold,
           fontSize: 22,
           letterSpacing: -0.5,

@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Renter/host/host_profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
+import 'widgets/renter_availability_calendar.dart'; // NEW: Renter calendar
 
 class CarDetailScreen extends StatefulWidget {
   final int carId;
@@ -271,7 +272,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 }
 
 
-    final imageUrl = formatImage(carData?["image"] ?? "");
+    // Removed unused variable: final imageUrl = formatImage(carData?["image"] ?? "");
     final ownerImage = formatImage(carData?["owner_image"] ?? "");
     final ownerName = carData?["owner_name"] ?? "Unknown Owner";
     final phone = carData?["phone"] ?? "";
@@ -946,7 +947,7 @@ side: BorderSide(color: colors.outline, width: 1.5),
               ),
             ),
 
-            // Bottom Action Button
+            // Bottom Action Buttons
             Positioned(
               bottom: 0,
               left: 0,
@@ -964,13 +965,34 @@ side: BorderSide(color: colors.outline, width: 1.5),
                 ),
                 child: SafeArea(
                   top: false,
-                  child: ElevatedButton(
-                    onPressed: isCheckingVerification 
-                        ? null 
-                        : (isVerified 
-                            ? () async {
-                                final userData = await _getUserData();  
-
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // NEW: Check Availability Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RenterAvailabilityCalendar(
+                                  vehicleId: widget.carId,
+                                  vehicleType: 'car',
+                                  vehicleName: widget.carName,
+                                ),
+                              ),
+                            );
+                            
+                            // If dates selected, proceed to booking
+                            if (result != null && result is Map) {
+                              if (!isVerified) {
+                                _showVerificationRequiredDialog();
+                                return;
+                              }
+                              
+                              final userData = await _getUserData();
+                              if (mounted) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -982,78 +1004,137 @@ side: BorderSide(color: colors.outline, width: 1.5),
                                       pricePerDay: price,
                                       location: location,
                                       ownerId: carData?["owner_id"].toString() ?? "",
-                                      userId: userData['userId'],                
-                                      userFullName: userData['fullName'],         
-                                      userEmail: userData['email'],               
-                                      userMunicipality: userData['municipality'], 
+                                      userId: userData['userId'],
+                                      userFullName: userData['fullName'],
+                                      userEmail: userData['email'],
+                                      userMunicipality: userData['municipality'],
                                       ownerLatitude: double.tryParse(carData?["latitude"]?.toString() ?? ""),
-                                      ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),     
+                                      ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),
                                     ),
                                   ),
                                 );
                               }
-                            : () {
-                                _showVerificationRequiredDialog();
-                              }
-                        ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isCheckingVerification 
-                          ? Colors.grey.shade400
-                          : (isVerified ? Colors.black : Colors.grey.shade600),
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            if (isCheckingVerification)
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            else if (!isVerified)
-                              const Icon(Icons.lock, size: 20, color: Colors.white),
-                            
-                            if (isCheckingVerification || !isVerified)
-                              const SizedBox(width: 8),
-                            
-                            Text(
-                              isCheckingVerification 
-                                  ? "Checking..."
-                                  : (isVerified ? "Book Car" : "Verification Required"),
-                              style: GoogleFonts.poppins(
-                                color: isDark ? colors.surface : Colors.white,                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isVerified && !isCheckingVerification)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              "₱$price/day",
-                              style: GoogleFonts.poppins(
-                                color: isDark ? colors.surface : Colors.white,                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_month, size: 20),
+                          label: Text(
+                            'Check Availability',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                      ],
-                    ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: BorderSide(color: Colors.blue, width: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Existing Book Now Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isCheckingVerification 
+                              ? null 
+                              : (isVerified 
+                                  ? () async {
+                                      final userData = await _getUserData();  
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BookingScreen(
+                                            vehicleType: "car",
+                                            carId: widget.carId,
+                                            carName: widget.carName,
+                                            carImage: widget.carImage,
+                                            pricePerDay: price,
+                                            location: location,
+                                            ownerId: carData?["owner_id"].toString() ?? "",
+                                            userId: userData['userId'],                
+                                            userFullName: userData['fullName'],         
+                                            userEmail: userData['email'],               
+                                            userMunicipality: userData['municipality'], 
+                                            ownerLatitude: double.tryParse(carData?["latitude"]?.toString() ?? ""),
+                                            ownerLongitude: double.tryParse(carData?["longitude"]?.toString() ?? ""),     
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  : () {
+                                      _showVerificationRequiredDialog();
+                                    }
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isCheckingVerification 
+                                ? Colors.grey.shade400
+                                : (isVerified ? Colors.black : Colors.grey.shade600),
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  if (isCheckingVerification)
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  else if (!isVerified)
+                                    const Icon(Icons.lock, size: 20, color: Colors.white),
+                                  
+                                  if (isCheckingVerification || !isVerified)
+                                    const SizedBox(width: 8),
+                                  
+                                  Text(
+                                    isCheckingVerification 
+                                        ? "Checking..."
+                                        : (isVerified ? "Book Car" : "Verification Required"),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isVerified && !isCheckingVerification)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "₱$price/day",
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

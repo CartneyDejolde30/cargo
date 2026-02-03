@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_application_1/config/maptiler_config.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:flutter_application_1/widgets/map_controls.dart';
+import 'package:flutter_application_1/widgets/map_style_switcher.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SearchFilterScreen extends StatefulWidget {
   final Map<String, dynamic>? currentFilters;
@@ -21,22 +26,67 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   final TextEditingController _locationController = TextEditingController();
   String _selectedDeliveryMethod = '';
   String _selectedVehicleType = '';
-  RangeValues _priceRange = const RangeValues(0, 2000);
+  RangeValues _priceRange = const RangeValues(0, 5000);
   bool _isLoadingLocation = false;
+  
+  // Additional filter options
+  String _selectedTransmission = '';
+  String _selectedFuelType = '';
+  String _selectedBodyStyle = '';
+  String _selectedBrand = '';
+  String _selectedYear = '';
+  int _selectedSeats = 0;
+  
+  // Filter options from API
+  Map<String, dynamic> _filterOptions = {};
+  bool _isLoadingOptions = true;
+  
+  // Price range based on actual data: ₱500 - ₱5000 per day
+  static const double _minPriceLimit = 0;
+  static const double _maxPriceLimit = 5000;
 
   @override
   void initState() {
     super.initState();
+    _loadFilterOptions();
     // Load existing filters if provided
     if (widget.currentFilters != null) {
       _locationController.text = widget.currentFilters!['location'] ?? '';
       _selectedDeliveryMethod = widget.currentFilters!['deliveryMethod'] ?? '';
       _selectedVehicleType = widget.currentFilters!['vehicleType'] ?? '';
+      _selectedTransmission = widget.currentFilters!['transmission'] ?? '';
+      _selectedFuelType = widget.currentFilters!['fuelType'] ?? '';
+      _selectedBodyStyle = widget.currentFilters!['bodyStyle'] ?? '';
+      _selectedBrand = widget.currentFilters!['brand'] ?? '';
+      _selectedYear = widget.currentFilters!['year'] ?? '';
+      _selectedSeats = widget.currentFilters!['seats'] ?? 0;
       if (widget.currentFilters!['minPrice'] != null) {
         _priceRange = RangeValues(
           widget.currentFilters!['minPrice'],
           widget.currentFilters!['maxPrice'],
         );
+      }
+    }
+  }
+  
+  Future<void> _loadFilterOptions() async {
+    try {
+      const url = "http://10.77.127.2/carGOAdmin/api/get_filter_options.php";
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success' && mounted) {
+          setState(() {
+            _filterOptions = data['options'];
+            _isLoadingOptions = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error loading filter options: $e");
+      if (mounted) {
+        setState(() => _isLoadingOptions = false);
       }
     }
   }
@@ -266,14 +316,199 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: Theme.of(context).iconTheme.color,
-
-
-
                 ),
               ),
             ),
             if (isSelected)
               const Icon(Icons.check_circle, color: Colors.black),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(String text, bool isEmpty, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).iconTheme.color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: isEmpty ? Colors.grey.shade600 : Colors.black,
+              ),
+            ),
+          ),
+          Icon(Icons.keyboard_arrow_down, color: Theme.of(context).iconTheme.color),
+        ],
+      ),
+    );
+  }
+
+  void _showSingleSelectModal(String title, List<dynamic> options, String selectedValue, Function(String) onSelect) {
+    if (_isLoadingOptions || options.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_isLoadingOptions ? 'Loading options...' : 'No options available')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.black),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: options.length + 1, // +1 for "Any" option
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildSelectOption('Any', '', selectedValue, onSelect);
+                  }
+                  String option = options[index - 1].toString();
+                  return _buildSelectOption(option, option, selectedValue, onSelect);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectOption(String displayText, String value, String selectedValue, Function(String) onSelect) {
+    bool isSelected = selectedValue == value;
+    return InkWell(
+      onTap: () {
+        onSelect(value);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                displayText,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: Theme.of(context).iconTheme.color),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSeatsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Minimum Seats',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.black),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSeatsOption(0, 'Any seats'),
+            _buildSeatsOption(2, '2+ seats'),
+            _buildSeatsOption(4, '4+ seats'),
+            _buildSeatsOption(5, '5+ seats'),
+            _buildSeatsOption(7, '7+ seats'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeatsOption(int seats, String label) {
+    bool isSelected = _selectedSeats == seats;
+    return InkWell(
+      onTap: () {
+        setState(() => _selectedSeats = seats);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: Theme.of(context).iconTheme.color),
           ],
         ),
       ),
@@ -300,7 +535,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       _locationController.clear();
       _selectedDeliveryMethod = '';
       _selectedVehicleType = '';
-      _priceRange = const RangeValues(0, 2000);
+      _selectedTransmission = '';
+      _selectedFuelType = '';
+      _selectedBodyStyle = '';
+      _selectedBrand = '';
+      _selectedYear = '';
+      _selectedSeats = 0;
+      _priceRange = const RangeValues(0, 5000);
     });
   }
 
@@ -309,6 +550,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       'location': _locationController.text,
       'deliveryMethod': _selectedDeliveryMethod,
       'vehicleType': _selectedVehicleType,
+      'transmission': _selectedTransmission,
+      'fuelType': _selectedFuelType,
+      'bodyStyle': _selectedBodyStyle,
+      'brand': _selectedBrand,
+      'year': _selectedYear,
+      'seats': _selectedSeats,
       'minPrice': _priceRange.start,
       'maxPrice': _priceRange.end,
     };
@@ -550,36 +797,29 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '\$${_priceRange.start.round()}',
+                              '₱${_priceRange.start.round()}',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).iconTheme.color,
-
-
-
                               ),
                             ),
                             Text(
-                              '\$${_priceRange.end.round()}',
+                              '₱${_priceRange.end.round()}',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).iconTheme.color,
-
-
-
                               ),
                             ),
                           ],
                         ),
                         RangeSlider(
                           values: _priceRange,
-                          min: 0,
-                          max: 2000,
-                          divisions: 40,
+                          min: _minPriceLimit,
+                          max: _maxPriceLimit,
+                          divisions: 100,
                           activeColor: Theme.of(context).iconTheme.color,
-
                           inactiveColor: Colors.grey.shade300,
                           onChanged: (RangeValues values) {
                             setState(() {
@@ -598,9 +838,6 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: Theme.of(context).iconTheme.color,
-
-
-
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -636,12 +873,154 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           Icon(
                             Icons.keyboard_arrow_down,
                             color: Theme.of(context).iconTheme.color,
-
-
-
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Brand Section
+                  Text(
+                    'Brand',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSingleSelectModal(
+                      'Select Brand',
+                      _filterOptions['brands'] ?? [],
+                      _selectedBrand,
+                      (value) => setState(() => _selectedBrand = value),
+                    ),
+                    child: _buildDropdownField(
+                      _selectedBrand.isEmpty ? 'Choose brand' : _selectedBrand,
+                      _selectedBrand.isEmpty,
+                      Icons.car_rental,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Body Style Section
+                  Text(
+                    'Body Style',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSingleSelectModal(
+                      'Select Body Style',
+                      _filterOptions['bodyStyles'] ?? [],
+                      _selectedBodyStyle,
+                      (value) => setState(() => _selectedBodyStyle = value),
+                    ),
+                    child: _buildDropdownField(
+                      _selectedBodyStyle.isEmpty ? 'Choose body style' : _selectedBodyStyle,
+                      _selectedBodyStyle.isEmpty,
+                      Icons.directions_car,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Transmission Section
+                  Text(
+                    'Transmission',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSingleSelectModal(
+                      'Select Transmission',
+                      _filterOptions['transmissions'] ?? [],
+                      _selectedTransmission,
+                      (value) => setState(() => _selectedTransmission = value),
+                    ),
+                    child: _buildDropdownField(
+                      _selectedTransmission.isEmpty ? 'Choose transmission' : _selectedTransmission,
+                      _selectedTransmission.isEmpty,
+                      Icons.settings,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Fuel Type Section
+                  Text(
+                    'Fuel Type',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSingleSelectModal(
+                      'Select Fuel Type',
+                      _filterOptions['fuelTypes'] ?? [],
+                      _selectedFuelType,
+                      (value) => setState(() => _selectedFuelType = value),
+                    ),
+                    child: _buildDropdownField(
+                      _selectedFuelType.isEmpty ? 'Choose fuel type' : _selectedFuelType,
+                      _selectedFuelType.isEmpty,
+                      Icons.local_gas_station,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Year Section
+                  Text(
+                    'Year',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSingleSelectModal(
+                      'Select Year',
+                      _filterOptions['years'] ?? [],
+                      _selectedYear,
+                      (value) => setState(() => _selectedYear = value),
+                    ),
+                    child: _buildDropdownField(
+                      _selectedYear.isEmpty ? 'Choose year' : _selectedYear,
+                      _selectedYear.isEmpty,
+                      Icons.calendar_today,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Seats Section
+                  Text(
+                    'Minimum Seats',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Theme.of(context).iconTheme.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showSeatsModal(),
+                    child: _buildDropdownField(
+                      _selectedSeats == 0 ? 'Any seats' : '$_selectedSeats+ seats',
+                      _selectedSeats == 0,
+                      Icons.event_seat,
                     ),
                   ),
                 ],
@@ -743,15 +1122,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   final MapController _mapController = MapController();
   
   double _radius = 50.0;
-  bool _isLoadingLocation = false;
   bool _showMunicipalitiesList = false;
   
   LatLng _currentPosition = LatLng(14.5995, 120.9842);
   List<Marker> _markers = [];
   List<CircleMarker> _circles = [];
   
-  final String _mapTilerApiKey = 'YGJxmPnRtlTHI1endzDH';
   String _selectedAddress = '';
+  String _currentMapStyle = MapTilerConfig.defaultStyle;
+  bool _showStyleSwitcher = false;
   
   final Map<String, LatLng> _agusanMunicipalities = {
     'Bayugan': LatLng(8.7167, 125.7500),
@@ -793,7 +1172,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
-    setState(() => _isLoadingLocation = true);
     try {
       Position pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -802,11 +1180,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       );
       LatLng newPos = LatLng(pos.latitude, pos.longitude);
       await _updateAddressFromCoordinates(newPos);
-      setState(() {
-        _currentPosition = newPos;
-        _addMarker(newPos);
-      });
-      _mapController.move(newPos, 15);
+      if (mounted) {
+        setState(() {
+          _currentPosition = newPos;
+          _addMarker(newPos);
+        });
+        _mapController.move(newPos, 15);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -814,7 +1194,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         );
       }
     }
-    setState(() => _isLoadingLocation = false);
   }
 
   Future<void> _searchAddress(String address) async {
@@ -1149,37 +1528,68 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   children: [
                     TileLayer(
                       urlTemplate:
-                          'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=$_mapTilerApiKey',
+                          MapTilerConfig.getTileUrl(_currentMapStyle),
                     ),
                     CircleLayer(circles: _circles),
                     MarkerLayer(markers: _markers),
                   ],
                 ),
+                
+                // Map Controls (right side)
                 Positioned(
-                  bottom: 16,
+                  top: 16,
                   right: 16,
-                  child: FloatingActionButton(
-                    onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                     backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                    child: _isLoadingLocation
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            Icons.my_location,
-                            color: Colors.white,
-                          ),
+                  child: MapControls(
+                    mapController: _mapController,
+                    onCenterLocation: _getCurrentLocation,
                   ),
                 ),
+                
+                // Style Switcher Button (left side, top)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Material(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF1E1E1E) 
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 0.2),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showStyleSwitcher = !_showStyleSwitcher;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.layers,
+                          color: Theme.of(context).iconTheme.color,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Style Switcher Panel
+                if (_showStyleSwitcher)
+                  Positioned(
+                    top: 76,
+                    left: 16,
+                    child: MapStyleSwitcher(
+                      currentStyle: _currentMapStyle,
+                      onStyleChanged: (newStyle) {
+                        setState(() {
+                          _currentMapStyle = newStyle;
+                          _showStyleSwitcher = false;
+                        });
+                      },
+                    ),
+                  ),
               ],
             ),
           ),

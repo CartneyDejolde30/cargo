@@ -60,7 +60,7 @@ class _MessagePageState extends State<MessagePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: colors.onBackground),
+        iconTheme: IconThemeData(color: colors.onSurface),
 
         title: Text(
           "Messages",
@@ -83,7 +83,9 @@ class _MessagePageState extends State<MessagePage> {
           preferredSize: const Size.fromHeight(1),
           child: Container(
             height: 1,
-            color: Colors.grey.shade200,
+            color: isDark
+    ? colors.onSurface.withOpacity(0.1)
+    : Colors.grey.shade200,
           ),
         ),
       ),
@@ -122,7 +124,7 @@ class _MessagePageState extends State<MessagePage> {
                         decoration: InputDecoration(
                           hintText: "Search conversations...",
                           hintStyle: GoogleFonts.inter(
-                            color: Colors.grey.shade500,
+                            color: colors.onSurface.withOpacity(0.5),
                             fontSize: 15,
                           ),
                           prefixIcon: Icon(Icons.search_rounded,
@@ -335,7 +337,7 @@ class _MessagePageState extends State<MessagePage> {
                               Text(
                                 "Start a conversation to see it here",
                                 style: GoogleFonts.inter(
-                                  color: Colors.grey.shade500,
+                                  color: colors.onSurface.withOpacity(0.5),
                                   fontSize: 14,
                                 ),
                               ),
@@ -395,7 +397,9 @@ class _MessagePageState extends State<MessagePage> {
                                       children: [
                                         CircleAvatar(
                                           radius: 28,
-                                          backgroundColor: Colors.grey.shade200,
+                                          backgroundColor: isDark
+    ? colors.onSurface.withOpacity(0.1)
+    : Colors.grey.shade200,
                                           backgroundImage: isValidUrl(avatar)
                                               ? CachedNetworkImageProvider(avatar)
                                               : null,
@@ -441,7 +445,7 @@ class _MessagePageState extends State<MessagePage> {
                                             ),
                                             style: GoogleFonts.inter(
                                               fontSize: 11,
-                                              color: Colors.grey.shade500,
+                                              color: colors.onSurface.withOpacity(0.5),
                                             ),
                                           ),
                                       ],
@@ -456,8 +460,9 @@ class _MessagePageState extends State<MessagePage> {
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.inter(
                                           color: lastMessage == "typing..."
-                                              ? Colors.blue.shade600
-                                              : Colors.grey.shade600,
+                                            ? Colors.blue.shade600
+                                            : colors.onSurface.withOpacity(0.6),
+
                                           fontSize: 14,
                                           fontStyle: lastMessage == "typing..."
                                               ? FontStyle.italic

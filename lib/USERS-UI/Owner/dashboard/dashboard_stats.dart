@@ -14,6 +14,7 @@ class DashboardStats {
   final double todayIncome;
   final int unreadNotifications;
   final int unreadMessages;
+  final Map<String, dynamic>? revenueBreakdown; // NEW - Revenue breakdown data
 
   DashboardStats({
     required this.totalCars,
@@ -31,6 +32,7 @@ class DashboardStats {
     required this.todayIncome,
     required this.unreadNotifications,
     required this.unreadMessages,
+    this.revenueBreakdown, // NEW
   });
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class DashboardStats {
       todayIncome: double.tryParse(json['today_income']?.toString() ?? '0') ?? 0.0,
       unreadNotifications: int.tryParse(json['unread_notifications']?.toString() ?? '0') ?? 0,
       unreadMessages: int.tryParse(json['unread_messages']?.toString() ?? '0') ?? 0,
+      revenueBreakdown: json['revenue_breakdown'] as Map<String, dynamic>?, // NEW
     );
   }
 
@@ -70,6 +73,7 @@ class DashboardStats {
       todayIncome: 0.0,
       unreadNotifications: 0,
       unreadMessages: 0,
+      revenueBreakdown: null, // NEW
     );
   }
 

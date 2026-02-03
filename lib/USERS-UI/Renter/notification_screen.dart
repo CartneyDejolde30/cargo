@@ -182,7 +182,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
 
   Color _getBackgroundByType(BuildContext context, String type) {
-  return Theme.of(context).colorScheme.surfaceVariant;
+  return Theme.of(context).colorScheme.surfaceContainerHighest;
 }
 
 
@@ -374,7 +374,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,              shape: BoxShape.circle,
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Icon(
@@ -613,7 +613,7 @@ class NotificationDetailScreen extends StatelessWidget {
   }
 
   Color _getBackgroundByType(BuildContext context, String type) {
-  return Theme.of(context).colorScheme.surfaceVariant;
+  return Theme.of(context).colorScheme.surfaceContainerHighest;
 }
 
 
@@ -705,7 +705,7 @@ class NotificationDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,                
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,                
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),

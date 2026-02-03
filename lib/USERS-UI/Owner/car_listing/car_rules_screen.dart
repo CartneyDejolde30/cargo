@@ -26,12 +26,22 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
 
   late List<String> selectedRules;
   bool? hasUnlimitedMileage;
+  final TextEditingController _dailyLimitController = TextEditingController();
+  final TextEditingController _excessRateController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     selectedRules = List<String>.from(widget.listing.rules);
     hasUnlimitedMileage = widget.listing.hasUnlimitedMileage;
+    
+    // Initialize with existing values or defaults
+    if (widget.listing.mileageLimit != null) {
+      _dailyLimitController.text = widget.listing.mileageLimit.toString();
+    } else {
+      _dailyLimitController.text = widget.vehicleType == 'motorcycle' ? '150' : '200';
+    }
+    _excessRateController.text = '10'; // Default ₱10/km
   }
 
   bool _canContinue() {
@@ -42,20 +52,37 @@ void _saveAndContinue() {
   if (_canContinue()) {
     widget.listing.rules = selectedRules;
     widget.listing.hasUnlimitedMileage = hasUnlimitedMileage ?? false;
+    
+    // Save mileage limit and excess rate
+    if (hasUnlimitedMileage == false) {
+      final dailyLimit = int.tryParse(_dailyLimitController.text);
+      if (dailyLimit == null || dailyLimit <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Please enter a valid daily mileage limit"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      widget.listing.mileageLimit = dailyLimit;
+    } else {
+      widget.listing.mileageLimit = null; // Unlimited
+    }
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CarPricingScreen(
           listing: widget.listing,
-          vehicleType: widget.vehicleType, // ADD THIS LINE
+          vehicleType: widget.vehicleType,
         ),
       ),
     );
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text("Please select rules and mileage option."),
+      const SnackBar(
+        content: Text("Please select rules and mileage option."),
         backgroundColor: Colors.red,
       ),
     );
@@ -133,6 +160,13 @@ void _saveAndContinue() {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _dailyLimitController.dispose();
+    _excessRateController.dispose();
+    super.dispose();
   }
 
   @override
@@ -243,6 +277,155 @@ void _saveAndContinue() {
                         ),
                       ],
                     ),
+
+                    // Show mileage limit inputs if "Set mileage limit" is selected
+                    if (hasUnlimitedMileage == false) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Mileage Limit Settings',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Daily Limit Input
+                            Text(
+                              'Daily Mileage Limit (km/day)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _dailyLimitController,
+                              keyboardType: TextInputType.number,
+                              style: GoogleFonts.poppins(fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: widget.vehicleType == 'motorcycle' ? '150' : '200',
+                                hintStyle: GoogleFonts.poppins(color: Colors.grey),
+                                prefixIcon: const Icon(Icons.speed, size: 20),
+                                suffixText: 'km/day',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.blue, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Excess Rate Input
+                            Text(
+                              'Excess Mileage Rate (₱/km)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _excessRateController,
+                              keyboardType: TextInputType.number,
+                              style: GoogleFonts.poppins(fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: '10',
+                                hintStyle: GoogleFonts.poppins(color: Colors.grey),
+                                prefixIcon: const Icon(Icons.payments, size: 20),
+                                suffixText: '₱/km',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.blue, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Example calculation
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Example (3-day rental):',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '• Allowed: ${(int.tryParse(_dailyLimitController.text) ?? 200) * 3} km total',
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
+                                  ),
+                                  Text(
+                                    '• If driven 700 km: ${700 - ((int.tryParse(_dailyLimitController.text) ?? 200) * 3)} km excess',
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
+                                  ),
+                                  Text(
+                                    '• Excess fee: ₱${(700 - ((int.tryParse(_dailyLimitController.text) ?? 200) * 3)) * (int.tryParse(_excessRateController.text) ?? 10)}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

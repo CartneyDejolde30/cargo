@@ -123,6 +123,15 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
     _saveCredentials();
 
     final url = Uri.parse("http://10.77.127.2/carGOAdmin/login.php");
@@ -146,19 +155,14 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
 
         if (data["status"] == "success") {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data["message"])),
-          );
-
+          // Save user data to SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          
           if (data["token"] != null) {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
             await prefs.setString("auth_token", data["token"]);
             print("🔐 TOKEN SAVED: ${data["token"]}");
-          } else {
-            print("❌ NO TOKEN RECEIVED FROM SERVER");
           }
 
-          SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString("user_id", data["id"].toString());  
           await prefs.setString("fullname", data["fullname"]);
           await prefs.setString("email", data["email"]);
@@ -167,67 +171,114 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString("address", data["address"] ?? "");
           await prefs.setString("profile_image", data["profile_image"] ?? "");
 
-          final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+          String role = data["role"];
 
-          if (!(await userRef.get()).exists) {
-            await userRef.set({
-              "uid": data["id"].toString(),
-              "name": data["fullname"],               
-              "avatar": data["profile_image"] ?? "",  
-              "email": data["email"],
-              "role": data["role"],
-              "online": true,
-              "createdAt": FieldValue.serverTimestamp(),
-            });
-            print("🔥 Firestore user CREATED");
-          } else {
-            print("✔ Firestore user already exists → updating status");
-            await userRef.update({
-              "online": true,
-              "avatar": data["profile_image"] ?? "",
-              "name": data["fullname"],
-            });
+          // ✅ OPTIMIZATION: Navigate immediately, do Firebase operations in background
+          // Close loading dialog
+          if (mounted) Navigator.pop(context);
 
-            try {
-              final token = await FirebaseMessaging.instance.getToken();
-              await userRef.update({"fcm": token});
-              print("📩 FCM Token Updated: $token");
-            } catch (e) {
-              print("❌ Failed to save FCM Token: $e");
+          // Navigate to home screen immediately
+          if (mounted) {
+            if (role == "Renter") {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            } else if (role == "Owner") {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
+              );
             }
           }
 
-          String role = data["role"];
-          if (role == "Renter") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-          } else if (role == "Owner") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
-            );
-          } else {
+          // ✅ Do Firebase operations in background (non-blocking)
+          _updateFirebaseInBackground(data);
+
+          // Show success message
+          if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Unknown user role.')),
+              SnackBar(content: Text(data["message"])),
             );
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data["message"] ?? "Login failed.")),
-          );
+          if (mounted) Navigator.pop(context);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(data["message"] ?? "Login failed.")),
+            );
+          }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Server error: ${response.statusCode}")),
-        );
+        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Server error: ${response.statusCode}")),
+          );
+        }
       }
     } catch (e) {
       print("Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error connecting to server.')),
-      );
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error connecting to server.')),
+        );
+      }
+    }
+  }
+
+  // ✅ NEW: Background Firebase operations (non-blocking)
+  Future<void> _updateFirebaseInBackground(Map<String, dynamic> data) async {
+    try {
+      final userRef = FirebaseFirestore.instance.collection("users").doc(data["id"].toString());
+
+      // Check if user exists
+      final docSnapshot = await userRef.get();
+
+      if (!docSnapshot.exists) {
+        // Create new user
+        await userRef.set({
+          "uid": data["id"].toString(),
+          "name": data["fullname"],               
+          "avatar": data["profile_image"] ?? "",  
+          "email": data["email"],
+          "role": data["role"],
+          "online": true,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+        print("🔥 Firestore user CREATED in background");
+      } else {
+        // Update existing user - do both operations in parallel
+        print("✔ Firestore user already exists → updating status");
+        
+        final futures = <Future>[];
+        
+        // Update user data
+        futures.add(userRef.update({
+          "online": true,
+          "avatar": data["profile_image"] ?? "",
+          "name": data["fullname"],
+        }));
+
+        // Get and update FCM token in parallel
+        futures.add(
+          FirebaseMessaging.instance.getToken().then((token) {
+            if (token != null) {
+              userRef.update({"fcm": token});
+              print("📩 FCM Token Updated: $token");
+            }
+          }).catchError((e) {
+            print("❌ Failed to save FCM Token: $e");
+          })
+        );
+
+        // Wait for both operations to complete
+        await Future.wait(futures);
+      }
+    } catch (e) {
+      print("❌ Firebase background update error: $e");
+      // Don't show error to user - this is background operation
     }
   }
 

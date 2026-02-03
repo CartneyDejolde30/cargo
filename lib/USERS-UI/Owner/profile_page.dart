@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
+import 'package:flutter_application_1/USERS-UI/Owner/insurance/owner_insurance_screen.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/theme/theme_provider.dart';
@@ -517,6 +518,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const OwnerTransactionHistoryScreen()),
+                          );
+                        },
+                      ),
+                      _MenuItemData(
+                        icon: Icons.shield_outlined,
+                        title: "Insurance Management",
+                        subtitle: "View and manage booking insurance",
+                        onTap: () async {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          int ownerId = int.tryParse(prefs.getString("user_id") ?? "0") ?? 0;
+                          
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OwnerInsuranceScreen(ownerId: ownerId),
+                            ),
                           );
                         },
                       ),

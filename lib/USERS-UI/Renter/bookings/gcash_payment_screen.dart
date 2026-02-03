@@ -22,9 +22,6 @@ class GCashPaymentScreen extends StatefulWidget {
   final String rentalPeriod;
   final bool needsDelivery;
   final double totalAmount;
-  
-  final String? paymentIntentId;
-  final String? clientKey;
 
   const GCashPaymentScreen({
     super.key,
@@ -44,8 +41,6 @@ class GCashPaymentScreen extends StatefulWidget {
     required this.rentalPeriod,
     required this.needsDelivery,
     required this.totalAmount,
-    this.paymentIntentId,
-    this.clientKey,
   });
 
   @override
@@ -59,10 +54,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   bool isProcessing = false;
   bool hasAgreedToTerms = false;
   
-  // 🆕 Payment Intent Tracking
   String? _transactionId;
-  String? _paymentIntentStatus;
-  bool _isCheckingStatus = false;
 
   final String gcashQRCodeUrl = "assets/gcash.jpg";
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
@@ -70,10 +62,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   @override
   void initState() {
     super.initState();
-    // 🆕 Check payment intent status if available
-    if (widget.paymentIntentId != null) {
-      _checkPaymentIntentStatus();
-    }
+    // Manual GCash payment - no automatic status checking needed
   }
 
   @override
@@ -83,40 +72,6 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     super.dispose();
   }
 
-  // 🆕 Check Payment Intent Status
-  Future<void> _checkPaymentIntentStatus() async {
-    if (widget.paymentIntentId == null) return;
-
-    setState(() => _isCheckingStatus = true);
-
-    try {
-      final response = await http.get(
-        Uri.parse('${baseUrl}api/payment/check_payment_intent.php?payment_intent_id=${widget.paymentIntentId}'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        
-        if (data['success'] == true) {
-          setState(() {
-            _paymentIntentStatus = data['status'];
-            _transactionId = data['transaction_id'];
-          });
-
-          // Auto-redirect if payment already succeeded
-          if (data['status'] == 'succeeded') {
-            _showSuccessDialog(showAutoDetected: true);
-          }
-        }
-      }
-    } catch (e) {
-      print('Error checking payment intent: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isCheckingStatus = false);
-      }
-    }
-  }
 
   String _formatCurrency(double amount) {
     return NumberFormat.currency(
@@ -216,8 +171,6 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           "payment_method": "gcash",
           "gcash_number": gcashNumberController.text.trim(),
           "payment_reference": referenceNumberController.text.trim(),
-          if (widget.paymentIntentId != null) 
-            "payment_intent_id": widget.paymentIntentId!,
         },
       );
 
@@ -231,7 +184,6 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         setState(() => isProcessing = false);
 
         if (data['success'] == true) {
-          // 🆕 Store transaction ID
           _transactionId = data['transaction_id']?.toString();
           _showSuccessDialog();
         } else {
@@ -257,7 +209,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     );
   }
 
-  void _showSuccessDialog({bool showAutoDetected = false}) {
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -280,7 +232,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              showAutoDetected ? 'Payment Detected!' : 'Payment Submitted!',
+              'Payment Submitted!',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -289,9 +241,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              showAutoDetected 
-                  ? 'Your payment has been automatically detected and verified.'
-                  : 'Your payment has been received and is being verified by our admin team.',
+              'Your payment has been received and will be verified manually by our admin team.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -299,7 +249,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
               ),
             ),
             
-            // 🆕 Transaction ID Display
+            // Transaction ID Display
             if (_transactionId != null) ...[
               const SizedBox(height: 16),
               Container(
@@ -428,51 +378,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         ),
         centerTitle: true,
       ),
-      body: _isCheckingStatus
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Colors.black),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Checking payment status...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : Column(
+      body: Column(
         children: [
-          // 🆕 Payment Intent Status Banner
-          if (_paymentIntentStatus != null && _paymentIntentStatus != 'succeeded')
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: _getStatusColor(_paymentIntentStatus!).withValues(alpha: 0.1),
-              child: Row(
-                children: [
-                  Icon(
-                    _getStatusIcon(_paymentIntentStatus!),
-                    color: _getStatusColor(_paymentIntentStatus!),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _getStatusMessage(_paymentIntentStatus!),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: _getStatusColor(_paymentIntentStatus!),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -525,49 +432,6 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     );
   }
 
-  // 🆕 Helper methods for payment intent status
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'succeeded':
-        return Colors.green;
-      case 'processing':
-      case 'awaiting_payment_method':
-        return Colors.orange;
-      case 'failed':
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'succeeded':
-        return Icons.check_circle;
-      case 'processing':
-        return Icons.hourglass_empty;
-      case 'failed':
-        return Icons.error;
-      default:
-        return Icons.info;
-    }
-  }
-
-  String _getStatusMessage(String status) {
-    switch (status.toLowerCase()) {
-      case 'processing':
-        return 'Payment is being processed. Please complete the transaction.';
-      case 'awaiting_payment_method':
-        return 'Waiting for payment confirmation. Please complete your GCash payment.';
-      case 'failed':
-        return 'Previous payment attempt failed. Please try again.';
-      case 'cancelled':
-        return 'Payment was cancelled. You can submit a new payment.';
-      default:
-        return 'Payment status: $status';
-    }
-  }
 
   Widget _buildShowQRButton() {
     return Container(

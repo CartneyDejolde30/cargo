@@ -415,7 +415,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
 
               borderRadius: BorderRadius.circular(10),
             ),

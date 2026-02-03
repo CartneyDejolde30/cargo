@@ -6,9 +6,8 @@ import 'package:http/http.dart' as http;
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
-
 import 'motorcycle_detail_screen.dart';
-
+import 'motorcycle_list_screen.dart';
 
 class MotorcycleScreen extends StatefulWidget {
   const MotorcycleScreen({super.key});
@@ -65,30 +64,32 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-  final String apiUrl = "http://10.77.127.2/carGOAdmin/get_motorcycles.php";
+    const String apiUrl = "http://10.77.127.2/carGOAdmin/api/get_motorcycles_filtered.php?sortBy=created_at&sortOrder=DESC";
 
-  try {
-    final response = await http.get(Uri.parse(apiUrl));
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
 
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
+      print("🔍 API Response Status: ${response.statusCode}");
+      print("🔍 API Response Body (first 200 chars): ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}");
 
-      if (decoded['status'] == 'success') {
-        setState(() {
-          _motorcycles = List<Map<String, dynamic>>.from(decoded['motorcycles']);
-        });
-      } else {
-        print("❌ API Error: ${decoded['message'] ?? 'Unknown error'}");
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded['status'] == 'success') {
+          setState(() {
+            _motorcycles = List<Map<String, dynamic>>.from(decoded['motorcycles']);
+          });
+          print("✅ Loaded ${_motorcycles.length} motorcycles");
+        } else if (decoded['status'] == 'error') {
+          print("❌ API Error: ${decoded['message']}");
+        }
       }
-    } else {
-      print("❌ HTTP Error: ${response.statusCode}");
+    } catch (e) {
+      print("❌ Error fetching motorcycles: $e");
     }
-  } catch (e) {
-    print("❌ Error fetching motorcycles: $e");
-  }
 
-  if (mounted) setState(() => _isLoading = false);
-}
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   void _handleNavigation(int index) {
     setState(() => _selectedNavIndex = index);
@@ -114,6 +115,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get best motorcycles (first 4) and newly listed (last 3)
     final bestMotorcycles = _motorcycles.take(4).toList();
     final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -132,7 +134,7 @@ final colors = Theme.of(context).colorScheme;
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "CARGO",
+                      "CARGO - Motorcycles",
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -143,29 +145,35 @@ final colors = Theme.of(context).colorScheme;
                 ),
                 const SizedBox(height: 20),
 
-                // Search Bar
+                // Search Bar - Navigate to list screen
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const CarListScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const MotorcycleListScreen(),
+                      ),
                     );
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,                      borderRadius: BorderRadius.circular(12),
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: colors.onSurface.withOpacity(0.6), size: 22),
-
+                        Icon(
+                          Icons.search,
+                          color: Theme.of(context).iconTheme.color,
+                          size: 22,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             "Search motorcycle near you...",
                             style: GoogleFonts.poppins(
-                              color: Colors.grey,
+                              color: Theme.of(context).hintColor,
                               fontSize: 14,
                             ),
                           ),
@@ -176,32 +184,8 @@ final colors = Theme.of(context).colorScheme;
                 ),
                 const SizedBox(height: 20),
 
-                // Enhanced Vehicle Type Toggle
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildToggleButton(
-                          "Car",
-                          false,
-                          () => Navigator.pop(context),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildToggleButton(
-                          "Motorcycle",
-                          true,
-                          () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
+                // Vehicle Type Toggle
+                _buildVehicleTypeToggle(),
                 const SizedBox(height: 20),
 
                 // Best Motorcycles Section
@@ -216,36 +200,7 @@ final colors = Theme.of(context).colorScheme;
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _motorcycles.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(40),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.two_wheeler,
-                                    size: 80,
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    "No motorcycles available yet",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Check back soon for new listings!",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
+                        ? const Center(child: Text("No motorcycles available"))
                         : GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -258,6 +213,7 @@ final colors = Theme.of(context).colorScheme;
                             itemCount: bestMotorcycles.length,
                             itemBuilder: (context, index) {
                               final motorcycle = bestMotorcycles[index];
+
                               final rawLocation = (motorcycle['location'] ?? '').toString().trim();
                               final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
 
@@ -267,7 +223,7 @@ final colors = Theme.of(context).colorScheme;
                                 name: "${motorcycle['brand']} ${motorcycle['model']}",
                                 rating: double.tryParse(motorcycle['rating'].toString()) ?? 5.0,
                                 location: locationText,
-                                type: motorcycle['type'] ?? "Standard",
+                                type: motorcycle['body_style'] ?? motorcycle['type'] ?? "Standard",
                                 price: motorcycle['price'].toString(),
                               );
                             },
@@ -276,34 +232,38 @@ final colors = Theme.of(context).colorScheme;
                 const SizedBox(height: 32),
 
                 // Newly Listed Section
-                if (_motorcycles.isNotEmpty) ...[
-                  _buildSectionHeader("Newly Listed", "See more", color: Colors.green),
-                  const SizedBox(height: 12),
+                _buildSectionHeader("Newly Listed", "See more", color: Colors.green),
+                const SizedBox(height: 12),
 
-                  SizedBox(
-                    height: 160,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: newlyListed.length,
-                      itemBuilder: (context, index) {
-                        final motorcycle = newlyListed[index];
-                        final rawLocation = (motorcycle['location'] ?? '').toString().trim();
-                        final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : newlyListed.isEmpty
+                        ? const Center(child: Text("No new listings"))
+                        : SizedBox(
+                            height: 160,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: newlyListed.length,
+                              itemBuilder: (context, index) {
+                                final motorcycle = newlyListed[index];
 
-                        return _buildNewlyListedCard(
-                          motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
-                          image: formatImage(motorcycle['image'] ?? ''),
-                          name: "${motorcycle['brand']} ${motorcycle['model']}",
-                          year: motorcycle['year'] ?? "",
-                          location: locationText,
-                          type: motorcycle['type'] ?? "Standard",
-                          price: motorcycle['price'].toString(),
-                          engineSize: motorcycle['engine_size'] ?? "150cc",
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                                final rawLocation = (motorcycle['location'] ?? '').toString().trim();
+                                final locationText = rawLocation.isEmpty ? "Unknown" : rawLocation;
+
+                                return _buildNewlyListedCard(
+                                  motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
+                                  image: formatImage(motorcycle['image'] ?? ''),
+                                  name: "${motorcycle['brand']} ${motorcycle['model']}",
+                                  year: motorcycle['motorcycle_year'] ?? "",
+                                  location: locationText,
+                                  type: motorcycle['body_style'] ?? motorcycle['type'] ?? "Standard",
+                                  transmission: motorcycle['transmission_type'] ?? motorcycle['transmission'] ?? "Manual",
+                                  price: motorcycle['price'].toString(),
+                                  hasUnlimitedMileage: motorcycle['has_unlimited_mileage'] == 1,
+                                );
+                              },
+                            ),
+                          ),
               ],
             ),
           ),
@@ -312,29 +272,6 @@ final colors = Theme.of(context).colorScheme;
       bottomNavigationBar: BottomNavBar(
         currentIndex: _selectedNavIndex,
         onTap: _handleNavigation,
-      ),
-    );
-  }
-
-  Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? Colors.black : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -354,10 +291,14 @@ final colors = Theme.of(context).colorScheme;
 
         ),
         GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CarListScreen()),
-          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const MotorcycleListScreen(),
+              ),
+            );
+          },
           child: Text(
             action,
             style: GoogleFonts.poppins(
@@ -368,6 +309,34 @@ final colors = Theme.of(context).colorScheme;
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVehicleTypeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildToggleButton(
+              "Car",
+              false,
+              () => Navigator.pop(context),
+            ),
+          ),
+          Expanded(
+            child: _buildToggleButton(
+              "Motorcycle",
+              true,
+              () {},
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -393,22 +362,17 @@ final colors = Theme.of(context).colorScheme;
               motorcycleName: name,
               motorcycleImage: image,
               price: price,
-              rating: 5.0,
+              rating: rating,
               location: location,
             ),
-
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-  color: Theme.of(context).brightness == Brightness.dark
-      ? Colors.transparent   // no white border in dark mode
-      : Colors.grey.shade300, // soft border in light mode
-),
-
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,13 +392,13 @@ final colors = Theme.of(context).colorScheme;
                       if (progress == null) return child;
                       return Container(
                         height: 110,
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context).dividerColor,
                         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 110,
-                      color: Colors.grey.shade200,
+                      color: Theme.of(context).dividerColor,
                       child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
                     ),
                   );
@@ -466,11 +430,11 @@ final colors = Theme.of(context).colorScheme;
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.category, size: 14, color: Colors.grey),
+                      Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
                       const SizedBox(width: 4),
                       Text(
                         type,
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).hintColor),
                       ),
                     ],
                   ),
@@ -488,6 +452,240 @@ final colors = Theme.of(context).colorScheme;
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildNewlyListedCard({
+    required int motorcycleId,
+    required String image,
+    required String name,
+    required String year,
+    required String location,
+    required String type,
+    required String transmission,
+    required String price,
+    bool hasUnlimitedMileage = false,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MotorcycleDetailScreen(
+              motorcycleId: motorcycleId,
+              motorcycleName: name,
+              motorcycleImage: image,
+              price: price,
+              rating: 5.0,
+              location: location,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 300,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                  ),
+                  child: FutureBuilder<String>(
+                    future: resolveImageUrlCached(image),
+                    builder: (context, snap) {
+                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
+                      return Image.network(
+                        imageUrl,
+                        height: 160,
+                        width: 140,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            height: 160,
+                            width: 140,
+                            color: Theme.of(context).dividerColor,
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 160,
+                          width: 140,
+                          color: Theme.of(context).dividerColor,
+                          child: const Icon(Icons.two_wheeler, size: 40, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                if (hasUnlimitedMileage)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        "Unlimited Mileage",
+                        style: GoogleFonts.poppins(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).iconTheme.color,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "₱$price",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).iconTheme.color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "$name $year",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).dividerColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Theme.of(context).hintColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          type,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(Icons.speed, size: 14, color: Theme.of(context).hintColor),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            transmission,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Theme.of(context).hintColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/*
+// Unused helper methods - kept for reference if needed later
+
+  Widget _buildSectionHeader(String title, String action, {Color color = Colors.grey}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CarListScreen()),
+          ),
+          child: Text(
+            action,
+            style: GoogleFonts.poppins(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -654,3 +852,4 @@ final colors = Theme.of(context).colorScheme;
     );
   }
 }
+*/

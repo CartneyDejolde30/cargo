@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'receipt_viewer_screen.dart';
 import 'refund_request_screen.dart';
+import 'refund_history_screen.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -161,14 +162,29 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         'Payment History',
         style: GoogleFonts.poppins(
           color: Theme.of(context).iconTheme.color,
-
-
-
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
       ),
       centerTitle: true,
+      actions: [
+        // View Refunds Button
+        IconButton(
+          icon: Icon(
+            Icons.receipt_long_outlined,
+            color: Theme.of(context).iconTheme.color,
+          ),
+          tooltip: 'View Refunds',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RefundHistoryScreen(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -417,6 +433,13 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     final amount = double.tryParse(payment['amount'].toString()) ?? 0;
     final hasReceipt = payment['has_receipt'] == true || payment['has_receipt'] == 1;
     final canRefund = payment['can_request_refund'] == true || payment['can_request_refund'] == 1;
+    
+    // Check if refund was requested or processed
+    final refundStatus = payment['refund_status']?.toString();
+    final hasRefund = refundStatus != null && refundStatus != 'not_requested';
+    final refundAmount = payment['refund_amount'] != null 
+        ? double.tryParse(payment['refund_amount'].toString()) ?? 0 
+        : 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -542,6 +565,39 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                           color: Colors.grey.shade600,
                         ),
                       ),
+                      // Show refund status if exists
+                      if (hasRefund) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              _getRefundIcon(refundStatus),
+                              size: 12,
+                              color: _getRefundColor(refundStatus),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getRefundLabel(refundStatus),
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _getRefundColor(refundStatus),
+                              ),
+                            ),
+                            if (refundStatus == 'completed' && refundAmount > 0) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '• ${_formatCurrency(refundAmount.toDouble())}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -566,8 +622,19 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                       () => _viewReceipt(bookingId),
                     ),
                   ),
-                if (hasReceipt && canRefund) const SizedBox(width: 8),
-                if (canRefund)
+                if (hasReceipt && (canRefund || hasRefund)) const SizedBox(width: 8),
+                if (hasRefund)
+                  // Show "View Refund" if refund already exists
+                  Expanded(
+                    child: _buildActionButton(
+                      'View Refund',
+                      Icons.info_outline,
+                      Colors.blue.shade600,
+                      () => _viewRefundHistory(),
+                    ),
+                  )
+                else if (canRefund)
+                  // Show "Request Refund" only if no refund exists
                   Expanded(
                     child: _buildActionButton(
                       'Request Refund',
@@ -669,6 +736,71 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         _fetchPaymentHistory();
       }
     });
+  }
+
+  void _viewRefundHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RefundHistoryScreen(),
+      ),
+    );
+  }
+
+  // Helper methods for refund status display
+  IconData _getRefundIcon(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'requested':
+      case 'pending':
+        return Icons.schedule;
+      case 'approved':
+        return Icons.check_circle_outline;
+      case 'processing':
+        return Icons.sync;
+      case 'completed':
+        return Icons.check_circle;
+      case 'rejected':
+        return Icons.cancel;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getRefundColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'requested':
+      case 'pending':
+        return Colors.orange.shade600;
+      case 'approved':
+        return Colors.blue.shade600;
+      case 'processing':
+        return Colors.purple.shade600;
+      case 'completed':
+        return Colors.green.shade600;
+      case 'rejected':
+        return Colors.red.shade600;
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
+  String _getRefundLabel(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'requested':
+        return 'Refund Requested';
+      case 'pending':
+        return 'Refund Pending';
+      case 'approved':
+        return 'Refund Approved';
+      case 'processing':
+        return 'Refund Processing';
+      case 'completed':
+        return 'Refunded';
+      case 'rejected':
+        return 'Refund Rejected';
+      default:
+        return 'Refund Status';
+    }
   }
 
   String _formatCurrency(double amount) {

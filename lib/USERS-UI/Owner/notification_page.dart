@@ -343,7 +343,7 @@ class _NotificationPageState extends State<NotificationPage>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
-        icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onBackground, size: 20),
+        icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onSurface, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
       title: Column(
@@ -733,7 +733,7 @@ class NotificationDetailScreen extends StatelessWidget {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onBackground, size: 20),
+          icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(

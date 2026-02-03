@@ -76,10 +76,22 @@ class GpsTrackingManager {
 
       debugPrint('✅ Location permission granted');
 
-      // Get initial position
+      // Create location settings for both initial position and stream
+      final LocationSettings locationSettings = AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: ApiConfig.minDistanceFilter.toInt(),
+        intervalDuration: ApiConfig.locationUpdateInterval,
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationText: "CarGO is tracking your rental location",
+          notificationTitle: "Location Tracking Active",
+          enableWakeLock: true,
+        ),
+      );
+
+      // Get initial position using modern settings
       try {
         final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+          locationSettings: locationSettings,
         ).timeout(
           const Duration(seconds: 10),
           onTimeout: () {
@@ -98,18 +110,7 @@ class GpsTrackingManager {
         // Continue anyway - will get position from stream
       }
 
-      // Start position stream with proper settings from config
-      final LocationSettings locationSettings = AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: ApiConfig.minDistanceFilter.toInt(),
-        intervalDuration: ApiConfig.locationUpdateInterval,
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText: "CarGO is tracking your rental location",
-          notificationTitle: "Location Tracking Active",
-          enableWakeLock: true,
-        ),
-      );
-
+      // Start position stream with same settings
       final positionStream = Geolocator.getPositionStream(
         locationSettings: locationSettings,
       );

@@ -70,7 +70,9 @@ class LocationPermissionHelper {
           children: [
             Icon(Icons.location_off, color: Colors.orange.shade700),
             const SizedBox(width: 12),
-            Text('Location Services Off', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text('Location Services Off', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
         content: Text(
@@ -109,7 +111,9 @@ class LocationPermissionHelper {
           children: [
             Icon(Icons.location_disabled, color: Colors.red.shade700),
             const SizedBox(width: 12),
-            Text('Permission Required', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text('Permission Required', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
         content: Text(

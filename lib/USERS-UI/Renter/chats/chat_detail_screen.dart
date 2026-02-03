@@ -549,7 +549,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border(
             left: BorderSide(
@@ -905,7 +905,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
 
                 shape: BoxShape.circle,
               ),
@@ -918,7 +918,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                   color: Theme.of(context).colorScheme.outlineVariant,

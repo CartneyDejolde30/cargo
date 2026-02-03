@@ -7,7 +7,7 @@ import '../Owner/notification/notification_service.dart';
 // Pages
 import 'dashboard.dart';
 import 'mycar_page.dart';
-import 'notification_page.dart';
+import 'notification/enhanced_notification_page.dart'; // NEW: Enhanced Notifications
 import 'message_page.dart';
 import 'profile_page.dart';
 
@@ -35,9 +35,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     super.initState();
     _loadUserData();
     
-    // Show verification popup after screen loads
+    // ✅ OPTIMIZATION: Defer verification popup to avoid blocking initial render
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      VerifyPopup.showIfNotVerified(context);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          VerifyPopup.showIfNotVerified(context);
+        }
+      });
     });
   }
 
@@ -50,13 +54,17 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                      prefs.getInt("user_id")?.toString() ?? 
                      "0";
       
+      debugPrint("🔑 SharedPreferences user_id: $userId");
+      
       setState(() {
         _ownerId = int.tryParse(userId) ?? 0;
         _loading = false;
       });
 
-      // Load badge counts
-      await _loadBadgeCounts();
+      debugPrint("🔑 Parsed owner_id: $_ownerId");
+
+      // ✅ OPTIMIZATION: Load badge counts in background (non-blocking)
+      _loadBadgeCounts();
     } catch (e) {
       debugPrint("Error loading user data: $e");
       setState(() => _loading = false);
@@ -107,7 +115,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     final List<Widget> pages = [
       const DashboardPage(),
       MyCarPage(ownerId: _ownerId),
-      NotificationPage(userId: _ownerId),
+      EnhancedNotificationPage(userId: _ownerId), // NEW: Using Enhanced Notifications
       const MessagePage(),
       const ProfileScreen(),
     ];

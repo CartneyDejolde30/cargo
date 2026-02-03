@@ -150,7 +150,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         duration: const Duration(milliseconds: 400),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -274,7 +274,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         padding: const EdgeInsets.all(2.5),
                         child: CircleAvatar(
                           radius: 28,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,                          backgroundImage: isValidUrl(img)
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,                          backgroundImage: isValidUrl(img)
                               ? CachedNetworkImageProvider(img)
                               : null,
                           child: !isValidUrl(img)
@@ -400,7 +400,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,                    backgroundImage: isValidUrl(img)
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,                    backgroundImage: isValidUrl(img)
                         ? CachedNetworkImageProvider(img)
                         : null,
                     child: !isValidUrl(img)

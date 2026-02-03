@@ -7,6 +7,8 @@ import 'map_route_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'gcash_payment_screen.dart';
+import '../insurance/insurance_selection_screen.dart';
+import '../../services/insurance_service.dart';
 
 class BookingScreen extends StatefulWidget {
   final int carId;
@@ -77,6 +79,11 @@ class _BookingScreenState extends State<BookingScreen> {
     return returnDate!.difference(pickupDate!).inDays + 1;
   }
 
+  // Insurance state
+  String? selectedInsuranceCoverage;
+  double insurancePremium = 0.0;
+  bool insuranceRequired = true; // Insurance is mandatory
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +122,30 @@ class _BookingScreenState extends State<BookingScreen> {
         includeInsurance: false,
       );
     });
+  }
+
+  Future<void> _selectInsurance() async {
+    if (priceBreakdown == null) {
+      _showError('Please complete booking details first');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InsuranceSelectionScreen(
+          bookingId: 0, // Will be set after booking creation
+          userId: int.tryParse(widget.userId ?? '0') ?? 0,
+          rentalAmount: priceBreakdown!.totalAmount,
+          onInsuranceSelected: (coverageType, premium) {
+            setState(() {
+              selectedInsuranceCoverage = coverageType;
+              insurancePremium = premium;
+            });
+          },
+        ),
+      ),
+    );
   }
 
   // Replace your _checkVerificationOnInit() method with this improved version:
@@ -579,6 +610,8 @@ Future<void> _checkVerificationOnInit() async {
               SizedBox(height: 12),
               _buildLocationWithMap(),
               SizedBox(height: 24),
+              _buildInsuranceSection(),
+              SizedBox(height: 24),
               _buildPriceBreakdown(),
               SizedBox(height: 100),
             ],
@@ -982,8 +1015,109 @@ Future<void> _checkVerificationOnInit() async {
     );
   }
 
+  Widget _buildInsuranceSection() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: selectedInsuranceCoverage != null 
+            ? Colors.green.shade50 
+            : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selectedInsuranceCoverage != null 
+              ? Colors.green.shade200 
+              : Colors.orange.shade300,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                selectedInsuranceCoverage != null 
+                    ? Icons.verified_user 
+                    : Icons.warning_amber_rounded,
+                color: selectedInsuranceCoverage != null 
+                    ? Colors.green.shade700 
+                    : Colors.orange.shade700,
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedInsuranceCoverage != null 
+                          ? 'Insurance Selected ✓' 
+                          : 'Insurance Required',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: selectedInsuranceCoverage != null 
+                            ? Colors.green.shade900 
+                            : Colors.orange.shade900,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      selectedInsuranceCoverage != null 
+                          ? '${selectedInsuranceCoverage!.toUpperCase()} Coverage - ${InsuranceService.formatCurrency(insurancePremium)}'
+                          : 'All bookings must have insurance coverage',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _selectInsurance,
+              icon: Icon(
+                selectedInsuranceCoverage != null 
+                    ? Icons.edit 
+                    : Icons.shield,
+                size: 18,
+              ),
+              label: Text(
+                selectedInsuranceCoverage != null 
+                    ? 'Change Coverage' 
+                    : 'Select Insurance',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: selectedInsuranceCoverage != null 
+                    ? Colors.green.shade700 
+                    : Colors.orange.shade700,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPriceBreakdown() {
     if (priceBreakdown == null) return SizedBox();
+
+    // Calculate total with insurance
+    final double totalWithInsurance = priceBreakdown!.totalAmount + insurancePremium;
 
     return Container(
       padding: EdgeInsets.all(20),
@@ -1030,6 +1164,16 @@ Future<void> _checkVerificationOnInit() async {
             subtitle: '5% platform fee',
           ),
           
+          // Insurance Premium
+          if (insurancePremium > 0)
+            _buildBreakdownRow(
+              'Insurance Premium',
+              InsuranceService.formatCurrency(insurancePremium),
+              subtitle: selectedInsuranceCoverage != null 
+                  ? '${selectedInsuranceCoverage!.toUpperCase()} coverage' 
+                  : null,
+            ),
+          
           Divider(height: 24, thickness: 1.5),
           
           Row(
@@ -1043,7 +1187,7 @@ Future<void> _checkVerificationOnInit() async {
                 ),
               ),
               Text(
-                PricingCalculator.formatCurrency(priceBreakdown!.totalAmount),
+                PricingCalculator.formatCurrency(totalWithInsurance),
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1055,7 +1199,7 @@ Future<void> _checkVerificationOnInit() async {
           
           SizedBox(height: 8),
           Text(
-            'Effective rate: ${PricingCalculator.formatCurrency(priceBreakdown!.effectiveDailyRate)}/day',
+            'Effective rate: ${PricingCalculator.formatCurrency(priceBreakdown!.effectiveDailyRate + (insurancePremium / numberOfDays))}/day',
             style: GoogleFonts.poppins(
               fontSize: 11,
               color: Theme.of(context).hintColor,
@@ -1152,7 +1296,7 @@ Future<void> _checkVerificationOnInit() async {
             children: [
               Text(
                 priceBreakdown != null 
-                    ? PricingCalculator.formatCurrency(priceBreakdown!.totalAmount)
+                    ? PricingCalculator.formatCurrency(priceBreakdown!.totalAmount + insurancePremium)
                     : '₱0.00',
                 style: GoogleFonts.poppins(
                   color: Theme.of(context).colorScheme.surface,
@@ -1208,6 +1352,11 @@ Future<void> _checkVerificationOnInit() async {
     }
     if (returnDate == null) {
       _showError('Please select return date');
+      return false;
+    }
+    // Validate insurance selection
+    if (insuranceRequired && selectedInsuranceCoverage == null) {
+      _showError('Please select an insurance coverage to proceed');
       return false;
     }
     return true;
@@ -1483,23 +1632,23 @@ Future<void> _submitBookingToServer() async {
       final data = jsonDecode(response.body);
 
       if (data["success"] == true) {
-        // PayMongo integration response
+        // Manual GCash payment flow (PayMongo removed)
         final bookingId = data["data"]["booking_id"] as int;
-        final paymentIntentId = data["data"]["payment_intent_id"] as String?;
-        final clientKey = data["data"]["client_key"] as String?;
+        final paymentId = data["data"]["payment_id"] as int;
         final totalAmount = (data["data"]["total_amount"] as num).toDouble();
         
         print("✅ Booking created! ID: $bookingId");
-        print("💳 Payment Intent: $paymentIntentId");
+        print("💳 Payment ID: $paymentId");
+        print("💰 Total Amount: $totalAmount");
 
         Navigator.pop(context); // Close loading dialog
 
-        // Navigate to payment screen with PayMongo details
+        // Navigate directly to GCash payment screen (manual verification)
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => GCashPaymentScreen(
-              bookingId: bookingId, // Now passing as int
+              bookingId: bookingId,
               carId: widget.carId,
               carName: widget.carName,
               carImage: widget.carImage,
@@ -1515,8 +1664,6 @@ Future<void> _submitBookingToServer() async {
               rentalPeriod: selectedPeriod,
               needsDelivery: needsDelivery,
               totalAmount: totalAmount,
-              paymentIntentId: paymentIntentId,
-              clientKey: clientKey,
             ),
           ),
         );

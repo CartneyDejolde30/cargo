@@ -13,6 +13,7 @@ import '../Renter/host/host_profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/motorcycle_booking_screen.dart';
+import 'widgets/renter_availability_calendar.dart'; 
 
 
 class MotorcycleDetailScreen extends StatefulWidget {
@@ -60,10 +61,65 @@ class _MotorcycleDetailScreenState
     };
   }
 
+  List<String> getAllImages() {
+    List<String> images = [];
+
+    // Main image
+    if (motorcycleData?["image"] != null && motorcycleData!["image"].toString().isNotEmpty) {
+      images.add(formatImage(motorcycleData!["image"]));
+    }
+
+    // Extra images
+    final extra = motorcycleData?["extra_images"];
+
+    if (extra != null && extra.toString().isNotEmpty && extra.toString() != "[]") {
+      try {
+        final decoded = jsonDecode(extra);
+
+        if (decoded is List && decoded.isNotEmpty) {
+          for (var img in decoded) {
+            final imgStr = img.toString();
+            if (imgStr.isNotEmpty && imgStr != "[]" && imgStr != "null") {
+              images.add(formatImage(imgStr));
+            }
+          }
+        }
+      } catch (e) {
+        // If it's comma-separated instead of JSON
+        final splitImages = extra.toString().split(",");
+        for (var img in splitImages) {
+          final trimmed = img.trim();
+          if (trimmed.isNotEmpty && trimmed != "[]" && trimmed != "null") {
+            images.add(formatImage(trimmed));
+          }
+        }
+      }
+    }
+
+    return images;
+  }
+
   String formatImage(String path) {
-    if (path.isEmpty) return "https://via.placeholder.com/400x300";
-    if (path.startsWith("http")) return path;
-    return "$baseUrl$path";
+    if (path.isEmpty || path == "null" || path == "[]") {
+      return "https://via.placeholder.com/400x300";
+    }
+
+    // If API already returned full URL
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      // Fix double uploads and double slash issues
+      return path
+          .replaceAll("//uploads/uploads/", "/uploads/")
+          .replaceAll("/uploads/uploads/", "/uploads/")
+          .replaceAll("carGOAdmin//uploads/", "carGOAdmin/uploads/");
+    }
+
+    // Clean filename paths
+    final cleanPath = path
+        .replaceAll("uploads/uploads/", "")
+        .replaceAll("uploads/", "");
+
+    // Extra images live in /uploads/
+    return "${baseUrl}uploads/$cleanPath";
   }
 
    Future<void> _checkVerificationStatus() async {
@@ -240,7 +296,12 @@ Future<void> fetchMotorcycleDetails() async {
       );
     }
 
-    final imageUrl = formatImage(motorcycleData?["image"] ?? "");
+    final images = getAllImages();
+    print("🖼 MOTORCYCLE IMAGES: $images");
+    if (images.isEmpty) {
+      images.add("https://via.placeholder.com/400x300");
+    }
+
     final ownerImage = formatImage(motorcycleData?["owner_image"] ?? "");
     final ownerName = motorcycleData?["owner_name"] ?? "Unknown Owner";
     final phone = motorcycleData?["phone"] ?? "";
@@ -259,17 +320,13 @@ Future<void> fetchMotorcycleDetails() async {
     ? List<String>.from(motorcycleData!["features"])
     : <String>[];
 
-final rules = motorcycleData?["rules"] != null
-    ? List<String>.from(motorcycleData!["rules"])
-    : <String>[];
+    final rules = motorcycleData?["rules"] != null
+        ? List<String>.from(motorcycleData!["rules"])
+        : <String>[];
 
-final deliveryTypes = motorcycleData?["delivery_types"] != null
-    ? List<String>.from(motorcycleData!["delivery_types"])
-    : <String>[];
-
-final extraImages = motorcycleData?["extra_imaRges"] != null
-    ? List<String>.from(motorcycleData!["extra_images"])
-    : <String>[];
+    final deliveryTypes = motorcycleData?["delivery_types"] != null
+        ? List<String>.from(motorcycleData!["delivery_types"])
+        : <String>[];
 
     final minTripDuration = motorcycleData?["min_trip_duration"] ?? "1";
     final maxTripDuration = motorcycleData?["max_trip_duration"] ?? "7";
@@ -288,28 +345,37 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                   // Hero Image with Back Button
                   Stack(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FullscreenImageViewer(imageUrl: imageUrl),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 280,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(24),
-                              bottomRight: Radius.circular(24),
-                            ),
-                            image: DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                      SizedBox(
+                        height: 280,
+                        child: PageView.builder(
+                          itemCount: images.length,
+                          itemBuilder: (context, index) {
+                            final imgUrl = images[index];
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => FullscreenImageViewer(imageUrl: imgUrl),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(24),
+                                    bottomRight: Radius.circular(24),
+                                  ),
+                                  image: DecorationImage(
+                                    image: NetworkImage(imgUrl),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       // Back Button (LEFT)
@@ -721,26 +787,41 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  radius: 28,
-                                  backgroundImage: NetworkImage(ownerImage),
+                                  radius: 26,
+                                  backgroundColor: Colors.grey.shade300,
+                                  child: ownerImage.contains('placeholder.com')
+                                      ? Icon(Icons.person, size: 28, color: Colors.grey.shade600)
+                                      : null,
+                                  backgroundImage: ownerImage.contains('placeholder.com')
+                                      ? null
+                                      : NetworkImage(ownerImage),
+                                  onBackgroundImageError: (exception, stackTrace) {
+                                    // Silently handle 404 errors
+                                  },
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     ownerName,
                                     style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                      fontSize: 15,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+                                  icon: const Icon(Icons.chat_bubble_outline, size: 22, color: Colors.blue),
                                   onPressed: _messageOwner,
+                                  padding: EdgeInsets.all(8),
+                                  constraints: BoxConstraints(),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.call, color: Colors.green),
+                                  icon: const Icon(Icons.call, size: 22, color: Colors.green),
                                   onPressed: () => _callOwner(phone),
+                                  padding: EdgeInsets.all(8),
+                                  constraints: BoxConstraints(),
                                 ),
                               ],
                             ),
@@ -926,104 +1007,187 @@ final extraImages = motorcycleData?["extra_imaRges"] != null
                 ),
                 child: SafeArea(
                   top: false,
-                  child: ElevatedButton(
-                    onPressed: isCheckingVerification 
-                        ? null 
-                        : (isVerified 
-                            ? () async {
-                                final userData = await _getUserData();  
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  settings: const RouteSettings(name: 'motorcycle'),
-                                  builder: (_) => MotorcycleBookingScreen(
-                                    motorcycleId: widget.motorcycleId,
-                                    motorcycleName: widget.motorcycleName,
-                                    motorcycleImage: widget.motorcycleImage,
-                                    pricePerDay: price,
-                                    location: location,
-                                    ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
-                                    userId: userData['userId'],
-                                    userFullName: userData['fullName'],
-                                    userEmail: userData['email'],
-                                    userContact: userData['contact'],
-                                    userMunicipality: userData['municipality'],
-                                    ownerLatitude: double.tryParse(
-                                      motorcycleData?["latitude"]?.toString() ?? "",
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // NEW: Check Availability Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RenterAvailabilityCalendar(
+                                  vehicleId: widget.motorcycleId,
+                                  vehicleType: 'motorcycle',
+                                  vehicleName: widget.motorcycleName,
+                                ),
+                              ),
+                            );
+                            
+                            // If dates selected, proceed to booking
+                            if (result != null && result is Map) {
+                              if (!isVerified) {
+                                _showVerificationRequiredDialog();
+                                return;
+                              }
+                              
+                              final userData = await _getUserData();
+                              if (mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    settings: const RouteSettings(name: 'motorcycle'),
+                                    builder: (_) => MotorcycleBookingScreen(
+                                      motorcycleId: widget.motorcycleId,
+                                      motorcycleName: widget.motorcycleName,
+                                      motorcycleImage: widget.motorcycleImage,
+                                      pricePerDay: price,
+                                      location: location,
+                                      ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
+                                      userId: userData['userId'],
+                                      userFullName: userData['fullName'],
+                                      userEmail: userData['email'],
+                                      userContact: userData['contact'],
+                                      userMunicipality: userData['municipality'],
+                                      ownerLatitude: double.tryParse(
+                                        motorcycleData?["latitude"]?.toString() ?? "",
+                                      ),
+                                      ownerLongitude: double.tryParse(
+                                        motorcycleData?["longitude"]?.toString() ?? "",
+                                      ),
                                     ),
-                                    ownerLongitude: double.tryParse(
-                                      motorcycleData?["longitude"]?.toString() ?? "",
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_month, size: 20),
+                          label: Text(
+                            'Check Availability',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: BorderSide(color: Colors.blue, width: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Existing Book Now Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isCheckingVerification 
+                              ? null 
+                              : (isVerified 
+                                  ? () async {
+                                      final userData = await _getUserData();  
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        settings: const RouteSettings(name: 'motorcycle'),
+                                        builder: (_) => MotorcycleBookingScreen(
+                                          motorcycleId: widget.motorcycleId,
+                                          motorcycleName: widget.motorcycleName,
+                                          motorcycleImage: widget.motorcycleImage,
+                                          pricePerDay: price,
+                                          location: location,
+                                          ownerId: motorcycleData?["owner_id"]?.toString() ?? "",
+                                          userId: userData['userId'],
+                                          userFullName: userData['fullName'],
+                                          userEmail: userData['email'],
+                                          userContact: userData['contact'],
+                                          userMunicipality: userData['municipality'],
+                                          ownerLatitude: double.tryParse(
+                                            motorcycleData?["latitude"]?.toString() ?? "",
+                                          ),
+                                          ownerLongitude: double.tryParse(
+                                            motorcycleData?["longitude"]?.toString() ?? "",
+                                          ),
+                                        ),
+                                      ),
+                                    );
+
+                                    }
+                                  : () {
+                                      _showVerificationRequiredDialog();
+                                    }
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isCheckingVerification 
+                                ? Colors.grey.shade400
+                                : (isVerified ? Colors.black : Colors.grey.shade600),
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  if (isCheckingVerification)
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  else if (!isVerified)
+                                    const Icon(Icons.lock, size: 20, color: Colors.white),
+                                  
+                                  if (isCheckingVerification || !isVerified)
+                                    const SizedBox(width: 8),
+                                  
+                                  Text(
+                                    isCheckingVerification 
+                                        ? "Checking..."
+                                        : (isVerified ? "Book Motorcycle" : "Verification Required"),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isVerified && !isCheckingVerification)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "₱$price/day",
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                              );
-
-                              }
-                            : () {
-                                _showVerificationRequiredDialog();
-                              }
-                        ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isCheckingVerification 
-                          ? Colors.grey.shade400
-                          : (isVerified ? Colors.black : Colors.grey.shade600),
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            if (isCheckingVerification)
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            else if (!isVerified)
-                              const Icon(Icons.lock, size: 20, color: Colors.white),
-                            
-                            if (isCheckingVerification || !isVerified)
-                              const SizedBox(width: 8),
-                            
-                            Text(
-                              isCheckingVerification 
-                                  ? "Checking..."
-                                  : (isVerified ? "Book Motorcycle" : "Verification Required"),
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isVerified && !isCheckingVerification)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              "₱$price/day",
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

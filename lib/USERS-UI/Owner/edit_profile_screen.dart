@@ -60,6 +60,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     phoneController.text = prefs.getString("phone") ?? "";
     addressController.text = prefs.getString("address") ?? "";
     storedProfile = prefs.getString("profile_image") ?? "";
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -78,6 +80,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     } else {
       imageFile = File(picked.path);
     }
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => hasChanges = true);
   }
 
@@ -140,6 +144,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       Navigator.pop(context, true);
     }
 
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => saving = false);
   }
 
