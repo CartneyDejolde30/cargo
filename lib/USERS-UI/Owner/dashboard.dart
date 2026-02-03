@@ -243,7 +243,7 @@ class _DashboardPageState extends State<DashboardPage>
         childAspectRatio: 1.52,
         children: [
           StatCard(
-            title: "Total Cars",
+            title: "Total Vehicles",
             value: "${stats.totalCars}",
             icon: Icons.directions_car_outlined,
             subtitle: "${stats.approvedCars} active",

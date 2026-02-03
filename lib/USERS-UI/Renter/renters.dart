@@ -94,13 +94,18 @@ void initState() {
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
 
     try {
-      final resp = await http.head(Uri.parse(candidate)).timeout(const Duration(seconds: 4));
+      // ✅ CRASH FIX: Add timeout and proper error handling
+      final resp = await http.head(Uri.parse(candidate)).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => throw Exception('Image check timeout'),
+      );
       if (resp.statusCode == 200) {
         _resolvedImageCache[candidate] = candidate;
         return candidate;
       }
-    } catch (_) {
-      // ignore network errors, fall through to placeholder
+    } catch (e) {
+      // ✅ CRASH FIX: Log error for debugging but don't crash
+      print("⚠️ Image check failed for $candidate: $e");
     }
 
     _resolvedImageCache[candidate] = placeholder;
@@ -112,21 +117,51 @@ void initState() {
     final String apiUrl = "http://10.218.197.49/carGOAdmin/api/get_cars.php";
 
     try {
-      final response = await http.get(Uri.parse(apiUrl));
+      // ✅ CRASH FIX: Add timeout to prevent hanging
+      final response = await http.get(Uri.parse(apiUrl)).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Connection timeout');
+        },
+      );
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
+        // ✅ CRASH FIX: Wrap jsonDecode in try-catch
+        try {
+          final decoded = jsonDecode(response.body);
 
-        if (decoded['status'] == 'success') {
-          setState(() {
-            _cars = List<Map<String, dynamic>>.from(decoded['cars']);
-          });
+          if (decoded['status'] == 'success') {
+            // ✅ CRASH FIX: Check mounted before setState
+            if (!mounted) return;
+            setState(() {
+              _cars = List<Map<String, dynamic>>.from(decoded['cars']);
+            });
+          }
+        } catch (jsonError) {
+          print("❌ JSON decode error: $jsonError");
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error loading car data')),
+            );
+          }
         }
+      } else {
+        print("❌ HTTP error: ${response.statusCode}");
       }
     } catch (e) {
       print("❌ Error fetching cars: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('timeout') 
+              ? 'Connection timeout. Please check your internet.' 
+              : 'Failed to load cars. Please try again.'),
+          ),
+        );
+      }
     }
 
+    // ✅ CRASH FIX: Check mounted before setState
     if (mounted) setState(() => _isLoading = false);
   }
 

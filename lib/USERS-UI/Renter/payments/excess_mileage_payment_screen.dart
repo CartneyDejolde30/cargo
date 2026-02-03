@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ExcessMileagePaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -122,8 +123,12 @@ class _ExcessMileagePaymentScreenState extends State<ExcessMileagePaymentScreen>
         Uri.parse('http://10.218.197.49/carGOAdmin/api/payment/submit_late_fee_payment.php'),
       );
 
+      // Get user ID from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id') ?? '0';
+      
       request.fields['booking_id'] = widget.bookingId.toString();
-      request.fields['user_id'] = '1'; // TODO: Get from session
+      request.fields['user_id'] = userId;
       request.fields['late_fee_amount'] = widget.excessFee.toStringAsFixed(2);
       request.fields['rental_amount'] = widget.isRentalPaid ? '0.00' : widget.rentalAmount.toStringAsFixed(2);
       request.fields['total_amount'] = totalAmount.toStringAsFixed(2);

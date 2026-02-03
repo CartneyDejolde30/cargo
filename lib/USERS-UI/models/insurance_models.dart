@@ -25,14 +25,14 @@ class InsuranceCoverage {
 
   factory InsuranceCoverage.fromJson(Map<String, dynamic> json) {
     return InsuranceCoverage(
-      id: json['id'] ?? 0,
+      id: int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'] ?? '',
       code: json['code'] ?? '',
       description: json['description'] ?? '',
       premiumRate: double.tryParse(json['premium_rate'].toString()) ?? 0.0,
       minCoverage: double.tryParse(json['min_coverage'].toString()) ?? 0.0,
       maxCoverage: double.tryParse(json['max_coverage'].toString()) ?? 0.0,
-      isMandatory: json['is_mandatory'] ?? false,
+      isMandatory: json['is_mandatory'] == true || json['is_mandatory'] == 1 || json['is_mandatory'] == '1',
       features: CoverageFeatures.fromJson(json['features'] ?? {}),
     );
   }
@@ -57,12 +57,12 @@ class CoverageFeatures {
 
   factory CoverageFeatures.fromJson(Map<String, dynamic> json) {
     return CoverageFeatures(
-      collisionDamage: double.tryParse(json['collision_damage'].toString()) ?? 0.0,
-      thirdPartyLiability: double.tryParse(json['third_party_liability'].toString()) ?? 0.0,
-      theftProtection: double.tryParse(json['theft_protection'].toString()) ?? 0.0,
-      personalInjury: double.tryParse(json['personal_injury'].toString()) ?? 0.0,
-      roadsideAssistance: json['roadside_assistance'] ?? false,
-      deductible: double.tryParse(json['deductible'].toString()) ?? 0.0,
+      collisionDamage: double.tryParse(json['collision_damage']?.toString() ?? '0') ?? 0.0,
+      thirdPartyLiability: double.tryParse(json['third_party_liability']?.toString() ?? '0') ?? 0.0,
+      theftProtection: double.tryParse(json['theft_protection']?.toString() ?? '0') ?? 0.0,
+      personalInjury: double.tryParse(json['personal_injury']?.toString() ?? '0') ?? 0.0,
+      roadsideAssistance: json['roadside_assistance'] == true || json['roadside_assistance'] == 1 || json['roadside_assistance'] == '1',
+      deductible: double.tryParse(json['deductible']?.toString() ?? '0') ?? 0.0,
     );
   }
 }
@@ -104,20 +104,20 @@ class InsurancePolicy {
 
   factory InsurancePolicy.fromJson(Map<String, dynamic> json) {
     return InsurancePolicy(
-      policyId: json['policy_id'] ?? 0,
+      policyId: int.tryParse(json['policy_id']?.toString() ?? '0') ?? 0,
       policyNumber: json['policy_number'] ?? '',
-      bookingId: json['booking_id'] ?? 0,
+      bookingId: int.tryParse(json['booking_id']?.toString() ?? '0') ?? 0,
       provider: InsuranceProvider.fromJson(json['provider'] ?? {}),
       coverage: PolicyCoverage.fromJson(json['coverage'] ?? {}),
-      premiumAmount: double.tryParse(json['premium_amount'].toString()) ?? 0.0,
+      premiumAmount: double.tryParse(json['premium_amount']?.toString() ?? '0') ?? 0.0,
       policyStart: DateTime.parse(json['policy_start']),
       policyEnd: DateTime.parse(json['policy_end']),
       status: json['status'] ?? '',
-      isExpired: json['is_expired'] ?? false,
-      daysRemaining: json['days_remaining'] ?? 0,
+      isExpired: json['is_expired'] == true || json['is_expired'] == 1 || json['is_expired'] == '1',
+      daysRemaining: int.tryParse(json['days_remaining']?.toString() ?? '0') ?? 0,
       renter: Renter.fromJson(json['renter'] ?? {}),
       vehicleType: json['vehicle_type'] ?? '',
-      termsAccepted: json['terms_accepted'] ?? false,
+      termsAccepted: json['terms_accepted'] == true || json['terms_accepted'] == 1 || json['terms_accepted'] == '1',
       issuedAt: DateTime.parse(json['issued_at']),
     );
   }

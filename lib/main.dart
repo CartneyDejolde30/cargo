@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'onboarding.dart';
 import 'login.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
@@ -24,67 +26,112 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  
+  // ✅ CRASH FIX: Global error handling to prevent app crashes
+  await runZonedGuarded(
+    () async {
+      // Setup Flutter error handler
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.presentError(details);
+        _logError('FlutterError', details.exception, details.stack);
+      };
 
-  // Permissions for Android/iOS
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+      // Setup platform error handler
+      PlatformDispatcher.instance.onError = (error, stack) {
+        _logError('PlatformError', error, stack);
+        return true;
+      };
 
-  // Background handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+      // ✅ OPTIMIZATION: Initialize Firebase first (required), but do other setup in background
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-  // Local Notification setup
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'carGo_channel',
-    'CarGO Notifications',
-    description: 'Channel for real-time notifications',
-    importance: Importance.high,
-  );
-
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  await _localNotifications.initialize(
-    const InitializationSettings(android: initializationSettingsAndroid),
-  );
-
-  // Create channel
-  await _localNotifications
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
-
-  // Foreground listener
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    if (message.notification != null) {
-      _localNotifications.show(
-        message.notification.hashCode,
-        message.notification!.title,
-        message.notification!.body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'carGo_channel',
-            'CarGO Notifications',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
+      // ✅ Start app immediately, do non-critical initialization in background
+      runApp(
+        ChangeNotifierProvider(
+          create: (_) => ThemeProvider(),
+          child: const MyApp(),
         ),
       );
-    }
-  });
 
-  // 🔥 WRAP APP WITH THEME PROVIDER
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: const MyApp(),
-    ),
+      // ✅ Do notification setup in background (non-blocking)
+      _setupNotificationsInBackground();
+    },
+    (error, stack) {
+      _logError('ZonedGuardedError', error, stack);
+    },
   );
+}
+
+/// ✅ CRASH FIX: Centralized error logging
+void _logError(String source, Object error, StackTrace? stack) {
+  debugPrint('❌ [$source] Error: $error');
+  if (stack != null) {
+    debugPrint('Stack trace:\n$stack');
+  }
+  
+  // TODO: Send to crash reporting service (Firebase Crashlytics, Sentry, etc.)
+  // Example: FirebaseCrashlytics.instance.recordError(error, stack);
+}
+
+// ✅ NEW: Non-blocking notification setup
+Future<void> _setupNotificationsInBackground() async {
+  try {
+    // Permissions for Android/iOS
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Background handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+    // Local Notification setup
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'carGo_channel',
+      'CarGO Notifications',
+      description: 'Channel for real-time notifications',
+      importance: Importance.high,
+    );
+
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    await _localNotifications.initialize(
+      const InitializationSettings(android: initializationSettingsAndroid),
+    );
+
+    // Create channel
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // Foreground listener
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        _localNotifications.show(
+          message.notification.hashCode,
+          message.notification!.title,
+          message.notification!.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'carGo_channel',
+              'CarGO Notifications',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
+    });
+
+    print("✅ Notifications setup completed in background");
+  } catch (e) {
+    print("❌ Error setting up notifications: $e");
+  }
 }
 
 class MyApp extends StatelessWidget {

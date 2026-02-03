@@ -104,22 +104,49 @@ class _CarListScreenState extends State<CarListScreen> {
     }
 
     try {
-      final res = await http.get(Uri.parse(url));
+      // ✅ CRASH FIX: Add timeout to prevent hanging
+      final res = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Connection timeout');
+        },
+      );
 
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data['status'] == 'success') {
-          // ✅ FIX: Check if widget is still mounted before calling setState
+        // ✅ CRASH FIX: Wrap jsonDecode in try-catch
+        try {
+          final data = jsonDecode(res.body);
+          if (data['status'] == 'success') {
+            // ✅ FIX: Check if widget is still mounted before calling setState
+            if (mounted) {
+              setState(() {
+                _allCars = List<Map<String, dynamic>>.from(data['cars']);
+                _applyFilters();
+              });
+            }
+          }
+        } catch (jsonError) {
+          print("❌ JSON decode error: $jsonError");
           if (mounted) {
-            setState(() {
-              _allCars = List<Map<String, dynamic>>.from(data['cars']);
-              _applyFilters();
-            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error loading car data')),
+            );
           }
         }
+      } else {
+        print("❌ HTTP error: ${res.statusCode}");
       }
     } catch (e) {
       print("❌ ERROR LOADING CARS: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('timeout') 
+              ? 'Connection timeout. Please check your internet.' 
+              : 'Failed to load cars. Please try again.'),
+          ),
+        );
+      }
     }
 
     // ✅ FIX: Check if widget is still mounted before calling setState

@@ -49,6 +49,30 @@ class _MyCarPageState extends State<MyCarPage> {
     _initialize();
   }
 
+  @override
+  void didUpdateWidget(MyCarPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh if ownerId changed
+    if (oldWidget.ownerId != widget.ownerId) {
+      _initialize();
+    }
+  }
+
+  // ✅ NEW: Auto-refresh when page becomes visible again
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if we're resuming from background or returning from another screen
+    if (ModalRoute.of(context)?.isCurrent == true) {
+      // Small delay to avoid multiple simultaneous refreshes
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted && !isLoading) {
+          fetchCars();
+        }
+      });
+    }
+  }
+
   /* ---------------- INITIALIZE ---------------- */
   Future<void> _initialize() async {
     await Future.wait([
@@ -59,10 +83,14 @@ class _MyCarPageState extends State<MyCarPage> {
 
   /* ---------------- CHECK VERIFICATION STATUS ---------------- */
   Future<void> checkVerificationStatus() async {
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => isCheckingVerification = true);
 
     final result = await _verificationService.checkVerification();
     
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() {
       isVerified = result['isVerified'] ?? false;
       canAddCar = result['canAddCar'] ?? false;
@@ -72,19 +100,40 @@ class _MyCarPageState extends State<MyCarPage> {
 
   /* ---------------- FETCH DATA ---------------- */
   Future<void> fetchCars() async {
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     debugPrint("📱 MyCarPage - Fetching cars for owner_id: ${widget.ownerId}");
-    final fetchedCars = await _carService.fetchCars(widget.ownerId);
     
-    debugPrint("📱 MyCarPage - Received ${fetchedCars.length} cars");
-    
-    setState(() {
-      cars = fetchedCars;
-      isLoading = false;
-    });
-    
-    applyFilters();
+    try {
+      final fetchedCars = await _carService.fetchCars(widget.ownerId);
+      
+      debugPrint("📱 MyCarPage - Received ${fetchedCars.length} cars");
+      
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
+      setState(() {
+        cars = fetchedCars;
+        isLoading = false;
+      });
+      
+      applyFilters();
+    } catch (e) {
+      debugPrint("❌ Error in fetchCars: $e");
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load cars: ${e.toString()}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   /* ---------------- FILTER LOGIC ---------------- */
@@ -103,6 +152,8 @@ class _MyCarPageState extends State<MyCarPage> {
       return matchesSearch && matchesFilter;
     }).toList();
 
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() {});
   }
 

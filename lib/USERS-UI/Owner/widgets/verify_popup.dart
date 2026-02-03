@@ -7,13 +7,13 @@ import '../../Owner/verification/personal_info_screen.dart';
 
 class VerifyPopup {
   /// Main method to show verification popup
-  /// Set showForRentersOnly to true to only show on renters.dart
+  /// Set skipVerificationCheck to true to disable the popup entirely
   static Future<void> showIfNotVerified(
     BuildContext context, {
-    bool showForRentersOnly = false,
+    bool skipVerificationCheck = false,
   }) async {
-    // Skip if this should only show for renters and we're not calling from renters
-    if (!showForRentersOnly) {
+    // Skip if verification check is disabled
+    if (skipVerificationCheck) {
       print("⏭️ Verification popup disabled for this screen");
       return;
     }
@@ -151,6 +151,8 @@ class VerifyPopup {
                     ),
                     onPressed: () {
                       Navigator.pop(dialogContext); // Close popup
+                      // ✅ CRASH FIX: Check mounted before navigation
+                      if (!context.mounted) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(

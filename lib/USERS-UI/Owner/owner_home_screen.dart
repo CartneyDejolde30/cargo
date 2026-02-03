@@ -35,9 +35,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     super.initState();
     _loadUserData();
     
-    // Show verification popup after screen loads
+    // ✅ OPTIMIZATION: Defer verification popup to avoid blocking initial render
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      VerifyPopup.showIfNotVerified(context);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          VerifyPopup.showIfNotVerified(context);
+        }
+      });
     });
   }
 
@@ -59,8 +63,8 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
       debugPrint("🔑 Parsed owner_id: $_ownerId");
 
-      // Load badge counts
-      await _loadBadgeCounts();
+      // ✅ OPTIMIZATION: Load badge counts in background (non-blocking)
+      _loadBadgeCounts();
     } catch (e) {
       debugPrint("Error loading user data: $e");
       setState(() => _loading = false);

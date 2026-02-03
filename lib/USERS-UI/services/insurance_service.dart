@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import '../models/insurance_models.dart';
 
 class InsuranceService {
-  // TODO: Replace with your actual API base URL
   static const String baseUrl = 'http://10.218.197.49/carGOAdmin/api/insurance';
 
   /// Get available insurance coverage types

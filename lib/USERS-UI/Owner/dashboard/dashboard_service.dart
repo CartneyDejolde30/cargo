@@ -23,9 +23,21 @@ class DashboardService {
         final data = jsonDecode(response.body);
 
         if (data['success'] == true && data['stats'] != null) {
-          return DashboardStats.fromJson(
+          // ✅ DEBUG: Log the exact values received
+          debugPrint("🔍 Total Cars from API: ${data['stats']['total_cars']}");
+          debugPrint("🔍 Approved Cars from API: ${data['stats']['approved_cars']}");
+          debugPrint("🔍 Pending Cars from API: ${data['stats']['pending_cars']}");
+          debugPrint("🔍 Rented Cars from API: ${data['stats']['rented_cars']}");
+          
+          final stats = DashboardStats.fromJson(
             Map<String, dynamic>.from(data['stats']),
           );
+          
+          // ✅ DEBUG: Log the parsed values
+          debugPrint("✅ Parsed Total Cars: ${stats.totalCars}");
+          debugPrint("✅ Parsed Approved Cars: ${stats.approvedCars}");
+          
+          return stats;
         } else {
           debugPrint("❌ Dashboard stats error: ${data['message']}");
         }

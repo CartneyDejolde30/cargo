@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/insurance_models.dart';
 import '../../services/insurance_service.dart';
+import 'file_claim_screen.dart';
 
 class InsurancePolicyScreen extends StatefulWidget {
   final int bookingId;
@@ -430,10 +431,20 @@ class _InsurancePolicyScreenState extends State<InsurancePolicyScreen> {
     }
   }
 
-  void _navigateToFileClaim() {
-    // TODO: Navigate to claim filing screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Claim filing feature coming soon')),
+  void _navigateToFileClaim() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FileClaimScreen(
+          policy: _policy!,
+          userId: widget.userId,
+        ),
+      ),
     );
+
+    // Reload policy if claim was filed
+    if (result == true) {
+      _loadPolicy();
+    }
   }
 }

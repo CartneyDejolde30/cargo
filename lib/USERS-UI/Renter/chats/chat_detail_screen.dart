@@ -62,6 +62,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     final prefs = await SharedPreferences.getInstance();
     currentUserId = prefs.getString("user_id") ?? "";
     await _createChatIfNeeded();
+    // ✅ CRASH FIX: Check mounted before setState
+    if (!mounted) return;
     setState(() {});
     _markMessagesSeen();
   }
@@ -88,6 +90,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       if (doc.exists) {
         final data = doc.data();
         if (data != null && data.containsKey("${widget.peerId}_typing")) {
+          // ✅ CRASH FIX: Check mounted before setState
+          if (!mounted) return;
           setState(() {
             isPeerTyping = data["${widget.peerId}_typing"] ?? false;
           });
@@ -142,12 +146,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       selectedImage = null;
       replyingToMessage = null;
       replyingToText = null;
+      
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() {});
       _setTyping(false);
 
       // Scroll to bottom after sending
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients) {
+        if (_scrollController.hasClients && mounted) {
           _scrollController.animateTo(
             0,
             duration: const Duration(milliseconds: 300),
@@ -177,6 +184,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
     if (img != null) {
       selectedImage = File(img.path);
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() {});
     }
   }
@@ -187,6 +196,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
     if (img != null) {
       selectedImage = File(img.path);
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() {});
     }
   }
@@ -195,6 +206,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     if (selectedImage == null) return;
 
     try {
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() => isUploading = true);
 
       final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
@@ -203,10 +216,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       await ref.putFile(selectedImage!);
       final url = await ref.getDownloadURL();
 
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() => isUploading = false);
 
       await _sendMessage(imageUrl: url);
     } catch (e) {
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() => isUploading = false);
       
       if (mounted) {
