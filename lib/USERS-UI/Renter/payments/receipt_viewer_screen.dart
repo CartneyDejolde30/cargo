@@ -23,11 +23,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   Map<String, dynamic>? _receiptData;
   String? _error;
 
-<<<<<<< HEAD
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
-=======
   final String baseUrl = GlobalApiConfig.baseUrl + "/";
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
   @override
   void initState() {

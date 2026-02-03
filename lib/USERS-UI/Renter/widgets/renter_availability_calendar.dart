@@ -29,11 +29,7 @@ class RenterAvailabilityCalendar extends StatefulWidget {
 class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar> {
   // Use ApiConstants instead of hardcoded URL
   // Import: import '../../Owner/mycar/api_constants.dart';
-<<<<<<< HEAD
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
-=======
   final String baseUrl = GlobalApiConfig.baseUrl + "/";
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedStart;

@@ -72,11 +72,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   
   Future<void> _loadFilterOptions() async {
     try {
-<<<<<<< HEAD
-      const url = "http://10.77.127.2/carGOAdmin/api/get_filter_options.php";
-=======
       final url = GlobalApiConfig.getFilterOptionsEndpoint;
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
       final response = await http.get(Uri.parse(url));
       
       if (response.statusCode == 200) {

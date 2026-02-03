@@ -37,13 +37,13 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 }
 
 /// 🚀 APP ENTRY POINT
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await runZonedGuarded(() async {
     _setupGlobalErrorHandling();
 
-    // 🔥 Initialize Firebase first
+    // 🔥 Initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -161,9 +161,8 @@ class MyApp extends StatelessWidget {
       // 🎨 THEMES
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeProvider.isDarkMode
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode:
+          themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
       // 🏠 START SCREEN
       home: const OnboardingScreen(),

@@ -55,19 +55,11 @@ class _CarListScreenState extends State<CarListScreen> {
     if (path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
-<<<<<<< HEAD
-    return "http://10.77.127.2/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
-  }
-
-  Future<void> fetchCars() async {
-    String url = "http://10.77.127.2/carGOAdmin/api/get_cars_filtered.php";
-=======
     return GlobalApiConfig.getImageUrl(path.replaceFirst("uploads/", ""));
   }
 
   Future<void> fetchCars() async {
     String url = GlobalApiConfig.getCarsFilteredEndpoint;
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
     List<String> queryParams = [];
     
     // Build query parameters from active filters

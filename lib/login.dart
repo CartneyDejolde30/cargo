@@ -140,6 +140,8 @@ class _LoginPageState extends State<LoginPage> {
     print("Sending JSON -> email: $email, password: $password");
 
     try {
+      print("LOGIN URL -> ${GlobalApiConfig.loginEndpoint}");
+
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json; charset=UTF-8"},

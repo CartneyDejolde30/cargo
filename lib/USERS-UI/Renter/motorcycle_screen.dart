@@ -34,11 +34,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     if (path.isEmpty) return "https://via.placeholder.com/300";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     final cleanPath = path.replaceFirst("uploads/", "");
-<<<<<<< HEAD
-    return "http://10.77.127.2/carGOAdmin/uploads/$cleanPath";
-=======
     return GlobalApiConfig.getImageUrl(cleanPath);
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   }
 
   Future<String> resolveImageUrlCached(String? rawPath) async {
@@ -51,11 +47,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-<<<<<<< HEAD
-      candidate = "http://10.77.127.2/carGOAdmin/uploads/$clean";
-=======
       candidate = GlobalApiConfig.getImageUrl(clean);
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -73,11 +65,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Future<void> fetchMotorcycles() async {
-<<<<<<< HEAD
-    const String apiUrl = "http://10.77.127.2/carGOAdmin/api/get_motorcycles_filtered.php?sortBy=created_at&sortOrder=DESC";
-=======
     final String apiUrl = "${GlobalApiConfig.getMotorcyclesFilteredEndpoint}?sortBy=created_at&sortOrder=DESC";
->>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
     try {
       final response = await http.get(Uri.parse(apiUrl));

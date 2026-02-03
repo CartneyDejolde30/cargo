@@ -20,7 +20,8 @@ class GlobalApiConfig {
   // Production Configuration (Hostinger)
   static const String _prodDomain = 'cargoph.online';
   static const String _prodBasePath = 'carGOAdmin';
-  static const String _prodBaseUrl = 'http://$_prodDomain/$_prodBasePath';
+  static const String _prodBaseUrl = 'https://$_prodDomain/$_prodBasePath';
+  
   
   // ========================================
   // ACTIVE CONFIGURATION (Auto-selected)
