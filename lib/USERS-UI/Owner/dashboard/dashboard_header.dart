@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String userName;
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
 
   const DashboardHeader({
     super.key,
     required this.userName,
-    required this.isDarkMode,
-    required this.onToggleTheme,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -19,17 +14,14 @@ class DashboardHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 50, 24, 24),
       decoration: BoxDecoration(
-        color: Theme.of(context).iconTheme.color,
-
-
-
+        color: const Color(0xFF0F172A), // Fixed CarGo brand color
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(32),
           bottomRight: Radius.circular(32),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -83,7 +75,7 @@ class DashboardHeader extends StatelessWidget {
         Text(
           "Welcome back 👋",
           style: TextStyle(
-            color: Colors.grey.shade400,
+            color: Color(0xFFCBD5E1), // Soft light grey for contrast
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),

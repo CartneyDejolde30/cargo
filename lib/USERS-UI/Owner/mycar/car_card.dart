@@ -17,32 +17,42 @@ class CarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = car['image'];
-
     final status = car["status"] ?? "Unknown";
+
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+       border: Border.all(
+  color: Theme.of(context).brightness == Brightness.dark
+      ? Colors.transparent   // no white border in dark mode
+      : Colors.grey.shade300, // soft border in light mode
+),
+
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         children: [
           // Image with Preview
-          _buildCarImage(context, imageUrl, status),
+          _buildCarImage(context, imageUrl, status, isDark, colors),
 
           // Car Details
           Expanded(
             child: InkWell(
               onTap: onTap,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(18)),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -55,19 +65,29 @@ class CarCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: Colors.black87,
+                        color: isDark
+                            ? colors.onSurface
+                            : Colors.black87,
                         letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.payments_outlined, size: 14, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.payments_outlined,
+                          size: 14,
+                          color: isDark
+                              ? colors.onSurface.withOpacity(0.7)
+                              : Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           "₱ ${car['price_per_day']}/day",
                           style: GoogleFonts.poppins(
-                            color: Colors.grey.shade700,
+                            color: isDark
+                                ? colors.onSurface.withOpacity(0.8)
+                                : Colors.grey.shade700,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -77,7 +97,7 @@ class CarCard extends StatelessWidget {
                     const Spacer(),
 
                     // Menu Button
-                    _buildMenuButton(context),
+                    _buildMenuButton(context, isDark, colors),
                   ],
                 ),
               ),
@@ -88,13 +108,20 @@ class CarCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCarImage(BuildContext context, String imageUrl, String status) {
+  Widget _buildCarImage(
+    BuildContext context,
+    String imageUrl,
+    String status,
+    bool isDark,
+    ColorScheme colors,
+  ) {
     return GestureDetector(
-      onTap: () => _showImagePreview(context, imageUrl),
+      onTap: () => _showImagePreview(context, imageUrl, isDark, colors),
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(18)),
             child: Image.network(
               imageUrl,
               height: 110,
@@ -102,11 +129,14 @@ class CarCard extends StatelessWidget {
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 height: 110,
-                color: Colors.grey.shade200,
+                color:
+                    isDark ? const Color(0xFF121212) : Colors.grey.shade200,
                 child: Icon(
                   Icons.directions_car,
                   size: 40,
-                  color: Colors.grey.shade400,
+                  color: isDark
+                      ? colors.onSurface.withOpacity(0.5)
+                      : Colors.grey.shade400,
                 ),
               ),
             ),
@@ -115,27 +145,31 @@ class CarCard extends StatelessWidget {
             top: 10,
             left: 10,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: StatusHelper.getStatusColor(status),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: StatusHelper.getStatusColor(status).withValues(alpha: 0.3),
+                    color: StatusHelper.getStatusColor(status)
+                        .withOpacity(0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Text(
-                status.toUpperCase(),
+             child: DefaultTextStyle(
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
+                  color: Colors.white, // FORCE white always
                 ),
+                child: Text(status.toUpperCase()),
               ),
+
+
             ),
           ),
         ],
@@ -143,20 +177,28 @@ class CarCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuButton(BuildContext context) {
+  Widget _buildMenuButton(
+    BuildContext context,
+    bool isDark,
+    ColorScheme colors,
+  ) {
     return Align(
       alignment: Alignment.bottomRight,
       child: PopupMenuButton(
         icon: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: isDark
+                ? colors.surface.withOpacity(0.1)
+                : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.more_horiz_rounded,
             size: 20,
-            color: Colors.black87,
+            color: isDark
+                ? colors.onSurface.withOpacity(0.8)
+                : Colors.black87,
           ),
         ),
         shape: RoundedRectangleBorder(
@@ -169,9 +211,21 @@ class CarCard extends StatelessWidget {
             value: "edit",
             child: Row(
               children: [
-                Icon(Icons.edit_outlined, size: 20, color: Colors.grey.shade700),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: isDark
+                      ? colors.onSurface.withOpacity(0.8)
+                      : Colors.grey.shade700,
+                ),
                 const SizedBox(width: 12),
-                Text("Edit", style: GoogleFonts.poppins(fontSize: 14)),
+                Text(
+                  "Edit",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: colors.onSurface,
+                  ),
+                ),
               ],
             ),
           ),
@@ -179,11 +233,18 @@ class CarCard extends StatelessWidget {
             value: "delete",
             child: Row(
               children: [
-                const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.red),
+                const Icon(
+                  Icons.delete_outline_rounded,
+                  size: 20,
+                  color: Colors.red,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   "Delete",
-                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.red),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.red,
+                  ),
                 ),
               ],
             ),
@@ -193,7 +254,12 @@ class CarCard extends StatelessWidget {
     );
   }
 
-  void _showImagePreview(BuildContext context, String imageUrl) {
+  void _showImagePreview(
+    BuildContext context,
+    String imageUrl,
+    bool isDark,
+    ColorScheme colors,
+  ) {
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -205,11 +271,14 @@ class CarCard extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               height: 300,
-              color: Colors.grey.shade200,
+              color:
+                  isDark ? const Color(0xFF121212) : Colors.grey.shade200,
               child: Icon(
                 Icons.directions_car,
                 size: 64,
-                color: Colors.grey.shade400,
+                color: isDark
+                    ? colors.onSurface.withOpacity(0.5)
+                    : Colors.grey.shade400,
               ),
             ),
           ),

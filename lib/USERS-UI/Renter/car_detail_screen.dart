@@ -257,6 +257,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+     final isDark = Theme.of(context).brightness == Brightness.dark;
+  final colors = Theme.of(context).colorScheme;
     if (loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Colors.black)),
@@ -348,8 +350,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                              color: isDark ? colors.surface : Colors.white,                              shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.1),
@@ -382,8 +383,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                              color: isDark ? colors.surface : Colors.white,                              shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.1),
@@ -462,9 +462,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
+                            border: Border.all(
+  color: isDark ? Colors.transparent : Colors.grey.shade200,
+),
                           ),
                           child: Column(
                             children: [
@@ -510,8 +512,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: isDark ? colors.surface : Colors.white,                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(Icons.attach_money, color: Colors.green.shade700, size: 24),
                                   ),
@@ -606,14 +607,15 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
+                                  color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(featureIcon, size: 18, color: Colors.black),
+                                   Icon(featureIcon, size: 18, color: colors.onSurface),
+
                                     const SizedBox(width: 8),
                                     Text(
                                       feature,
@@ -742,9 +744,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(
+  color: isDark ? Colors.transparent : Colors.grey.shade200,
+),
                             ),
                             child: Row(
                               children: [
@@ -838,6 +842,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         final userData = await _getUserData();
                         final userId = userData['userId'];
                         
+                        
                         if (userId == null || userId.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -882,7 +887,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           }
                         });
                       },
-                      icon: const Icon(Icons.rate_review, size: 20, color: Colors.black),
+                      icon: Icon(Icons.rate_review, size: 20, color: colors.onSurface),
                       label: Text(
                         'Leave a Review',
                         style: GoogleFonts.poppins(
@@ -895,7 +900,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.black, width: 1.5),
+                        
+side: BorderSide(color: colors.outline, width: 1.5),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -913,7 +919,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
@@ -948,8 +954,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
+                  color: isDark ? colors.surface : Colors.white,                  boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 12,
@@ -1026,8 +1031,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                   ? "Checking..."
                                   : (isVerified ? "Book Car" : "Verification Required"),
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 16,
+                                color: isDark ? colors.surface : Colors.white,                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1043,8 +1047,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                             child: Text(
                               "₱$price/day",
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
+                                color: isDark ? colors.surface : Colors.white,                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1117,6 +1120,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    
+final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Icon(icon, size: 20, color: Colors.blue.shade700),
@@ -1135,7 +1140,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: colors.onSurface,
+
           ),
         ),
       ],
@@ -1148,13 +1154,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     required String date,
     required String review,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+  color: isDark ? Colors.transparent : Colors.grey.shade200,
+),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1198,11 +1208,16 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     );
   }
 
-  void _showVerificationRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
+void _showVerificationRequiredDialog() {
+  showDialog(
+    context: context,
+    builder: (ctx) {
+      final isDark = Theme.of(ctx).brightness == Brightness.dark;
+      final colors = Theme.of(ctx).colorScheme;
+
+      return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+
         title: Row(
           children: [
             Container(
@@ -1225,6 +1240,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
             ),
           ],
         ),
+
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1235,31 +1251,9 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                   : verificationMessage,
               style: GoogleFonts.poppins(fontSize: 14, height: 1.5),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Verification takes 24-48 hours',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.blue.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
+
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -1279,11 +1273,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-               backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+              backgroundColor: colors.surface,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1292,15 +1282,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
             child: Text(
               'Get Verified',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: isDark ? colors.onSurface : Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
+
 }
 
 class FullscreenImageViewer extends StatelessWidget {
@@ -1310,6 +1302,7 @@ class FullscreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
        backgroundColor: Theme.of(context).iconTheme.color,
 

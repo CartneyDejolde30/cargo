@@ -126,6 +126,7 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   Future<void> _deleteNotification(NotificationModel notification) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -170,7 +171,7 @@ class _NotificationPageState extends State<NotificationPage>
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
+              foregroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -263,11 +264,12 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   void _showSnackBar({required IconData icon, required String message, required Color backgroundColor}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: isDark ? const Color(0xFF1E1E1E) : Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -324,20 +326,24 @@ class _NotificationPageState extends State<NotificationPage>
 
   @override
   Widget build(BuildContext context) {
+    
     final unreadCount = notifications.where((n) => n.isUnread).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(unreadCount),
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,      appBar: _buildAppBar(unreadCount),
       body: _buildBody(),
     );
   }
 
   AppBar _buildAppBar(int unreadCount) {
+ 
+    final colors = Theme.of(context).colorScheme;
     return AppBar(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+        icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onBackground, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
       title: Column(
@@ -391,12 +397,15 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   Widget _buildBody() {
+   
+    final colors = Theme.of(context).colorScheme;
     if (isLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: Colors.black),
+            CircularProgressIndicator(color: colors.primary),
+
             const SizedBox(height: 16),
             Text(
               "Loading notifications...",
@@ -413,6 +422,8 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   Widget _buildErrorState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+  
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -445,11 +456,7 @@ class _NotificationPageState extends State<NotificationPage>
               label: Text('Try Again', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                  backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                foregroundColor: Colors.white,
+                foregroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -489,6 +496,8 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   Widget _buildNotificationList() {
+   
+  final colors = Theme.of(context).colorScheme;
     return FadeTransition(
       opacity: _fadeAnimation,
       child: RefreshIndicator(
@@ -510,8 +519,7 @@ class _NotificationPageState extends State<NotificationPage>
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      letterSpacing: -0.3,
+                      color: colors.onSurface,letterSpacing: -0.3,
                     ),
                   ),
                 ),
@@ -526,6 +534,8 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   Widget _buildNotificationItem(NotificationModel n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
     final color = _getColorByType(n.type);
     final icon = _getIconByType(n.type);
     final isUnread = n.isUnread;
@@ -533,7 +543,7 @@ class _NotificationPageState extends State<NotificationPage>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isUnread ? color.withOpacity(0.3) : Colors.grey.shade200,
@@ -579,8 +589,7 @@ class _NotificationPageState extends State<NotificationPage>
                               style: GoogleFonts.poppins(
                                 fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
                                 fontSize: 15,
-                                color: Colors.black87,
-                              ),
+                                color: colors.onSurface,                              ),
                             ),
                           ),
                           if (isUnread)
@@ -598,7 +607,8 @@ class _NotificationPageState extends State<NotificationPage>
                       Text(
                         n.message,
                         style: GoogleFonts.poppins(
-                          color: Colors.grey.shade700,
+                          color: colors.onSurface.withOpacity(0.7),
+
                           fontSize: 13,
                           height: 1.4,
                         ),
@@ -613,7 +623,8 @@ class _NotificationPageState extends State<NotificationPage>
                           Text(
                             n.formattedTime,
                             style: GoogleFonts.poppins(
-                              color: Colors.grey.shade500,
+                              color: colors.onSurface.withOpacity(0.6),
+
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -714,14 +725,15 @@ class NotificationDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _getColorByType(notification.type);
     final icon = _getIconByType(notification.type);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,      appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onBackground, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -808,8 +820,7 @@ class NotificationDetailScreen extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
-                height: 1.3,
+                color: colors.onSurface,                height: 1.3,
               ),
             ),
             const SizedBox(height: 16),
@@ -843,7 +854,7 @@ class NotificationDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),

@@ -16,7 +16,7 @@ import '../Owner/mycar/car_filter_chips.dart';
 import '../Owner/mycar/car_stats_section.dart';
 import '../Owner/mycar/empty_car_state.dart';
 import '../Owner/mycar/car_shimmer.dart';
-import '../Owner/mycar/car_detail_page.dart'; // ADD THIS IMPORT
+import '../Owner/mycar/car_detail_page.dart';
 
 // Dialogs
 import '../Owner/mycar/verification_dialog.dart';
@@ -62,7 +62,7 @@ class _MyCarPageState extends State<MyCarPage> {
     setState(() => isCheckingVerification = true);
 
     final result = await _verificationService.checkVerification();
-    
+
     setState(() {
       isVerified = result['isVerified'] ?? false;
       canAddCar = result['canAddCar'] ?? false;
@@ -75,12 +75,12 @@ class _MyCarPageState extends State<MyCarPage> {
     setState(() => isLoading = true);
 
     final fetchedCars = await _carService.fetchCars(widget.ownerId);
-    
+
     setState(() {
       cars = fetchedCars;
       isLoading = false;
     });
-    
+
     applyFilters();
   }
 
@@ -95,7 +95,8 @@ class _MyCarPageState extends State<MyCarPage> {
       final matchesSearch = brand.contains(query) || model.contains(query);
       final matchesFilter =
           selectedFilter == "All" ||
-              selectedFilter.toLowerCase() == car["status"].toString().toLowerCase();
+              selectedFilter.toLowerCase() ==
+                  car["status"].toString().toLowerCase();
 
       return matchesSearch && matchesFilter;
     }).toList();
@@ -110,7 +111,7 @@ class _MyCarPageState extends State<MyCarPage> {
     if (success) {
       cars.removeWhere((car) => car["id"].toString() == id.toString());
       applyFilters();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -126,7 +127,8 @@ class _MyCarPageState extends State<MyCarPage> {
             ),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -163,7 +165,7 @@ class _MyCarPageState extends State<MyCarPage> {
               builder: (_) => const PersonalInfoScreen(),
             ),
           );
-          
+
           if (result == true || mounted) {
             checkVerificationStatus();
           }
@@ -175,7 +177,8 @@ class _MyCarPageState extends State<MyCarPage> {
     final result = await Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => VehicleTypeSelectionScreen(ownerId: widget.ownerId),
+        pageBuilder: (_, __, ___) =>
+            VehicleTypeSelectionScreen(ownerId: widget.ownerId),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
@@ -199,23 +202,24 @@ class _MyCarPageState extends State<MyCarPage> {
   /* ---------------- BUILD UI ---------------- */
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
-      floatingActionButton: _buildFAB(),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : Colors.grey.shade50,
+      appBar: _buildAppBar(context, colors, isDark),
+      floatingActionButton: _buildFAB(isDark),
       body: RefreshIndicator(
         onRefresh: _initialize,
-        color: Theme.of(context).iconTheme.color,
-
-
-
+        color: colors.primary,
         child: Column(
           children: [
             // Stats Section
             CarStatsSection(cars: cars),
 
             // Search Bar
-            _buildSearchBar(),
+            _buildSearchBar(context, colors, isDark),
 
             // Filter Chips
             CarFilterChips(
@@ -243,18 +247,17 @@ class _MyCarPageState extends State<MyCarPage> {
   }
 
   /* ---------------- APP BAR ---------------- */
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(
+      BuildContext context, ColorScheme colors, bool isDark) {
     return AppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : colors.background,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Text(
         "My Cars",
         style: GoogleFonts.poppins(
-          color: Theme.of(context).iconTheme.color,
-
-
-
+          color: colors.onBackground,
           fontWeight: FontWeight.bold,
           fontSize: 22,
           letterSpacing: -0.5,
@@ -270,26 +273,32 @@ class _MyCarPageState extends State<MyCarPage> {
   }
 
   /* ---------------- FLOATING ACTION BUTTON ---------------- */
-  Widget _buildFAB() {
+  Widget _buildFAB(bool isDark) {
     return FloatingActionButton.extended(
-      backgroundColor: canAddCar ? Colors.black : Colors.grey.shade400,
+      backgroundColor:
+          canAddCar ? (isDark ? Colors.white : Colors.black) : Colors.grey.shade400,
       onPressed: isCheckingVerification ? null : handleAddCar,
       icon: Icon(
         Icons.add,
-        color: canAddCar ? Colors.white : Colors.grey.shade600,
+        color: canAddCar
+            ? (isDark ? Colors.black : Colors.white)
+            : Colors.grey.shade600,
       ),
       label: Text(
         canAddCar ? "Add Car" : "Verify First",
         style: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
-          color: canAddCar ? Colors.white : Colors.grey.shade600,
+          color: canAddCar
+              ? (isDark ? Colors.black : Colors.white)
+              : Colors.grey.shade600,
         ),
       ),
     );
   }
 
   /* ---------------- SEARCH BAR ---------------- */
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(
+      BuildContext context, ColorScheme colors, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: TextField(
@@ -300,13 +309,21 @@ class _MyCarPageState extends State<MyCarPage> {
         decoration: InputDecoration(
           hintText: "Search car...",
           hintStyle: GoogleFonts.poppins(
-            color: Colors.grey.shade500,
+            color: isDark
+                ? colors.onSurface.withOpacity(0.5)
+                : Colors.grey.shade500,
             fontSize: 14,
           ),
-          prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+          prefixIcon: Icon(Icons.search,
+              color: isDark
+                  ? colors.onSurface.withOpacity(0.7)
+                  : Colors.grey.shade600),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                  icon: Icon(Icons.clear,
+                      color: isDark
+                          ? colors.onSurface.withOpacity(0.7)
+                          : Colors.grey.shade600),
                   onPressed: () {
                     setState(() {
                       searchQuery = "";
@@ -316,19 +333,30 @@ class _MyCarPageState extends State<MyCarPage> {
                 )
               : null,
           filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          fillColor:
+              isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+            borderSide: BorderSide(
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.grey.shade200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+            borderSide: BorderSide(
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.grey.shade200),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Colors.black, width: 1.5),
+            borderSide: BorderSide(
+              color: isDark ? colors.primary : Colors.black,
+              width: 1.5,
+            ),
           ),
         ),
       ),
@@ -354,19 +382,20 @@ class _MyCarPageState extends State<MyCarPage> {
           child: CarCard(
             car: car,
             onTap: () {
-              // NOW NAVIGATES TO DETAIL VIEW INSTEAD OF EDIT SCREEN
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => CarDetailPage(
                     car: car,
                     onEdit: () => navigateToEditScreen(car),
-                    onDelete: () => deleteCar(int.parse(car["id"].toString())),
+                    onDelete: () =>
+                        deleteCar(int.parse(car["id"].toString())),
                   ),
                 ),
               );
             },
-            onMenuSelected: (action) => handleCarMenuAction(action, car),
+            onMenuSelected: (action) =>
+                handleCarMenuAction(action, car),
           ),
         );
       },

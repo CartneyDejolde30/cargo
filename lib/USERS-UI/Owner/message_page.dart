@@ -51,12 +51,17 @@ class _MessagePageState extends State<MessagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+     backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: colors.onBackground),
+
         title: Text(
           "Messages",
           style: GoogleFonts.poppins(
@@ -96,20 +101,22 @@ class _MessagePageState extends State<MessagePage> {
               children: [
                 // Search Bar
                 Container(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: FadeInDown(
                     duration: const Duration(milliseconds: 400),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F3F5),
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF1F3F5),
+
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300, width: 1),
                       ),
                       child: TextField(
                         onChanged: (v) => setState(() => searchQuery = v),
                         style: GoogleFonts.inter(
-                          color: Colors.black87,
+                          color: colors.onSurface,
                           fontSize: 15,
                         ),
                         decoration: InputDecoration(
@@ -140,8 +147,7 @@ class _MessagePageState extends State<MessagePage> {
                     final chats = snapshot.data!.docs;
 
                     return Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.only(bottom: 12),
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,                      padding: const EdgeInsets.only(bottom: 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -152,7 +158,7 @@ class _MessagePageState extends State<MessagePage> {
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade600,
+                                color: colors.onSurface.withOpacity(0.6),
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -249,8 +255,7 @@ class _MessagePageState extends State<MessagePage> {
                                                         color: Colors.green.shade500,
                                                         shape: BoxShape.circle,
                                                         border: Border.all(
-                                                          color: Colors.white,
-                                                          width: 2,
+                                                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,                                                          width: 2,
                                                         ),
                                                       ),
                                                     ),
@@ -266,7 +271,7 @@ class _MessagePageState extends State<MessagePage> {
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
                                                   style: GoogleFonts.inter(
-                                                    color: Colors.black87,
+                                                    color: colors.onSurface,
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w500,
                                                   ),
@@ -321,7 +326,7 @@ class _MessagePageState extends State<MessagePage> {
                               Text(
                                 "No messages yet",
                                 style: GoogleFonts.poppins(
-                                  color: Colors.grey.shade600,
+                                  color: colors.onSurface.withOpacity(0.6),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -374,8 +379,7 @@ class _MessagePageState extends State<MessagePage> {
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
+                                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,                                    borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.04),
@@ -410,8 +414,7 @@ class _MessagePageState extends State<MessagePage> {
                                               color: Colors.green.shade500,
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                color: Colors.white,
-                                                width: 2,
+                                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,                                                width: 2,
                                               ),
                                             ),
                                           ),
@@ -426,7 +429,7 @@ class _MessagePageState extends State<MessagePage> {
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
-                                              color: Colors.black87,
+                                              color: colors.onSurface,
                                             ),
                                           ),
                                         ),
@@ -464,7 +467,7 @@ class _MessagePageState extends State<MessagePage> {
                                     ),
                                     trailing: Icon(
                                       Icons.chevron_right_rounded,
-                                      color: Colors.grey.shade400,
+                                      color: colors.onSurface.withOpacity(0.4),
                                       size: 24,
                                     ),
                                     onTap: () {

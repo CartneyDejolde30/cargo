@@ -428,7 +428,12 @@ void initState() {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          border: Border.all(
+  color: Theme.of(context).brightness == Brightness.dark
+      ? Colors.transparent   // no white border in dark mode
+      : Colors.grey.shade300, // soft border in light mode
+),
+
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

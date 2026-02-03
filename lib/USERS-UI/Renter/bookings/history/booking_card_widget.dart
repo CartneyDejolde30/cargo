@@ -42,8 +42,11 @@ class BookingCardWidget extends StatelessWidget {
   color: Theme.of(context).colorScheme.surfaceVariant,
   borderRadius: BorderRadius.circular(16),
   border: Border.all(
-    color: Theme.of(context).colorScheme.outlineVariant,
-  ),
+  color: Theme.of(context).brightness == Brightness.dark
+      ? Colors.transparent   // no white border in dark mode
+      : Colors.grey.shade300, // soft border in light mode
+),
+
   boxShadow: [
     BoxShadow(
       color: Theme.of(context).shadowColor.withOpacity(0.25),

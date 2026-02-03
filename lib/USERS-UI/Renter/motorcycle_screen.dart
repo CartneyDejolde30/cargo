@@ -116,7 +116,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   Widget build(BuildContext context) {
     final bestMotorcycles = _motorcycles.take(4).toList();
     final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
-
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -152,13 +153,13 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,                      borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
-                        const Icon(Icons.search, color: Colors.grey, size: 22),
+                        Icon(Icons.search, color: colors.onSurface.withOpacity(0.6), size: 22),
+
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -179,8 +180,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(25),
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,                    borderRadius: BorderRadius.circular(25),
                   ),
                   child: Row(
                     children: [
@@ -317,6 +317,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -339,12 +340,18 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Widget _buildSectionHeader(String title, String action, {Color color = Colors.grey}) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+  color: colors.onSurface,
+),
+
         ),
         GestureDetector(
           onTap: () => Navigator.push(
@@ -365,6 +372,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Widget _buildMotorcycleCard({
+    
     required int motorcycleId,
     required String image,
     required String name,
@@ -373,6 +381,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     required String type,
     required String price,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -392,9 +402,13 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+  color: Theme.of(context).brightness == Brightness.dark
+      ? Colors.transparent   // no white border in dark mode
+      : Colors.grey.shade300, // soft border in light mode
+),
+
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,6 +501,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     required String price,
     required String engineSize,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -508,8 +524,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
         width: 300,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -577,7 +592,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
+
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
