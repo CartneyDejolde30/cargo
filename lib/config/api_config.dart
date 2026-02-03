@@ -14,13 +14,13 @@ class GlobalApiConfig {
   
   // Development Configuration (Local)
   static const String _devBaseIP = '10.218.197.49';
-  static const String _devBasePath = 'carGOAdmin';
+  static const String _devBasePath = 'cargoAdmin'; // Fixed: Changed from 'carGOAdmin' to 'cargoAdmin'
   static const String _devBaseUrl = 'http://$_devBaseIP/$_devBasePath';
   
   // Production Configuration (Hostinger)
   static const String _prodDomain = 'cargoph.online';
-  static const String _prodBasePath = 'carGOAdmin';
-  static const String _prodBaseUrl = 'http://$_prodDomain/$_prodBasePath';
+  static const String _prodBasePath = 'cargoAdmin'; // Fixed: Changed from 'carGOAdmin' to 'cargoAdmin'
+  static const String _prodBaseUrl = 'https://$_prodDomain/$_prodBasePath';
   
   // ========================================
   // ACTIVE CONFIGURATION (Auto-selected)

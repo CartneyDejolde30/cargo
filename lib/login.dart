@@ -153,9 +153,13 @@ class _LoginPageState extends State<LoginPage> {
       print("Response body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final responseData = jsonDecode(response.body);
 
-        if (data["status"] == "success") {
+        // ✅ FIX: Check for "success" field instead of "status"
+        if (responseData["success"] == true) {
+          // Extract the actual user data from the "data" field
+          final data = responseData["data"];
+          
           // Save user data to SharedPreferences
           SharedPreferences prefs = await SharedPreferences.getInstance();
           
@@ -199,14 +203,14 @@ class _LoginPageState extends State<LoginPage> {
           // Show success message
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(data["message"])),
+              SnackBar(content: Text(responseData["message"] ?? "Login successful")),
             );
           }
         } else {
           if (mounted) Navigator.pop(context);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(data["message"] ?? "Login failed.")),
+              SnackBar(content: Text(responseData["message"] ?? "Login failed.")),
             );
           }
         }

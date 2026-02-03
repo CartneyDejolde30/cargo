@@ -111,7 +111,7 @@ class _MotorcycleDetailScreenState
       return path
           .replaceAll("//uploads/uploads/", "/uploads/")
           .replaceAll("/uploads/uploads/", "/uploads/")
-          .replaceAll("carGOAdmin//uploads/", "carGOAdmin/uploads/");
+          .replaceAll("cargoAdmin//uploads/", "cargoAdmin/uploads/");
     }
 
     // Clean filename paths

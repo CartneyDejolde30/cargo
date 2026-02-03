@@ -27,27 +27,26 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // ✅ CRASH FIX: Global error handling to prevent app crashes
-  await runZonedGuarded(
-    () async {
-      // Setup Flutter error handler
-      FlutterError.onError = (FlutterErrorDetails details) {
-        FlutterError.presentError(details);
-        _logError('FlutterError', details.exception, details.stack);
-      };
+  // ✅ CRASH FIX: Setup error handlers before runApp
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    _logError('FlutterError', details.exception, details.stack);
+  };
 
-      // Setup platform error handler
-      PlatformDispatcher.instance.onError = (error, stack) {
-        _logError('PlatformError', error, stack);
-        return true;
-      };
+  // Setup platform error handler
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _logError('PlatformError', error, stack);
+    return true;
+  };
 
-      // ✅ OPTIMIZATION: Initialize Firebase first (required), but do other setup in background
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+  // ✅ FIX: Initialize Firebase outside of runZonedGuarded to avoid zone mismatch
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-      // ✅ Start app immediately, do non-critical initialization in background
+  // ✅ Run app with zone guarding for runtime errors
+  runZonedGuarded(
+    () {
       runApp(
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(),

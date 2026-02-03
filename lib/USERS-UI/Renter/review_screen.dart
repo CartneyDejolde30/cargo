@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
@@ -41,7 +42,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   Future<void> _fetchReviews() async {
     final url = Uri.parse(
-        "http://10.244.29.49/carGOAdmin/get_reviews.php?car_id=${widget.carId}");
+        GlobalApiConfig.getReviewsEndpoint + "?car_id=${widget.carId}");
 
     final response = await http.get(url);
 
