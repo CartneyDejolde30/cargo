@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class PayoutSettingsScreen extends StatefulWidget {
   const PayoutSettingsScreen({super.key});
@@ -20,7 +21,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen> {
   String? _userId;
   Map<String, dynamic>? _currentSettings;
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'receipt_viewer_screen.dart';
 import 'refund_request_screen.dart';
 import 'refund_history_screen.dart';
@@ -22,7 +23,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   String? _userId;
   String _filterStatus = 'all';
 
+<<<<<<< HEAD
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+=======
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
   @override
   void initState() {

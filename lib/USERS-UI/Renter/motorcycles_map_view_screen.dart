@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_application_1/config/maptiler_config.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/widgets/map_controls.dart';
 import 'package:flutter_application_1/widgets/map_style_switcher.dart';
 import 'motorcycle_detail_screen.dart';
@@ -253,7 +254,11 @@ class _MotorcyclesMapViewScreenState extends State<MotorcyclesMapViewScreen> {
     if (path == null || path.isEmpty) {
       return "https://via.placeholder.com/300";
     }
+<<<<<<< HEAD
     return "http://10.77.127.2/carGOAdmin/uploads/${path.replaceFirst("uploads/", "")}";
+=======
+    return GlobalApiConfig.getImageUrl(path.replaceFirst("uploads/", ""));
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   }
 
   void _changeMapStyle(String style) {

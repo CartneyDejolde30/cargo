@@ -5,7 +5,7 @@ import '../mycar/api_constants.dart';
 
 /// Enhanced Calendar Service with advanced features
 class EnhancedCalendarService {
-  static const String _baseUrl = ApiConstants.baseUrl;
+  static String get _baseUrl => ApiConstants.baseUrl;
 
   /// Get blocked dates with booking information
   Future<Map<String, dynamic>> getBlockedDates({

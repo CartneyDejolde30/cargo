@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import 'car_listing.dart';
 
 Future<bool> submitVehicleListing({
@@ -16,7 +17,7 @@ Future<bool> submitVehicleListing({
       ? "motorcycles_api.php" 
       : "cars_api.php";
   
-  final url = Uri.parse("http://10.77.127.2/carGOAdmin/$endpoint");
+  final url = Uri.parse("${GlobalApiConfig.baseUrl}/$endpoint");
 
   final request = http.MultipartRequest("POST", url);
 

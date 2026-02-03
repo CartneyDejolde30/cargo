@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class ExcessMileagePaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -120,7 +121,7 @@ class _ExcessMileagePaymentScreenState extends State<ExcessMileagePaymentScreen>
       // Use existing late fee payment API (can be adapted)
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://10.77.127.2/carGOAdmin/api/payment/submit_late_fee_payment.php'),
+        Uri.parse(GlobalApiConfig.submitLateFeePaymentEndpoint),
       );
 
       // Get user ID from shared preferences

@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_application_1/config/api_config.dart';
 
 /// Read-only availability calendar for renters
 /// Shows which dates are available, blocked, or booked
@@ -28,7 +29,11 @@ class RenterAvailabilityCalendar extends StatefulWidget {
 class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar> {
   // Use ApiConstants instead of hardcoded URL
   // Import: import '../../Owner/mycar/api_constants.dart';
+<<<<<<< HEAD
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+=======
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedStart;

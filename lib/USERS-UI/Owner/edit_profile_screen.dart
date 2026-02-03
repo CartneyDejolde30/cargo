@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String api;
@@ -125,7 +126,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       await prefs.setString("fullname", json["user"]["fullname"]);
       await prefs.setString("phone", json["user"]["phone"]);
       await prefs.setString("address", json["user"]["address"]);
-      String baseURL = "http://10.77.127.2/carGOAdmin/uploads/";
+      String baseURL = GlobalApiConfig.uploadsUrl + "/";
 
         await prefs.setString(
           "profile_image",

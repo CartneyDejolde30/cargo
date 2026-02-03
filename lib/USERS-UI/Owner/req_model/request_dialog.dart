@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 class RequestDialogs {
   static void showRejectDialog(
@@ -123,7 +124,7 @@ class RequestDialogs {
                         );
 
                         final url = Uri.parse(
-                          "http://10.77.127.2/carGOAdmin/api/reject_request.php",
+                          GlobalApiConfig.rejectRequestEndpoint,
                         );
 
                         try {

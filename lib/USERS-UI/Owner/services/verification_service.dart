@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 import '../models/user_verification.dart';
 
 class VerificationService {
-  static const String baseUrl =
-      "http://10.77.127.2/carGOAdmin/api/submit_verification.php";
+  static String get baseUrl =>
+      GlobalApiConfig.submitVerificationEndpoint;
 
   static Future<Map<String, dynamic>> submitVerification(
       UserVerification user) async {

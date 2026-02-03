@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class ReceiptViewerScreen extends StatefulWidget {
   final int bookingId;
@@ -22,7 +23,11 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   Map<String, dynamic>? _receiptData;
   String? _error;
 
+<<<<<<< HEAD
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+=======
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
   @override
   void initState() {

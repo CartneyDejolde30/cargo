@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class GoogleSignInService {
   // ✅ CRITICAL: Add your Web Client ID from Firebase Console
@@ -18,7 +19,7 @@ class GoogleSignInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Your PHP backend URL - UPDATE THIS WITH YOUR ACTUAL IP
-  static const String baseUrl = "http://10.77.127.2/carGOAdmin";
+  static String get baseUrl => GlobalApiConfig.baseUrl;
 
   /// Sign in with Google - ALWAYS shows account picker
   Future<Map<String, dynamic>?> signInWithGoogle() async {

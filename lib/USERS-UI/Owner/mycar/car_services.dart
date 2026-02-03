@@ -34,7 +34,7 @@ Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
 
         if (data is List) {
           return data.map<Map<String, dynamic>>((car) {
-            const String baseUrl = ApiConstants.baseUrl;
+            final String baseUrl = ApiConstants.baseUrl;
 
             String imagePath = car['image']?.toString() ?? "";
 

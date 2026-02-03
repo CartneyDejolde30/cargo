@@ -5,11 +5,12 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 
 // Configuration class for API
 class ApiConfig {
-  static const String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  static String get baseUrl => GlobalApiConfig.baseUrl + "/";
   static const Duration timeoutDuration = Duration(seconds: 30);
 }
 

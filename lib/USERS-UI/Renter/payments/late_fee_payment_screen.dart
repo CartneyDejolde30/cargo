@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class LateFeePaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -36,7 +37,11 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
   bool hasAgreedToTerms = false;
   bool isProcessing = false;
   
+<<<<<<< HEAD
   final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+=======
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   final String gcashQRCodeUrl = "assets/gcash.jpg";
 
   @override

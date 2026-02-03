@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const String baseUrl = "http://10.77.127.2/carGOAdmin";
+import 'package:flutter_application_1/config/api_config.dart';
+
+final String baseUrl = GlobalApiConfig.baseUrl;
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});

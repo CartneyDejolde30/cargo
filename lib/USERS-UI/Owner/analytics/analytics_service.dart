@@ -6,7 +6,7 @@ import 'analytics_models.dart';
 
 /// Enhanced Analytics Service
 class AnalyticsService {
-  static const String _baseUrl = ApiConstants.baseUrl;
+  static String get _baseUrl => ApiConstants.baseUrl;
 
   /// Get overview statistics
   Future<AnalyticsOverview?> getOverviewStats({int? ownerId}) async {

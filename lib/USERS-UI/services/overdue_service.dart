@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import '../models/overdue_booking.dart';
 
 class OverdueService {
-  static const String baseUrl = 'http://10.77.127.2/carGOAdmin'; // Production
+  static String get baseUrl => GlobalApiConfig.baseUrl; // Production
 
   /// Get overdue bookings for an owner
   Future<List<OverdueBooking>> getOwnerOverdueBookings(int ownerId) async {

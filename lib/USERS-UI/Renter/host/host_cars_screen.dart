@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import '../car_detail_screen.dart';
 
 class HostCarsScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _HostCarsScreenState extends State<HostCarsScreen> {
   bool loading = true;
   List<Map<String, dynamic>> cars = [];
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

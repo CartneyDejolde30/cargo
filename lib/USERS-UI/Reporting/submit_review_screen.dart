@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class SubmitReviewScreen extends StatefulWidget {
   final String bookingId;
@@ -33,7 +34,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   final TextEditingController _ownerReviewController = TextEditingController();
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   // Review categories for cars
   Map<String, double> carCategories = {

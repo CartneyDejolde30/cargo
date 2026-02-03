@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class PayoutHistoryScreen extends StatefulWidget {
   const PayoutHistoryScreen({super.key});
@@ -18,7 +19,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
   String? _userId;
   String _filterStatus = 'all';
 
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

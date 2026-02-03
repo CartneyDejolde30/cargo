@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 
 class GCashPaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -57,7 +58,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   String? _transactionId;
 
   final String gcashQRCodeUrl = "assets/gcash.jpg";
-  final String baseUrl = "http://10.77.127.2/carGOAdmin/";
+  final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
   void initState() {

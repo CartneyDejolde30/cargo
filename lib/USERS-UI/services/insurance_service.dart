@@ -2,10 +2,11 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import '../models/insurance_models.dart';
 
 class InsuranceService {
-  static const String baseUrl = 'http://10.77.127.2/carGOAdmin/api/insurance';
+  static String get baseUrl => GlobalApiConfig.insuranceBaseUrl;
 
   /// Get available insurance coverage types
   static Future<List<InsuranceCoverage>> getCoverageTypes() async {

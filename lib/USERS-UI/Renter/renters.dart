@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
@@ -41,7 +42,11 @@ Future<void> saveFcmToken() async {
 
   if (userId == null) return;
 
+<<<<<<< HEAD
   final url = Uri.parse("http://10.77.127.2/carGOAdmin/api/save_fcm_token.php");
+=======
+  final url = Uri.parse(GlobalApiConfig.saveFcmTokenEndpoint);
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
   await http.post(url, body: {
     "user_id": userId,
@@ -72,7 +77,11 @@ void initState() {
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
 
     final cleanPath = path.replaceFirst("uploads/", "");
+<<<<<<< HEAD
     return "http://10.77.127.2/carGOAdmin/uploads/$cleanPath";
+=======
+    return GlobalApiConfig.getImageUrl(cleanPath);
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
   }
 
   /// Async resolver that checks whether an image URL exists (via HEAD).
@@ -88,7 +97,11 @@ void initState() {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
+<<<<<<< HEAD
       candidate = "http://10.77.127.2/carGOAdmin/uploads/$clean";
+=======
+      candidate = GlobalApiConfig.getImageUrl(clean);
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -109,7 +122,11 @@ void initState() {
 
 
   Future<void> fetchCars() async {
+<<<<<<< HEAD
     final String apiUrl = "http://10.77.127.2/carGOAdmin/api/get_cars.php";
+=======
+    final String apiUrl = GlobalApiConfig.getCarsEndpoint;
+>>>>>>> 9adbf571a7283327b292d84ace8551a819d8984e
 
     try {
       final response = await http.get(Uri.parse(apiUrl));

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
 
 class BookingService {
@@ -10,7 +11,7 @@ class BookingService {
   static Future<List<Booking>> getMyBookings(String userId) async {
   final response = await http.get(
     Uri.parse(
-      'http://10.77.127.2/carGOAdmin/api/get_my_bookings.php?user_id=$userId',
+      '${GlobalApiConfig.getMyBookingsEndpoint}?user_id=$userId',
     ),
   );
 
@@ -43,7 +44,7 @@ class BookingService {
   }) async {
     final response = await http.post(
       Uri.parse(
-        'http://10.77.127.2/carGOAdmin/api/cancel_booking.php',
+        GlobalApiConfig.cancelBookingEndpoint,
       ),
       body: {
         'booking_id': bookingId.toString(),
