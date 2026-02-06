@@ -31,17 +31,23 @@ final FlutterLocalNotificationsPlugin _localNotifications =
 
 /// 📩 Firebase Background Handler
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp();
 }
 
-/// 🚀 APP ENTRY POINT
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    _setupGlobalErrorHandling();
+    // Setup error handlers
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      _logError('FlutterError', details.exception, details.stack);
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _logError('PlatformError', error, stack);
+      return true;
+    };
 
     // 🔥 Initialize Firebase
     await Firebase.initializeApp(
@@ -63,29 +69,8 @@ void main() {
   });
 }
 
-/// 🛑 Global Error Handling
-void _setupGlobalErrorHandling() {
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    _logError('FlutterError', details.exception, details.stack);
-  };
+/// 🚀 APP ENTRY POINT
 
-  PlatformDispatcher.instance.onError = (error, stack) {
-    _logError('PlatformError', error, stack);
-    return true;
-  };
-}
-
-/// 🧾 Centralized Error Logger
-void _logError(String source, Object error, StackTrace? stack) {
-  debugPrint('❌ [$source] Error: $error');
-  if (stack != null) {
-    debugPrint('📌 Stack trace:\n$stack');
-  }
-
-  // TODO: Send to Crashlytics / Sentry
-  // FirebaseCrashlytics.instance.recordError(error, stack);
-}
 
 /// 🔔 Notification Setup (Non-blocking)
 Future<void> _setupNotificationsInBackground() async {
@@ -189,4 +174,14 @@ class MyApp extends StatelessWidget {
       },
     );
   }
+}
+/// 🧾 Centralized Error Logger
+void _logError(String source, Object error, StackTrace? stack) {
+  debugPrint('❌ [$source] Error: $error');
+  if (stack != null) {
+    debugPrint('📌 Stack trace:\n$stack');
+  }
+
+  // Optional: Send to Crashlytics later
+  // FirebaseCrashlytics.instance.recordError(error, stack);
 }
