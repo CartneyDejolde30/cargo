@@ -35,14 +35,14 @@ class PaymentStatusTracker extends StatelessWidget {
           const SizedBox(height: 16),
           _buildSectionHeader(context,'Escrow Status', Icons.lock_clock),
           const SizedBox(height: 16),
-          _buildEscrowStatusCard(escrowStatus),
+          _buildEscrowStatusCard(context,escrowStatus),
         ],
 
         // Transaction Timeline
         const SizedBox(height: 24),
         _buildSectionHeader(context,'Transaction Timeline', Icons.timeline),
         const SizedBox(height: 16),
-        _buildTransactionTimeline(),
+        _buildTransactionTimeline(context),
 
         // Action Buttons
         const SizedBox(height: 20),
@@ -73,7 +73,9 @@ class PaymentStatusTracker extends StatelessWidget {
 
   Widget _buildPaymentStatusCard(BuildContext context,String status) {
     final statusInfo = _getPaymentStatusInfo(status);
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -122,7 +124,7 @@ class PaymentStatusTracker extends StatelessWidget {
                       statusInfo['subtitle'],
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: isDark ? colors.onSurfaceVariant : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -142,7 +144,7 @@ class PaymentStatusTracker extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color:isDark ? colors.surface : Colors.white,
                   ),
                 ),
               ),
@@ -152,20 +154,20 @@ class PaymentStatusTracker extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color:isDark ? colors.surface : Colors.white,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
               children: [
-                _buildInfoRow('Amount', _formatCurrency(paymentData['amount'])),
+                _buildInfoRow(context,'Amount', _formatCurrency(paymentData['amount'])),
                 const SizedBox(height: 8),
-                _buildInfoRow('Method', paymentData['payment_method']?.toString().toUpperCase() ?? 'N/A'),
+                _buildInfoRow(context,'Method', paymentData['payment_method']?.toString().toUpperCase() ?? 'N/A'),
                 if (paymentData['payment_reference'] != null) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow('Reference', paymentData['payment_reference']),
+                  _buildInfoRow(context,'Reference', paymentData['payment_reference']),
                 ],
                 const SizedBox(height: 8),
-                _buildInfoRow('Date', _formatDate(paymentData['created_at'])),
+                _buildInfoRow(context,'Date', _formatDate(paymentData['created_at'])),
               ],
             ),
           ),
@@ -174,9 +176,10 @@ class PaymentStatusTracker extends StatelessWidget {
     );
   }
 
-  Widget _buildEscrowStatusCard(String escrowStatus) {
+  Widget _buildEscrowStatusCard(BuildContext context,String escrowStatus) {
     final statusInfo = _getEscrowStatusInfo(escrowStatus);
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -218,7 +221,7 @@ class PaymentStatusTracker extends StatelessWidget {
                       statusInfo['description'],
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.grey.shade600,
+                        color: isDark ? colors.onSurfaceVariant : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -228,7 +231,7 @@ class PaymentStatusTracker extends StatelessWidget {
           ),
           if (paymentData['escrow_amount'] != null) ...[
             const SizedBox(height: 12),
-            Divider(color: Colors.grey.shade200),
+            Divider(color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -278,15 +281,18 @@ class PaymentStatusTracker extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionTimeline() {
+  Widget _buildTransactionTimeline(BuildContext context) {
+    
     final timeline = _buildTimelineEvents();
     
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50),
       ),
       child: Column(
         children: timeline.asMap().entries.map((entry) {
@@ -295,6 +301,7 @@ class PaymentStatusTracker extends StatelessWidget {
           final isLast = index == timeline.length - 1;
           
           return _buildTimelineItem(
+            context,
             event['icon'],
             event['title'],
             event['subtitle'],
@@ -309,6 +316,7 @@ class PaymentStatusTracker extends StatelessWidget {
   }
 
   Widget _buildTimelineItem(
+    BuildContext context,
     IconData icon,
     String title,
     String subtitle,
@@ -317,6 +325,8 @@ class PaymentStatusTracker extends StatelessWidget {
     bool isLast,
     bool isCompleted,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,12 +337,15 @@ class PaymentStatusTracker extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isCompleted ? color : Colors.grey.shade300,
+                  color: isCompleted
+    ? color
+    : (isDark ? colors.surfaceContainerHighest : Colors.grey.shade300),
+
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color:isDark ? colors.surface : Colors.white,
                   size: 20,
                 ),
               ),
@@ -358,7 +371,10 @@ class PaymentStatusTracker extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: isCompleted ? Colors.black : Colors.grey.shade600,
+                     color: isCompleted
+    ? (isDark ? colors.onSurface : Colors.black)
+    : (isDark ? colors.onSurfaceVariant : Colors.grey.shade600),
+
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -366,7 +382,7 @@ class PaymentStatusTracker extends StatelessWidget {
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: isDark ? colors.onSurfaceVariant : Colors.grey.shade600,
                     ),
                   ),
                   if (timestamp != null) ...[
@@ -383,7 +399,8 @@ class PaymentStatusTracker extends StatelessWidget {
                           timestamp,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Colors.grey.shade500,
+                           color: isDark ? colors.onSurfaceVariant : Colors.grey.shade500,
+
                           ),
                         ),
                       ],
@@ -399,6 +416,9 @@ class PaymentStatusTracker extends StatelessWidget {
   }
 
   Widget _buildActionButtons(String status, BuildContext context) {
+     final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         if (status.toLowerCase() == 'verified' || status.toLowerCase() == 'completed') ...[
@@ -415,13 +435,8 @@ class PaymentStatusTracker extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                 backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                 backgroundColor: isDark ? colors.primary : Colors.black,
+                  foregroundColor: isDark ? colors.onPrimary : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -458,7 +473,9 @@ class PaymentStatusTracker extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(context,String label, String value) {
+     final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -466,7 +483,7 @@ class PaymentStatusTracker extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: Colors.grey.shade600,
+            color: isDark ? colors.onSurfaceVariant : Colors.grey.shade600,
           ),
         ),
         Flexible(

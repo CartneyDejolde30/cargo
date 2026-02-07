@@ -15,7 +15,21 @@ class NotificationModel {
     required this.type,
     required this.createdAt,
     required this.readStatus,
+    
   });
+  NotificationModel copyWith({
+  String? readStatus,
+}) {
+  return NotificationModel(
+    id: id,
+    title: title,
+    message: message,
+    type: type,
+    createdAt: createdAt,
+    readStatus: readStatus ?? this.readStatus,
+  );
+}
+
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(

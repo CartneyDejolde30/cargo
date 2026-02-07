@@ -296,7 +296,8 @@ Future<void> fetchMotorcycleDetails() async {
         body: Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
-
+ final colors = Theme.of(context).colorScheme;   // ⭐ ADD THIS
+  final isDark = Theme.of(context).brightness == Brightness.dark; // ← ONLY HERE
     final images = getAllImages();
     print("🖼 MOTORCYCLE IMAGES: $images");
     if (images.isEmpty) {
@@ -388,7 +389,7 @@ Future<void> fetchMotorcycleDetails() async {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: colors.surface,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -422,7 +423,7 @@ Future<void> fetchMotorcycleDetails() async {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: colors.surface,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -502,9 +503,9 @@ Future<void> fetchMotorcycleDetails() async {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: colors.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
+                            
                           ),
                           child: Column(
                             children: [
@@ -522,103 +523,115 @@ Future<void> fetchMotorcycleDetails() async {
                   const SizedBox(height: 24),
 
                   // Rental Information Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Rental Information",
-                          style: GoogleFonts.poppins(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.blue.shade100),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(Icons.attach_money, color: Colors.green.shade700, size: 24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Price per day",
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 11,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          "₱$price",
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green.shade700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(height: 24),
-                              _buildInfoRow(Icons.access_time, "Advance Notice", advanceNotice),
-                              const SizedBox(height: 12),
-                              _buildInfoRow(Icons.calendar_today, "Min Trip Duration", "$minTripDuration day(s)"),
-                              const SizedBox(height: 12),
-                              _buildInfoRow(Icons.event, "Max Trip Duration", "$maxTripDuration day(s)"),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+         
 
-                  const SizedBox(height: 24),
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Rental Information",
+        style: GoogleFonts.poppins(
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : Colors.black,
+        ),
+      ),
+      const SizedBox(height: 12),
 
-                  // Description Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Description",
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          description,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: Icon(
+                    Icons.attach_money,
+                    color: Colors.green.shade700,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Price per day",
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: isDark ? Colors.white70 : Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        "₱$price",
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const Divider(height: 24),
+
+            _buildInfoRow(Icons.access_time, "Advance Notice", advanceNotice),
+            const SizedBox(height: 12),
+            _buildInfoRow(Icons.calendar_today, "Min Trip Duration", "$minTripDuration day(s)"),
+            const SizedBox(height: 12),
+            _buildInfoRow(Icons.event, "Max Trip Duration", "$maxTripDuration day(s)"),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
+
+const SizedBox(height: 24),
+
+/// DESCRIPTION
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Description",
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : Colors.black,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        description,
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          color: isDark ? Colors.white70 : Colors.grey.shade700,
+          height: 1.5,
+        ),
+      ),
+    ],
+  ),
+),
 
                   const SizedBox(height: 24),
 
@@ -645,9 +658,9 @@ Future<void> fetchMotorcycleDetails() async {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
+                                  color: colors.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                 
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -696,7 +709,7 @@ Future<void> fetchMotorcycleDetails() async {
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
                                 children: [
-                                  Icon(Icons.local_shipping, size: 20, color: Colors.grey.shade700),
+                                  Icon(Icons.local_shipping, size: 20, color: colors.onSurfaceVariant),
                                   const SizedBox(width: 10),
                                   Text(
                                     type,
@@ -781,9 +794,9 @@ Future<void> fetchMotorcycleDetails() async {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: colors.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
+                              
                             ),
                             child: Row(
                               children: [
@@ -791,7 +804,7 @@ Future<void> fetchMotorcycleDetails() async {
                                   radius: 26,
                                   backgroundColor: Colors.grey.shade300,
                                   child: ownerImage.contains('placeholder.com')
-                                      ? Icon(Icons.person, size: 28, color: Colors.grey.shade600)
+                                      ? Icon(Icons.person, size: 28, color: colors.onSurfaceVariant)
                                       : null,
                                   backgroundImage: ownerImage.contains('placeholder.com')
                                       ? null
@@ -813,13 +826,13 @@ Future<void> fetchMotorcycleDetails() async {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.chat_bubble_outline, size: 22, color: Colors.blue),
+                                  icon: Icon(Icons.chat_bubble_outline, size: 22, color: colors.primary),
                                   onPressed: _messageOwner,
                                   padding: EdgeInsets.all(8),
                                   constraints: BoxConstraints(),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.call, size: 22, color: Colors.green),
+                                  icon: Icon(Icons.call, size: 22, color: colors.tertiary),
                                   onPressed: () => _callOwner(phone),
                                   padding: EdgeInsets.all(8),
                                   constraints: BoxConstraints(),
@@ -865,7 +878,7 @@ Future<void> fetchMotorcycleDetails() async {
                             child: Text(
                               "See All",
                               style: GoogleFonts.poppins(
-                                color: Colors.blue,
+                                color: colors.primary,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 14,
                               ),
@@ -877,81 +890,80 @@ Future<void> fetchMotorcycleDetails() async {
 
                   const SizedBox(height: 12),
 
-                  // ⭐ NEW: "Leave a Review" button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        // Check if user has completed booking for this car
-                        final userData = await _getUserData();
-                        final userId = userData['userId'];
-                        
-                        if (userId == null || userId.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please login to leave a review'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                          return;
-                        }
-                        
-                        // Check if user has booked this car
-                        final hasBooked = await _checkIfUserBookedMotorcycle(userId);
-                        
-                        if (!hasBooked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('You need to complete a booking for this car first'),
-                              backgroundColor: Colors.orange,
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                          return;
-                        }
-                        
-                        // Navigate to review screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SubmitReviewScreen(
-                              bookingId: '', // Not tied to specific booking
-                              carId: widget.motorcycleId.toString(),
-                              carName: widget.motorcycleName,
-                              carImage: widget.motorcycleImage,
-                              ownerId: motorcycleData?["owner_id"].toString() ?? "",
-                              ownerName: motorcycleData?["owner_name"] ?? "Unknown",
-                              ownerImage: motorcycleData?["owner_image"] ?? "",
-                            ),
-                          ),
-                        ).then((result) {
-                          if (result == true) {
-                            fetchMotorcycleDetails();
- // Refresh to show new review
-                          }
-                        });
-                      },
-                      icon: const Icon(Icons.rate_review, size: 20, color: Colors.black),
-                      label: Text(
-                        'Leave a Review',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).iconTheme.color,
+                 Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  child: OutlinedButton.icon(
+    onPressed: () async {
+      final userData = await _getUserData();
+      final userId = userData['userId'];
 
+      if (userId == null || userId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to leave a review'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
+      final hasBooked = await _checkIfUserBookedMotorcycle(userId);
 
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.black, width: 1.5),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
+      if (!hasBooked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to complete a booking first'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubmitReviewScreen(
+            bookingId: '',
+            carId: widget.motorcycleId.toString(),
+            carName: widget.motorcycleName,
+            carImage: widget.motorcycleImage,
+            ownerId: motorcycleData?["owner_id"].toString() ?? "",
+            ownerName: motorcycleData?["owner_name"] ?? "Unknown",
+            ownerImage: motorcycleData?["owner_image"] ?? "",
+          ),
+        ),
+      ).then((result) {
+        if (result == true) {
+          fetchMotorcycleDetails();
+        }
+      });
+    },
+
+    icon: Icon(
+      Icons.rate_review,
+      size: 20,
+      color: colors.primary,
+    ),
+
+    label: Text(
+      'Leave a Review',
+      style: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: colors.onSurface,
+      ),
+    ),
+
+    style: OutlinedButton.styleFrom(
+      side: BorderSide(color: colors.primary, width: 1.5),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  ),
+),
 
                   const SizedBox(height: 16),
 
@@ -962,7 +974,7 @@ Future<void> fetchMotorcycleDetails() async {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: colors.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
@@ -997,7 +1009,7 @@ Future<void> fetchMotorcycleDetails() async {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),
@@ -1073,8 +1085,8 @@ Future<void> fetchMotorcycleDetails() async {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            side: BorderSide(color: Colors.blue, width: 2),
+                            foregroundColor: colors.primary,
+                            side: BorderSide(color: colors.primary, width: 2),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1136,56 +1148,68 @@ Future<void> fetchMotorcycleDetails() async {
                             ),
                             elevation: 0,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  if (isCheckingVerification)
-                                    const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
-                                  else if (!isVerified)
-                                    const Icon(Icons.lock, size: 20, color: Colors.white),
-                                  
-                                  if (isCheckingVerification || !isVerified)
-                                    const SizedBox(width: 8),
-                                  
-                                  Text(
-                                    isCheckingVerification 
-                                        ? "Checking..."
-                                        : (isVerified ? "Book Motorcycle" : "Verification Required"),
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (isVerified && !isCheckingVerification)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    "₱$price/day",
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                       child: Center(
+  child: Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+
+    /// LEFT — icon + text centered together
+    Expanded(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isCheckingVerification)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          else if (!isVerified)
+            const Icon(Icons.lock, size: 20, color: Colors.white),
+
+          if (isCheckingVerification || !isVerified)
+            const SizedBox(width: 8),
+
+          Text(
+            isCheckingVerification
+                ? "Checking..."
+                : (isVerified ? "Book Motorcycle" : "Verification Required"),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    ),
+
+    /// RIGHT — price badge (only when verified)
+    if (isVerified && !isCheckingVerification)
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          "₱$price/day",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+  ],
+),
+
+),
+
+
                         ),
                       ),
                     ],
@@ -1238,16 +1262,19 @@ Future<void> fetchMotorcycleDetails() async {
 
 
   Widget _buildSpecRow(IconData icon, String label, String value) {
+    final colors = Theme.of(context).colorScheme;
+final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon, size: 24, color: Colors.grey.shade700),
+        Icon(icon, size: 24, color: colors.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.black : colors.onSurfaceVariant,
+
             ),
           ),
         ),
@@ -1267,30 +1294,35 @@ Future<void> fetchMotorcycleDetails() async {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.blue.shade700),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-        Text(
-          value,
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return Row(
+    children: [
+      Icon(icon, size: 20, color: Colors.blue.shade700),
+      const SizedBox(width: 12),
+
+      Expanded(
+        child: Text(
+          label,
           style: GoogleFonts.poppins(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: isDark ? Colors.white70 : Colors.grey.shade700,
           ),
         ),
-      ],
-    );
-  }
+      ),
+
+      Text(
+        value,
+        style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white : Colors.black,
+        ),
+      ),
+    ],
+  );
+}
+
 
   Widget _buildReviewCard({
     required String name,
@@ -1298,13 +1330,16 @@ Future<void> fetchMotorcycleDetails() async {
     required String date,
     required String review,
   }) {
+     final colors = Theme.of(context).colorScheme;   // ⭐ ADD THIS
+ final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
+      
       margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1339,7 +1374,8 @@ Future<void> fetchMotorcycleDetails() async {
             review,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: Colors.grey.shade700,
+              color: isDark ? Colors.black : colors.onSurfaceVariant,
+
               height: 1.4,
             ),
           ),
@@ -1349,6 +1385,8 @@ Future<void> fetchMotorcycleDetails() async {
   }
 
   void _showVerificationRequiredDialog() {
+    final colors = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1389,19 +1427,19 @@ Future<void> fetchMotorcycleDetails() async {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: colors.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                  Icon(Icons.info_outline, color: colors.primary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Verification takes 24-48 hours',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.blue.shade900,
+                        color: colors.onPrimary,
                       ),
                     ),
                   ),
@@ -1415,7 +1453,7 @@ Future<void> fetchMotorcycleDetails() async {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(color: Colors.grey.shade600),
+              style: GoogleFonts.poppins(color: colors.onSurfaceVariant),
             ),
           ),
           ElevatedButton(
@@ -1429,7 +1467,8 @@ Future<void> fetchMotorcycleDetails() async {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).iconTheme.color,
+              backgroundColor: colors.primary
+,
 
 
 
@@ -1445,7 +1484,7 @@ Future<void> fetchMotorcycleDetails() async {
             child: Text(
               'Get Verified',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: colors.surface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1464,7 +1503,7 @@ class FullscreenImageViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).iconTheme.color,
+      backgroundColor: Colors.black,
 
 
 

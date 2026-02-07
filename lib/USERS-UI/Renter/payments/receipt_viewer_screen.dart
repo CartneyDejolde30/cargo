@@ -97,13 +97,18 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: isDark ? colors.background : Colors.grey.shade50,
+
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: colors.onSurface),
+
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -121,13 +126,15 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         actions: [
           if (!_isLoading && _receiptData != null)
             IconButton(
-              icon: const Icon(Icons.download, color: Colors.black),
+              icon: Icon(Icons.download, color: colors.onSurface),
+
               onPressed: _downloadReceipt,
             ),
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.black))
+          ? Center(child: CircularProgressIndicator(color: colors.primary)
+)
           : _error != null
               ? _buildErrorState()
               : SingleChildScrollView(
@@ -201,58 +208,58 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
     final amount = double.tryParse(_receiptData!['amount'].toString()) ?? 0;
     final paymentMethod = _receiptData!['payment_method'] ?? 'N/A';
     final paymentReference = _receiptData!['payment_reference'] ?? 'N/A';
+final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
 
     return Column(
       children: [
         // Header Card
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Theme.of(context).iconTheme.color,
-
-
-
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              Text(
-                'CarGo',
-                style: GoogleFonts.poppins(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'PAYMENT RECEIPT',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey.shade300,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+      Container(
+  padding: const EdgeInsets.all(24),
+  decoration: BoxDecoration(
+    color: Colors.black, // ✅ always dark
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: Column(
+    children: [
+      Text(
+        'CarGo',
+        style: GoogleFonts.poppins(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: Colors.white, // ✅ always light
+          letterSpacing: 2,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'PAYMENT RECEIPT',
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          color: Colors.white70, // ✅ soft light text
+          letterSpacing: 1,
+        ),
+      ),
+      const SizedBox(height: 16),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          status,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white, // ✅ always readable
           ),
         ),
+      ),
+    ],
+  ),
+),
+
 
         const SizedBox(height: 20),
 
@@ -309,7 +316,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -375,10 +382,13 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
     required String title,
     required List<Widget> children,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colors.surface : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -410,6 +420,9 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   }
 
   Widget _buildInfoRow(String label, String value, {bool isHighlighted = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -431,7 +444,10 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
-                color: isHighlighted ? Colors.green.shade700 : Colors.black,
+               color: isHighlighted
+    ? Colors.green.shade700
+    : (isDark ? colors.onSurface : Colors.black),
+
               ),
             ),
           ),

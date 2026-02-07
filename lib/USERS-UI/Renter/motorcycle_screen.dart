@@ -147,42 +147,51 @@ final colors = Theme.of(context).colorScheme;
                 const SizedBox(height: 20),
 
                 // Search Bar - Navigate to list screen
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MotorcycleListScreen(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search,
-                          color: Theme.of(context).iconTheme.color,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "Search motorcycle near you...",
-                            style: GoogleFonts.poppins(
-                              color: Theme.of(context).hintColor,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+               // Search Bar - Navigate to list screen
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MotorcycleListScreen(),
+      ),
+    );
+  },
+  child: Container(
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    child: Row(
+      children: [
+        Icon(
+          Icons.search,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 22,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            "Search motorcycle near you...",
+            style: GoogleFonts.poppins(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
                 const SizedBox(height: 20),
 
                 // Vehicle Type Toggle
@@ -193,9 +202,12 @@ final colors = Theme.of(context).colorScheme;
                 _buildSectionHeader("Best Motorcycles", "View All"),
                 const SizedBox(height: 8),
                 Text(
-                  "Available",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
-                ),
+  "Available",
+  style: GoogleFonts.poppins(
+    fontSize: 12,
+    color: Theme.of(context).colorScheme.onSurfaceVariant,
+  ),
+),
                 const SizedBox(height: 12),
 
                 _isLoading
@@ -314,32 +326,34 @@ final colors = Theme.of(context).colorScheme;
   }
 
   Widget _buildVehicleTypeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildToggleButton(
-              "Car",
-              false,
-              () => Navigator.pop(context),
-            ),
+  final colors = Theme.of(context).colorScheme;
+
+  return Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: colors.surfaceContainerHighest, // ✅ correct soft background
+      borderRadius: BorderRadius.circular(25),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildToggleButton(
+            "Car",
+            false,
+            () => Navigator.pop(context),
           ),
-          Expanded(
-            child: _buildToggleButton(
-              "Motorcycle",
-              true,
-              () {},
-            ),
+        ),
+        Expanded(
+          child: _buildToggleButton(
+            "Motorcycle",
+            true,
+            () {},
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildMotorcycleCard({
     
@@ -373,7 +387,7 @@ final colors = Theme.of(context).colorScheme;
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
+        
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,13 +407,13 @@ final colors = Theme.of(context).colorScheme;
                       if (progress == null) return child;
                       return Container(
                         height: 110,
-                        color: Theme.of(context).dividerColor,
+                        color: Theme.of(context).colorScheme.onSurface,
                         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 110,
-                      color: Theme.of(context).dividerColor,
+                      color: Theme.of(context).colorScheme.onSurface,
                       child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
                     ),
                   );
@@ -431,11 +445,11 @@ final colors = Theme.of(context).colorScheme;
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
+                      Icon(Icons.category, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         type,
-                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).hintColor),
+                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -520,14 +534,14 @@ final colors = Theme.of(context).colorScheme;
                           return Container(
                             height: 160,
                             width: 140,
-                            color: Theme.of(context).dividerColor,
+                            color: Theme.of(context).colorScheme.onSurface,
                             child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           );
                         },
                         errorBuilder: (_, __, ___) => Container(
                           height: 160,
                           width: 140,
-                          color: Theme.of(context).dividerColor,
+                          color: Theme.of(context).colorScheme.onSurface,
                           child: const Icon(Icons.two_wheeler, size: 40, color: Colors.grey),
                         ),
                       );
@@ -577,7 +591,7 @@ final colors = Theme.of(context).colorScheme;
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).dividerColor,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -585,14 +599,14 @@ final colors = Theme.of(context).colorScheme;
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.location_on, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -603,24 +617,24 @@ final colors = Theme.of(context).colorScheme;
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.category, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           type,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Theme.of(context).hintColor,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.speed, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.speed, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             transmission,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -638,27 +652,40 @@ final colors = Theme.of(context).colorScheme;
     );
   }
 
-  Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
+ Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
+  final colors = Theme.of(context).colorScheme;
+
+  return GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? colors.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [],
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: selected ? colors.onSurface : colors.onSurfaceVariant,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
 
 /*

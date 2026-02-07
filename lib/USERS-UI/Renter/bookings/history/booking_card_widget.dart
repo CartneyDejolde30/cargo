@@ -41,11 +41,7 @@ class BookingCardWidget extends StatelessWidget {
      decoration: BoxDecoration(
   color: Theme.of(context).cardColor,
   borderRadius: BorderRadius.circular(16),
-  border: Border.all(
-  color: Theme.of(context).brightness == Brightness.dark
-      ? Colors.transparent   // no white border in dark mode
-      : Colors.grey.shade300, // soft border in light mode
-),
+
 
   boxShadow: [
     BoxShadow(
@@ -140,11 +136,7 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
 
-          Divider(
-          height: 1,
-          color: Theme.of(context).dividerColor,
-        ),
-
+         
 
           // =========================
           // RENTAL PERIOD
@@ -181,11 +173,7 @@ class BookingCardWidget extends StatelessWidget {
             ),
           ),
 
-         Divider(
-                  height: 1,
-                  color: Theme.of(context).dividerColor,
-                ),
-
+       
 
           // =========================
           // PRICE + ACTION

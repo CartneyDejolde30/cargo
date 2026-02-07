@@ -262,9 +262,14 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
      final isDark = Theme.of(context).brightness == Brightness.dark;
   final colors = Theme.of(context).colorScheme;
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Colors.black)),
-      );
+     return Scaffold(
+  body: Center(
+    child: CircularProgressIndicator(
+      color: Theme.of(context).colorScheme.primary,
+    ),
+  ),
+);
+
     }
     final images = getAllImages();
      print("🖼 IMAGES: $images");
@@ -527,7 +532,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                           "Price per day",
                                           style: GoogleFonts.poppins(
                                             fontSize: 11,
-                                            color: Colors.grey.shade600,
+                                            color: isDark ? Colors.black : Colors.grey.shade600,
+
                                           ),
                                         ),
                                         Text(
@@ -535,7 +541,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.green.shade700,
+                                            color: isDark ? Colors.black : Colors.green.shade700,
+
                                           ),
                                         ),
                                       ],
@@ -1074,9 +1081,14 @@ side: BorderSide(color: colors.outline, width: 1.5),
                                     }
                               ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isCheckingVerification 
-                                ? Colors.grey.shade400
-                                : (isVerified ? Colors.black : Colors.grey.shade600),
+                           backgroundColor: isDark
+    ? (isCheckingVerification
+        ? colors.surfaceContainerHighest
+        : (isVerified ? colors.primary : colors.outline))
+    : (isCheckingVerification
+        ? Colors.grey.shade400
+        : (isVerified ? Colors.black : Colors.grey.shade600)),
+
                             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1201,34 +1213,35 @@ side: BorderSide(color: colors.outline, width: 1.5),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    
-final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.blue.shade700),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-        Text(
-          value,
+Widget _buildInfoRow(IconData icon, String label, String value) {
+  final colors = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return Row(
+    children: [
+      Icon(icon, size: 20, color: Colors.blue.shade700),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(
+          label,
           style: GoogleFonts.poppins(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: colors.onSurface,
-
+            color: Colors.grey.shade700,
           ),
         ),
-      ],
-    );
-  }
+      ),
+      Text(
+        value,
+        style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.black : colors.onSurface,
+        ),
+      ),
+    ],
+  );
+}
+
 
   Widget _buildReviewCard({
     required String name,
@@ -1386,7 +1399,8 @@ class FullscreenImageViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     
     return Scaffold(
-       backgroundColor: Theme.of(context).iconTheme.color,
+       backgroundColor: Colors.black,
+
 
 
 
