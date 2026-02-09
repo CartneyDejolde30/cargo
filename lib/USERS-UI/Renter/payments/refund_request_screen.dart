@@ -72,31 +72,50 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-final prefs = await SharedPreferences.getInstance();
-final token = prefs.getString('auth_token');
-print("TOKEN FROM STORAGE: $token");
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Try to get token from different storage keys
+    String? token = prefs.getString('auth_token');
+    
+    // If auth_token is null, try to get user_id and email to recreate token
+    if (token == null || token.isEmpty) {
+      final userId = prefs.getString('user_id');
+      final email = prefs.getString('email');
+      
+      print("⚠️ auth_token is null, trying user_id: $userId, email: $email");
+      
+      // If we have user_id, we can try to get token from database or use user_id directly
+      if (userId != null && userId.isNotEmpty) {
+        // For now, we'll need to re-login to get the token
+        // But let's try sending user_id as an alternative
+        print("Using user_id as fallback: $userId");
+      }
+    }
+    
+    print("TOKEN FROM STORAGE: $token");
+    
     try {
-     final response = await http.post(
-  Uri.parse('${baseUrl}api/refund/request_refund.php'),
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Authorization': 'Bearer $token',
-  },
-  body: {
-  'booking_id': widget.bookingId.toString(),
-  'refund_method': _selectedRefundMethod,
-  'account_number': _accountNumberController.text.trim(),
-  'account_name': _accountNameController.text.trim(),
-  'bank_name': _selectedRefundMethod == 'bank' ? 'User Bank' : '',
-  'refund_reason': _selectedReason,
-  'reason_details': _reasonController.text.trim(),
-  'original_payment_method': widget.paymentMethod,
-  'original_payment_reference': widget.paymentReference,
-  'token': token ?? '',
-}
-
-);
- print("STATUS: ${response.statusCode}");
+      final response = await http.post(
+        Uri.parse('${baseUrl}api/refund/request_refund.php'),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+        body: {
+          'booking_id': widget.bookingId.toString(),
+          'refund_method': _selectedRefundMethod,
+          'account_number': _accountNumberController.text.trim(),
+          'account_name': _accountNameController.text.trim(),
+          'bank_name': _selectedRefundMethod == 'bank' ? 'User Bank' : '',
+          'refund_reason': _selectedReason,
+          'reason_details': _reasonController.text.trim(),
+          'original_payment_method': widget.paymentMethod,
+          'original_payment_reference': widget.paymentReference,
+          'token': token ?? '',
+        }
+      );
+      
+      print("STATUS: ${response.statusCode}");
       print("BODY: ${response.body}");
 
       final data = jsonDecode(response.body);

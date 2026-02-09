@@ -8,6 +8,8 @@ import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_detail_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'widgets/sort_bottom_sheet.dart';
+import 'widgets/favorite_button.dart';
+import 'widgets/notification_icon.dart';
 import 'services/saved_search_service.dart';
 import 'saved_searches_screen.dart';
 import 'cars_map_view_screen.dart';
@@ -599,10 +601,10 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.black),
-          onPressed: () {},
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: NotificationIcon(),
         ),
       ],
     );
@@ -884,6 +886,16 @@ class _CarListScreenState extends State<CarListScreen> {
                       color: Colors.grey.shade200,
                       child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
                     ),
+                  ),
+                ),
+                // Favorite button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: FavoriteButton(
+                    vehicleType: 'car',
+                    vehicleId: carId,
+                    size: 20,
                   ),
                 ),
                 if (hasUnlimitedMileage)

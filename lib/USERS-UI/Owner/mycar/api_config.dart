@@ -21,6 +21,7 @@ class ApiConfig {
   static String get activeBookingsEndpoint => GlobalApiConfig.activeBookingsEndpoint;
   static String get approveBookingEndpoint => GlobalApiConfig.approveRequestEndpoint;
   static String get rejectBookingEndpoint => GlobalApiConfig.rejectRequestEndpoint;
+  static String get startTripEndpoint => GlobalApiConfig.startTripEndpoint;
   static String get endTripEndpoint => GlobalApiConfig.endTripEndpoint;
   static String get transactionsEndpoint => GlobalApiConfig.transactionsEndpoint;
   static String get cancelledBookingsEndpoint => GlobalApiConfig.cancelledBookingsEndpoint;

@@ -8,6 +8,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../widgets/bottom_nav_bar.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:flutter_application_1/widgets/online_status_indicator.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -47,6 +48,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         .orderBy("lastTimestamp", descending: true)
         .snapshots()
         .listen((snapshot) {
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
       setState(() {
         chats = snapshot.docs;
         filteredChats = chats;
@@ -285,15 +288,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       Positioned(
                         bottom: 2,
                         right: 2,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,                              width: 2,
-                            ),
-                          ),
+                        child: OnlineStatusBadge(
+                          userId: peerId,
+                          size: 14,
+                          showBorder: true,
                         ),
                       ),
                     ],
@@ -414,15 +412,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   Positioned(
                     bottom: 0,
                     right: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.surface,width: 2,
-                        ),
-                      ),
+                    child: OnlineStatusBadge(
+                      userId: peerId,
+                      size: 12,
+                      showBorder: true,
                     ),
                   ),
                 ],

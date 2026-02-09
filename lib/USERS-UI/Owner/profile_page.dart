@@ -3,12 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
+import 'package:flutter_application_1/USERS-UI/Owner/edit_profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/insurance/owner_insurance_screen.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/theme/theme_provider.dart';
+import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:flutter_application_1/services/persistent_auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +26,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String phone = "";
   String address = "";
   String profileImage = "";
+  String gcashNumber = "";
+  String gcashName = "";
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -54,21 +59,41 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
+    // ✅ FIX: Clean up malformed profile image URLs
+    String profileImg = prefs.getString("profile_image") ?? "";
+    // Check if URL is malformed (has double http:// or https://)
+    if ((profileImg.contains('http://') && profileImg.indexOf('http://') != profileImg.lastIndexOf('http://')) ||
+        (profileImg.contains('https://') && profileImg.indexOf('https://') != profileImg.lastIndexOf('https://'))) {
+      // Extract the actual Google/Facebook URL from the malformed path
+      int lastHttpsIndex = profileImg.lastIndexOf('https://');
+      int lastHttpIndex = profileImg.lastIndexOf('http://');
+      int lastIndex = lastHttpsIndex > lastHttpIndex ? lastHttpsIndex : lastHttpIndex;
+      
+      if (lastIndex > 0) {
+        profileImg = profileImg.substring(lastIndex);
+        // Save the corrected URL back to preferences
+        await prefs.setString("profile_image", profileImg);
+      }
+    }
+
     setState(() {
       userName = prefs.getString("fullname") ?? "User";
       userEmail = prefs.getString("email") ?? "No Email";
       phone = prefs.getString("phone") ?? "";
       address = prefs.getString("address") ?? "";
-      profileImage = prefs.getString("profile_image") ?? "";
+      profileImage = profileImg;
+      gcashNumber = prefs.getString("gcash_number") ?? "";
+      gcashName = prefs.getString("gcash_name") ?? "";
     });
   }
 
   ImageProvider? _getProfileImage() {
-    if (profileImage.isNotEmpty &&
+    // Safe check for network image - avoid empty strings
+    if (profileImage.trim().isNotEmpty &&
         profileImage != "null" &&
         profileImage != "NULL" &&
         profileImage != "None" &&
-        profileImage.startsWith("http")) {
+        (profileImage.startsWith("http://") || profileImage.startsWith("https://"))) {
       return NetworkImage(profileImage);
     }
     return null;
@@ -221,11 +246,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
       );
 
-      // Simulate logout process
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      // ✅ Set user offline and cleanup presence service
+      await UserPresenceService().setOffline();
+      await UserPresenceService().dispose();
+      
+      // ✅ Clear user session using PersistentAuthService
+      final authService = PersistentAuthService();
+      await authService.clearUserSession();
+      
+      // Small delay for smooth transition
+      await Future.delayed(const Duration(milliseconds: 500));
       
       if (!mounted) return;
       
@@ -427,7 +457,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       onPressed: () async {
                         await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const EditProfile()),
+                          MaterialPageRoute(builder: (_) => EditProfileScreen(
+                            api: GlobalApiConfig.baseUrl + '/api/update_profile.php',
+                          )),
                         );
                         loadUserData();
                       },
@@ -507,6 +539,213 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // GCash Payout Info Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade600, Colors.blue.shade800],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_wallet,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'GCash Payout Account',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      gcashNumber.isNotEmpty 
+                                          ? 'Configured for payouts'
+                                          : 'Not configured',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (gcashNumber.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade400,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle, color: Colors.white, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Active',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (gcashNumber.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'GCash Number',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                        ),
+                                      ),
+                                      Text(
+                                        gcashNumber,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Account Name',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                        ),
+                                      ),
+                                      Text(
+                                        gcashName,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.orange.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, 
+                                    color: Colors.orange.shade200, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Please configure your GCash account to receive payouts',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => EditProfileScreen(
+                                  api: GlobalApiConfig.baseUrl + '/api/update_profile.php',
+                                )),
+                              );
+                              loadUserData();
+                            },
+                            icon: Icon(
+                              gcashNumber.isEmpty ? Icons.add : Icons.edit,
+                              size: 16,
+                            ),
+                            label: Text(
+                              gcashNumber.isEmpty ? 'Setup GCash Account' : 'Update GCash Info',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.blue.shade700,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 16),
 
                     _buildMenuCard([

@@ -43,8 +43,8 @@ class GlobalApiConfig {
   static String get updateProfileEndpoint => '$baseUrl/update.php';
   static String get getProfileEndpoint => '$baseUrl/get_profile.php';
   
-  // Verification
-  static String get checkVerificationEndpoint => '$apiUrl/check_verification.php';
+  // Verification (Updated to use the correct endpoint)
+  static String get checkVerificationEndpoint => '$apiUrl/check_user_verification.php';
   static String get submitVerificationEndpoint => '$apiUrl/submit_verification.php';
   
   // Cars & Vehicles
@@ -73,6 +73,7 @@ class GlobalApiConfig {
   static String get activeBookingsEndpoint => '$apiUrl/bookings/get_owner_active_bookings.php';
   static String get cancelledBookingsEndpoint => '$apiUrl/bookings/cancelled_bookings.php';
   static String get rejectedBookingsEndpoint => '$apiUrl/bookings/rejected_bookings.php';
+  static String get startTripEndpoint => '$apiUrl/bookings/start_trip.php';
   static String get endTripEndpoint => '$apiUrl/bookings/end_trip.php';
   static String get transactionsEndpoint => '$apiUrl/get_owner_transactions.php';
   
@@ -141,22 +142,29 @@ class GlobalApiConfig {
   
   /// Get full image URL from relative path
   static String getImageUrl(String? imagePath) {
-    if (imagePath == null || imagePath.isEmpty) {
+    // Trim whitespace and check for empty/null
+    final trimmedPath = imagePath?.trim();
+    if (trimmedPath == null || trimmedPath.isEmpty) {
       return 'https://via.placeholder.com/300';
     }
     
     // Already a full URL
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
+    if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
+      return trimmedPath;
     }
     
     // Remove leading slash or "uploads/" prefix
-    String cleanPath = imagePath;
+    String cleanPath = trimmedPath;
     if (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
     if (cleanPath.startsWith('uploads/')) {
       cleanPath = cleanPath.substring(8);
+    }
+    
+    // Final check - if still empty after cleaning, return placeholder
+    if (cleanPath.isEmpty) {
+      return 'https://via.placeholder.com/300';
     }
     
     return '$uploadsUrl/$cleanPath';

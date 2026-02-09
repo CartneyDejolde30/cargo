@@ -429,18 +429,32 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   Widget _buildPaymentCard(Map<String, dynamic> payment) {
-    final statusBadge = payment['status_badge'] as Map<String, dynamic>? ?? {};
+    var statusBadge = payment['status_badge'] as Map<String, dynamic>? ?? {};
     final bookingId = payment['booking_id'] ?? 0;
     final amount = double.tryParse(payment['amount'].toString()) ?? 0;
     final hasReceipt = payment['has_receipt'] == true || payment['has_receipt'] == 1;
     final canRefund = payment['can_request_refund'] == true || payment['can_request_refund'] == 1;
     
     // Check if refund was requested or processed
-    final refundStatus = payment['refund_status']?.toString();
-    final hasRefund = refundStatus != null && refundStatus != 'not_requested';
+    final refundStatus = payment['refund_status'];
+    
+    // Only show refund info if there's an actual refund
+    // API returns null when no refund exists, not a string
+    final hasRefund = refundStatus != null && refundStatus.toString().isNotEmpty;
+    
     final refundAmount = payment['refund_amount'] != null 
         ? double.tryParse(payment['refund_amount'].toString()) ?? 0 
         : 0;
+    
+    // Override status badge if refund is completed
+    if (refundStatus?.toString().toLowerCase() == 'completed') {
+      statusBadge = {
+        'label': 'REFUNDED',
+        'sublabel': 'Money Returned',
+        'color': 'green',
+        'icon': 'check_circle'
+      };
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -624,6 +638,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     ),
                   ),
                 if (hasReceipt && (canRefund || hasRefund)) const SizedBox(width: 8),
+                // Only show refund button if there's an actual refund record
                 if (hasRefund)
                   // Show "View Refund" if refund already exists
                   Expanded(
@@ -635,7 +650,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     ),
                   )
                 else if (canRefund)
-                  // Show "Request Refund" only if no refund exists
+                  // Show "Request Refund" only if no refund exists and eligible
                   Expanded(
                     child: _buildActionButton(
                       'Request Refund',
@@ -755,11 +770,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       case 'pending':
         return Icons.schedule;
       case 'approved':
-        return Icons.check_circle_outline;
-      case 'processing':
-        return Icons.sync;
       case 'completed':
         return Icons.check_circle;
+      case 'processing':
+        return Icons.sync;
       case 'rejected':
         return Icons.cancel;
       default:
@@ -773,11 +787,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       case 'pending':
         return Colors.orange.shade600;
       case 'approved':
-        return Colors.blue.shade600;
-      case 'processing':
-        return Colors.purple.shade600;
       case 'completed':
         return Colors.green.shade600;
+      case 'processing':
+        return Colors.purple.shade600;
       case 'rejected':
         return Colors.red.shade600;
       default:
@@ -792,11 +805,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       case 'pending':
         return 'Refund Pending';
       case 'approved':
-        return 'Refund Approved';
-      case 'processing':
-        return 'Refund Processing';
       case 'completed':
         return 'Refunded';
+      case 'processing':
+        return 'Refund Processing';
       case 'rejected':
         return 'Refund Rejected';
       default:

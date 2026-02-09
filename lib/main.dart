@@ -13,9 +13,13 @@ import 'firebase_options.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/favorites_screen.dart';
 import 'package:provider/provider.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
+import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -56,11 +60,35 @@ void main() async {
 
       // ✅ Do notification setup in background (non-blocking)
       _setupNotificationsInBackground();
+      
+      // ✅ Initialize presence service in background
+      _initializePresenceService();
     },
     (error, stack) {
       _logError('ZonedGuardedError', error, stack);
     },
   );
+}
+
+/// ✅ NEW: Initialize presence service for logged-in users
+Future<void> _initializePresenceService() async {
+  try {
+    final authService = PersistentAuthService();
+    final isLoggedIn = await authService.isLoggedIn();
+    
+    if (isLoggedIn) {
+      debugPrint('🟢 User is logged in - initializing presence service');
+      
+      // Add small delay to ensure Firebase is ready
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      await UserPresenceService().initialize();
+    } else {
+      debugPrint('⚪ No logged in user - skipping presence service');
+    }
+  } catch (e) {
+    debugPrint('❌ Error initializing presence service: $e');
+  }
 }
 
 /// ✅ CRASH FIX: Centralized error logging
@@ -133,6 +161,82 @@ Future<void> _setupNotificationsInBackground() async {
   }
 }
 
+/// ✅ NEW: AuthWrapper to handle persistent login
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      // ✅ Add small delay to ensure SharedPreferences is fully loaded
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      final authService = PersistentAuthService();
+      final isLoggedIn = await authService.isLoggedIn();
+      final userRole = await authService.getUserRole();
+
+      setState(() {
+        _isLoggedIn = isLoggedIn;
+        _userRole = userRole;
+        _isLoading = false;
+      });
+
+      debugPrint('🔐 Auth check complete: ${isLoggedIn ? "LOGGED IN" : "NOT LOGGED IN"}');
+      if (isLoggedIn) {
+        debugPrint('   └─ Role: $userRole');
+      } else {
+        debugPrint('   └─ No session found');
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking auth status: $e');
+      setState(() {
+        _isLoading = false;
+        _isLoggedIn = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      // Show loading screen while checking auth status
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_isLoggedIn && _userRole != null) {
+      // User is logged in - navigate to appropriate home screen
+      final normalizedRole = _userRole!.toLowerCase();
+      
+      if (normalizedRole == 'renter') {
+        return const HomeScreen();
+      } else if (normalizedRole == 'owner') {
+        return OwnerHomeScreen();
+      }
+    }
+
+    // User not logged in - show onboarding
+    return const OnboardingScreen();
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -151,11 +255,12 @@ class MyApp extends StatelessWidget {
           ? ThemeMode.dark
           : ThemeMode.light,
 
-      home: const OnboardingScreen(),
+      home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/renters': (context) => const HomeScreen(),
         '/car_list': (context) => const CarListScreen(),
+        '/favorites': (context) => const FavoritesScreen(),
         '/chat_list': (context) => const ChatListScreen(),
         "/profile": (context) => const ProfileScreen(),
 

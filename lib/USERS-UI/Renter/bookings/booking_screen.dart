@@ -639,18 +639,25 @@ Future<void> _checkVerificationOnInit() async {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              widget.carImage,
-              width: 80,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 80,
-                height: 60,
-                color: Colors.grey.shade300,
-                child: Icon(Icons.directions_car),
-              ),
-            ),
+            child: widget.carImage.trim().isEmpty
+                ? Container(
+                    width: 80,
+                    height: 60,
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.directions_car),
+                  )
+                : Image.network(
+                    widget.carImage,
+                    width: 80,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 60,
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.directions_car),
+                    ),
+                  ),
           ),
           SizedBox(width: 16),
           Expanded(

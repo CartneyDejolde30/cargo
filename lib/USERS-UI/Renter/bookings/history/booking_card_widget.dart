@@ -637,6 +637,67 @@ Widget _buildActionButton(BuildContext context) {
 
 // 🆕 ADD THIS NEW METHOD
 Widget _buildRefundButton(BuildContext context) {
+  // Check if refund is already completed or approved
+  final escrowStatus = widget.booking.escrowStatus?.toLowerCase();
+  final refundStatus = widget.booking.refundStatus?.toLowerCase();
+  
+  // Don't show button if escrow is already refunded or refund is completed/approved
+  if (escrowStatus == 'refunded' || 
+      refundStatus == 'completed' || 
+      refundStatus == 'approved') {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
+          const SizedBox(width: 6),
+          Text(
+            'Refunded',
+            style: GoogleFonts.poppins(
+              color: Colors.green.shade700,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Show pending status if refund is requested/pending
+  if (refundStatus == 'requested' || refundStatus == 'pending') {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.schedule, size: 16, color: Colors.orange.shade700),
+          const SizedBox(width: 6),
+          Text(
+            'Refund Pending',
+            style: GoogleFonts.poppins(
+              color: Colors.orange.shade700,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Show request refund button
   return ElevatedButton(
     onPressed: () async {
       // Navigate to refund request screen
@@ -687,10 +748,59 @@ Widget _buildRefundButton(BuildContext context) {
   // HELPERS
   // =========================
   Widget _buildCarImage(String imagePath) {
-    if (imagePath.startsWith('http')) {
-      return Image.network(imagePath, fit: BoxFit.cover);
+    // Safe image loading - handle empty/invalid paths
+    if (imagePath.trim().isEmpty) {
+      return Container(
+        color: Colors.grey.shade300,
+        child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
+      );
     }
-    return Image.asset(imagePath, fit: BoxFit.cover);
+    
+    // Full URL from API
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey.shade200,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) {
+          return Container(
+            color: Colors.grey.shade300,
+            child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
+          );
+        },
+      );
+    }
+    
+    // If not a URL, treat as asset (but validate first)
+    if (imagePath.startsWith('assets/')) {
+      return Image.asset(
+        imagePath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey.shade300,
+          child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
+        ),
+      );
+    }
+    
+    // Unknown format - show placeholder
+    return Container(
+      color: Colors.grey.shade300,
+      child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
+    );
   }
 
   Widget _buildDateInfo(BuildContext context,String label, String date, String time) {

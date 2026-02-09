@@ -1,14 +1,17 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:animate_do/animate_do.dart';
+import 'package:http/http.dart' as http;
+import '../../../config/cache_config.dart';
+import 'package:flutter_application_1/widgets/online_status_indicator.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -202,37 +205,170 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     }
   }
 
+  Future<void> _preloadImage(String imageUrl) async {
+    try {
+      print('🔄 Preloading image: $imageUrl');
+      await ChatImageCacheManager.instance.getSingleFile(imageUrl);
+      print('✓ Image preloaded successfully');
+    } catch (e) {
+      print('⚠️ Preload failed (will load on demand): $e');
+    }
+  }
+
   Future<void> _uploadImage() async {
-    if (selectedImage == null) return;
+    if (selectedImage == null) {
+      print('❌ No image selected!');
+      return;
+    }
+
+    print('🚀 Starting image upload...');
+    print('📁 Image path: ${selectedImage!.path}');
 
     try {
-      // ✅ CRASH FIX: Check mounted before setState
       if (!mounted) return;
       setState(() => isUploading = true);
 
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-      final ref = FirebaseStorage.instance.ref("chat_images/$fileName");
+      print('📖 Reading image bytes...');
+      // ✅ FREE IMAGE UPLOAD using ImgBB (no payment required)
+      // Read image file as bytes
+      final bytes = await selectedImage!.readAsBytes();
+      print('✓ Image size: ${bytes.length} bytes');
+      
+      print('🔐 Encoding to base64...');
+      final base64Image = base64Encode(bytes);
+      print('✓ Base64 length: ${base64Image.length} characters');
 
-      await ref.putFile(selectedImage!);
-      final url = await ref.getDownloadURL();
+      // ImgBB API (Free tier: unlimited uploads, no expiration)
+      // Your personal API key from: https://api.imgbb.com/
+      const apiKey = '52d27fca0659d9b90733a6680f4261e7'; // Your personal API key
+      
+      print('🌐 Preparing upload to ImgBB...');
+      final uri = Uri.parse('https://api.imgbb.com/1/upload');
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['key'] = apiKey
+        ..fields['image'] = base64Image
+        ..fields['name'] = 'chat_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}';
 
-      // ✅ CRASH FIX: Check mounted before setState
-      if (!mounted) return;
-      setState(() => isUploading = false);
+      print('📤 Sending request to ImgBB...');
+      // Send upload request with timeout
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('❌ Upload timeout after 30 seconds!');
+          throw Exception('Upload timeout');
+        },
+      );
+      
+      print('✓ Response received, status: ${streamedResponse.statusCode}');
+      final response = await http.Response.fromStream(streamedResponse);
+      print('✓ Response parsed');
 
-      await _sendMessage(imageUrl: url);
-    } catch (e) {
-      // ✅ CRASH FIX: Check mounted before setState
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        
+        // Debug: Print the full response
+        print('═══════════════════════════════');
+        print('ImgBB Response Body:');
+        print(response.body);
+        print('═══════════════════════════════');
+        
+        // Get the image URL from ImgBB response
+        // Try different URL fields in order of preference
+        String? imageUrl;
+        
+        if (jsonResponse['data'] != null) {
+          final data = jsonResponse['data'];
+          
+          // Use display_url first (it's the medium size, more reliable)
+          imageUrl = data['display_url'] as String? ??
+                    data['url'] as String? ??
+                    data['image']['url'] as String?;
+          
+          print('Available URL fields in response:');
+          print('  - url: ${data['url']}');
+          print('  - display_url: ${data['display_url']}');
+          if (data['image'] != null) {
+            print('  - image.url: ${data['image']['url']}');
+          }
+        }
+
+        if (imageUrl == null || imageUrl.isEmpty) {
+          throw Exception('No valid image URL in response');
+        }
+
+        print('✓ Final Image URL: $imageUrl');
+        print('✓ URL Length: ${imageUrl.length}');
+        print('✓ Starts with https: ${imageUrl.startsWith('https://')}');
+
+        // Preload the image to cache before sending
+        await _preloadImage(imageUrl);
+
+        if (!mounted) return;
+        setState(() => isUploading = false);
+
+        // Send message with image URL
+        await _sendMessage(imageUrl: imageUrl);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Image uploaded successfully!', style: GoogleFonts.inter()),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Upload failed: ${response.statusCode}');
+      }
+      
+    } catch (e, stackTrace) {
+      print('❌ Upload Error: $e');
+      print('📍 Stack trace: $stackTrace');
+      
       if (!mounted) return;
       setState(() => isUploading = false);
       
       if (mounted) {
+        String errorMessage = 'Failed to upload image';
+        if (e.toString().contains('SocketException') || e.toString().contains('NetworkException')) {
+          errorMessage = 'No internet connection. Please check your network.';
+        } else if (e.toString().contains('TimeoutException') || e.toString().contains('timeout')) {
+          errorMessage = 'Upload timed out. Please try again.';
+        } else if (e.toString().contains('FileSystemException')) {
+          errorMessage = 'Cannot read image file. Please try a different image.';
+        } else {
+          errorMessage = 'Upload failed: ${e.toString()}';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to upload image: $e', style: GoogleFonts.inter()),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(errorMessage, style: GoogleFonts.inter()),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _uploadImage(),
+            ),
           ),
         );
       }
@@ -402,16 +538,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   }
 
   AppBar _buildAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return AppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      elevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      backgroundColor: isDark
+          ? const Color(0xFF1A1A1A)
+          : const Color(0xFF2C3E50),
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
+      systemOverlayStyle: SystemUiOverlayStyle.light,
       leading: IconButton(
-       icon: Icon(
+        icon: const Icon(
           Icons.arrow_back_ios,
-          color: Theme.of(context).iconTheme.color,
+          color: Colors.white,
         ),
-
         onPressed: () => Navigator.pop(context),
       ),
       title: GestureDetector(
@@ -448,14 +588,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 Positioned(
                   bottom: 0,
                   right: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
-                    ),
+                  child: OnlineStatusBadge(
+                    userId: widget.peerId,
+                    size: 12,
+                    showBorder: true,
                   ),
                 ),
               ],
@@ -468,32 +604,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   Text(
                     widget.peerName,
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
                     ),
                   ),
-                  Text(
-                    isPeerTyping ? 'typing...' : 'Active now',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: isPeerTyping
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outline,
-
-                      fontStyle: isPeerTyping ? FontStyle.italic : FontStyle.normal,
-                    ),
-                  ),
+                  isPeerTyping
+                      ? Text(
+                          'typing...',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.greenAccent.shade400,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      : OnlineStatusIndicator(
+                          userId: widget.peerId,
+                          showText: true,
+                          size: 8,
+                          onlineColor: Colors.greenAccent.shade400,
+                          offlineColor: Colors.white.withValues(alpha: 0.6),
+                        ),
                 ],
               ),
             ),
           ],
         ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
       ),
     );
   }
@@ -771,17 +908,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (msg["image"] != "")
+                if (msg["image"] != null && msg["image"] != "")
                   GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        opaque: false,
-                        pageBuilder: (_, __, ___) => FullImageView(msg["image"]),
-                        transitionsBuilder: (_, anim, __, child) =>
-                            FadeTransition(opacity: anim, child: child),
-                      ),
-                    ),
+                    onTap: () {
+                      final imageUrl = msg["image"] as String;
+                      print('🖼️ Tapped image, opening viewer for: $imageUrl');
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          opaque: false,
+                          pageBuilder: (_, __, ___) => FullImageView(imageUrl),
+                          transitionsBuilder: (_, anim, __, child) =>
+                              FadeTransition(opacity: anim, child: child),
+                        ),
+                      );
+                    },
                     child: Hero(
                       tag: msg["image"],
                       child: ClipRRect(
@@ -790,12 +931,148 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                           imageUrl: msg["image"],
                           width: 250,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            width: 250,
-                            height: 250,
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            child: const Center(child: CircularProgressIndicator()),
-                          ),
+                          cacheManager: ChatImageCacheManager.instance,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeOutDuration: const Duration(milliseconds: 300),
+                          cacheKey: msg["image"], // Explicit cache key
+                          errorListener: (error) {
+                            print('❌ Thumbnail error: $error');
+                          },
+                          placeholder: (context, url) {
+                            print('⏳ Loading thumbnail for: $url');
+                            return Container(
+                              width: 250,
+                              height: 250,
+                              color: Theme.of(context).colorScheme.outlineVariant,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const CircularProgressIndicator(strokeWidth: 2),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Loading...',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          errorWidget: (context, url, error) {
+                            print('❌ Thumbnail load error: $error for URL: $url');
+                            
+                            // Determine error type
+                            String errorMessage = 'Failed to load';
+                            String errorDetails = '';
+                            IconData errorIcon = Icons.broken_image;
+                            
+                            if (error.toString().contains('SocketException') || 
+                                error.toString().contains('Failed host lookup') ||
+                                error.toString().contains('Connection timed out') ||
+                                error.toString().contains('Connection closed') ||
+                                error.toString().contains('Connection reset')) {
+                              errorMessage = 'Unstable connection';
+                              errorDetails = 'Network keeps dropping';
+                              errorIcon = Icons.wifi_off;
+                            } else if (error.toString().contains('TimeoutException') ||
+                                       error.toString().contains('timeout')) {
+                              errorMessage = 'Slow connection';
+                              errorDetails = 'Taking too long';
+                              errorIcon = Icons.access_time;
+                            } else if (error.toString().contains('404')) {
+                              errorMessage = 'Image not found';
+                              errorDetails = 'Link expired';
+                              errorIcon = Icons.search_off;
+                            }
+                            
+                            return Container(
+                              width: 250,
+                              height: 250,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.grey.shade400,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(errorIcon, size: 50, color: Colors.grey.shade600),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    errorMessage,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade800,
+                                    ),
+                                  ),
+                                  if (errorDetails.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      errorDetails,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          print('🔄 Retrying image load: $url');
+                                          // Clear cache and retry
+                                          await ChatImageCacheManager.instance.removeFile(url);
+                                          if (context.mounted) {
+                                            setState(() {});
+                                          }
+                                        },
+                                        icon: const Icon(Icons.refresh, size: 16),
+                                        label: const Text('Retry'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Theme.of(context).primaryColor,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          // Open in full screen to try again
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => FullImageView(url),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.open_in_full, size: 16),
+                                        label: const Text('Full View'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -805,15 +1082,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                     margin: msg["image"] != "" ? const EdgeInsets.only(top: 8) : null,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
+                      gradient: isMe
+                          ? LinearGradient(
+                              colors: [
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withBlue(180),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
                       color: isMe
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surface,
-
-                      borderRadius: BorderRadius.circular(20),
+                          ? null
+                          : Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF2A2A2A)
+                              : Colors.grey.shade100,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+                        bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 5,
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -906,14 +1199,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   }
 
   Widget _buildInputBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,        boxShadow: [
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            width: 1,
+          ),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -922,55 +1224,87 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.onSurface),
+                icon: Icon(
+                  Icons.add_photo_alternate_rounded,
+                  color: Theme.of(context).primaryColor,
+                  size: 24,
+                ),
                 onPressed: _showImagePicker,
+                tooltip: 'Attach image',
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: isDark
+                      ? const Color(0xFF2A2A2A)
+                      : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
+                    color: isDark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
                 ),
                 child: TextField(
                   controller: _messageController,
                   onChanged: (v) => _setTyping(v.isNotEmpty),
-                  style: GoogleFonts.inter(fontSize: 15),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                   maxLines: null,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: "Type a message...",
-                    hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.outline),
+                    hintStyle: GoogleFonts.inter(
+                      color: Colors.grey.shade500,
+                      fontSize: 15,
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
+                      horizontal: 18,
                       vertical: 12,
                     ),
+                    suffixIcon: _messageController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.emoji_emotions_outlined,
+                              color: Colors.grey.shade600,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              // Emoji picker can be added here
+                            },
+                          )
+                        : null,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade600, Colors.purple.shade600],
+                  colors: [
+                    Theme.of(context).primaryColor,
+                    Theme.of(context).primaryColor.withBlue(200),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.shade300.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -982,18 +1316,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       : () => selectedImage != null ? _uploadImage() : _sendMessage(),
                   borderRadius: BorderRadius.circular(50),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     child: isUploading
-                        ?  SizedBox(
-                            width: 20,
-                            height: 20,
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
                             child: CircularProgressIndicator(
-                              color: Theme.of(context).colorScheme.surface,                              strokeWidth: 2,
+                              color: Colors.white,
+                              strokeWidth: 2.5,
                             ),
                           )
                         : Icon(
-                            selectedImage != null ? Icons.upload : Icons.send_rounded,
-                            color: Theme.of(context).colorScheme.surface,                            size: 20,
+                            selectedImage != null ? Icons.send_rounded : Icons.send_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
                   ),
                 ),
@@ -1010,25 +1346,59 @@ class FullImageView extends StatelessWidget {
   final String url;
 
   const FullImageView(this.url, {super.key});
+  
+  Widget _buildTipItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    print('🖼️ FullImageView - Opening image: $url');
+    
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Scaffold(
-         backgroundColor: Theme.of(context).colorScheme.surface,
-
-
-
-
-
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.black.withValues(alpha: 0.5),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.white, size: 28),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.download, color: Colors.white),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Download feature coming soon', style: GoogleFonts.inter()),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         body: Center(
           child: Hero(
@@ -1039,13 +1409,189 @@ class FullImageView extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: url,
                 fit: BoxFit.contain,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-                errorWidget: (context, url, error) =>  Icon(
-                  Icons.error,
-                  color: Theme.of(context).colorScheme.surface,                  size: 50,
-                ),
+                cacheManager: ChatImageCacheManager.instance,
+                fadeInDuration: const Duration(milliseconds: 500),
+                fadeOutDuration: const Duration(milliseconds: 300),
+                cacheKey: url, // Explicit cache key
+                httpHeaders: const {
+                  'User-Agent': 'Mozilla/5.0', // Some CDNs require this
+                },
+                errorListener: (error) {
+                  print('❌ Full image error: $error');
+                },
+                placeholder: (context, url) {
+                  print('⏳ Loading full image: $url');
+                  return Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading image...',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                errorWidget: (context, url, error) {
+                  print('❌ Image load error in FullImageView: $error');
+                  print('❌ Failed URL: $url');
+                  
+                  // Determine error type
+                  String errorMessage = 'Failed to load image';
+                  String errorDetails = '';
+                  IconData errorIcon = Icons.broken_image;
+                  
+                  if (error.toString().contains('SocketException') || 
+                      error.toString().contains('Failed host lookup') ||
+                      error.toString().contains('Connection timed out') ||
+                      error.toString().contains('Connection closed') ||
+                      error.toString().contains('Connection reset')) {
+                    errorMessage = 'Unstable Network Connection';
+                    errorDetails = 'Your connection is dropping. Try moving to a better location or switch networks.';
+                    errorIcon = Icons.wifi_off;
+                  } else if (error.toString().contains('TimeoutException') ||
+                             error.toString().contains('timeout')) {
+                    errorMessage = 'Connection Timeout';
+                    errorDetails = 'Image is taking too long to load. Your connection may be slow.';
+                    errorIcon = Icons.access_time;
+                  } else if (error.toString().contains('404')) {
+                    errorMessage = 'Image Not Found';
+                    errorDetails = 'This image may have been deleted or the link expired.';
+                    errorIcon = Icons.search_off;
+                  } else {
+                    errorDetails = error.toString();
+                  }
+                  
+                  return Container(
+                    color: Colors.black,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              errorIcon,
+                              color: Colors.white70,
+                              size: 80,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              errorMessage,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              errorDetails,
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 4,
+                            ),
+                            const SizedBox(height: 32),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    print('🔄 Retrying full image load: $url');
+                                    // Clear cache and force reload
+                                    await ChatImageCacheManager.instance.removeFile(url);
+                                    // Pop and push again to trigger reload
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => FullImageView(url),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Retry'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                OutlinedButton.icon(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.arrow_back),
+                                  label: const Text('Go Back'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(color: Colors.white38),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.lightbulb_outline,
+                                        color: Colors.yellowAccent,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Troubleshooting Tips:',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildTipItem('Check your WiFi or mobile data'),
+                                  _buildTipItem('Try switching between WiFi and mobile data'),
+                                  _buildTipItem('Move to a location with better signal'),
+                                  _buildTipItem('The image may load faster after retry'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

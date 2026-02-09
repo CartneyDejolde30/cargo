@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/services/verification_service.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
+import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SelfieScreen extends StatefulWidget {
   final UserVerification verification;
@@ -318,8 +321,24 @@ Future<void> _submitVerification() async {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                onPressed: () async {
+                  // Navigate based on user's role after successful verification
+                  final prefs = await SharedPreferences.getInstance();
+                  final role = prefs.getString('role') ?? 'renter';
+                  
+                  if (role.toLowerCase() == 'owner') {
+                    // Navigate to Owner home screen
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const OwnerHomeScreen()),
+                      (route) => false, // Remove all previous routes
+                    );
+                  } else {
+                    // Navigate to Renter home screen
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      (route) => false, // Remove all previous routes
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                    backgroundColor: Theme.of(context).iconTheme.color,

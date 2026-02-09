@@ -3,9 +3,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:flutter_application_1/services/persistent_auth_service.dart';
 
 class GoogleSignInService {
   // ✅ CRITICAL: Add your Web Client ID from Firebase Console
@@ -131,21 +132,17 @@ class GoogleSignInService {
     try {
       print('💾 Saving user data to SharedPreferences...');
       
-      // Save to SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString("user_id", userData["id"].toString());
-      await prefs.setString("fullname", userData["fullname"]);
-      await prefs.setString("email", userData["email"]);
-      await prefs.setString("role", userData["role"]);
-      await prefs.setString("phone", userData["phone"] ?? "");
-      await prefs.setString("address", userData["address"] ?? "");
-      await prefs.setString("municipality", userData["municipality"] ?? "");
-      await prefs.setString("profile_image", userData["profile_image"] ?? firebaseUser.photoURL ?? "");
+      // ✅ Save user session using PersistentAuthService
+      final authService = PersistentAuthService();
+      await authService.saveUserSession(userData);
 
       print('🔥 Updating Firestore...');
       
       // Update/Create Firestore user
       await _createOrUpdateFirestoreUser(userData, firebaseUser);
+      
+      // ✅ Initialize presence service
+      await UserPresenceService().initialize();
 
       print('✅ User login successful');
 
@@ -205,16 +202,9 @@ class GoogleSignInService {
         if (data['status'] == 'success') {
           print('✅ Registration successful');
           
-          // Save to SharedPreferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString("user_id", data["user"]["id"].toString());
-          await prefs.setString("fullname", data["user"]["fullname"]);
-          await prefs.setString("email", data["user"]["email"]);
-          await prefs.setString("role", data["user"]["role"]);
-          await prefs.setString("municipality", data["user"]["municipality"] ?? "");
-          await prefs.setString("profile_image", data["user"]["profile_image"] ?? "");
-          await prefs.setString("phone", data["user"]["phone"] ?? "");
-          await prefs.setString("address", data["user"]["address"] ?? "");
+          // ✅ Save user session using PersistentAuthService
+          final authService = PersistentAuthService();
+          await authService.saveUserSession(data["user"]);
 
           print('🔥 Creating Firestore user...');
           
@@ -223,6 +213,9 @@ class GoogleSignInService {
           if (firebaseUser != null) {
             await _createOrUpdateFirestoreUser(data["user"], firebaseUser);
           }
+          
+          // ✅ Initialize presence service
+          await UserPresenceService().initialize();
 
           return {
             'success': true,
@@ -302,24 +295,17 @@ class GoogleSignInService {
     try {
       print('👋 Signing out...');
       
-      // Update Firestore status to offline
-      final User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? userId = prefs.getString("user_id");
-        
-        if (userId != null) {
-          await _firestore.collection("users").doc(userId).update({
-            "online": false,
-          });
-        }
-      }
+      // ✅ Set user offline in presence service
+      await UserPresenceService().setOffline();
+      await UserPresenceService().dispose();
       
+      // Sign out from Google and Firebase
       await _googleSignIn.signOut();
       await _auth.signOut();
       
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      // ✅ Clear session using PersistentAuthService
+      final authService = PersistentAuthService();
+      await authService.clearUserSession();
       
       print('✅ Sign out successful');
     } catch (e) {

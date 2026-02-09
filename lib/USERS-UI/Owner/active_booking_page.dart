@@ -104,6 +104,197 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
     await _fetchActiveBookings();
   }
 
+  Future<void> _handleStartTrip(Map<String, dynamic> booking) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.play_circle_outline, color: Colors.green.shade600, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Start Rental?',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Confirm that ${booking['renter_name']} has picked up the vehicle:',
+              style: GoogleFonts.inter(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    booking['car_full_name'] ?? 'Vehicle',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pickup: ${booking['pickup_date']}',
+                    style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '✓ This will mark the rental as started\n✓ Renter will be notified\n✓ Trip tracking will begin',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.check_circle, size: 18),
+            label: const Text('Confirm Pickup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Colors.green),
+              const SizedBox(height: 16),
+              Text(
+                'Starting rental...',
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final result = await _bookingService.startTrip(
+        booking['booking_id'].toString(),
+        _ownerId!,
+      );
+
+      if (!mounted) return;
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result['message'] ?? 'Rental started successfully!',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Refresh the list
+        await _handleRefresh();
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result['message'] ?? 'Failed to start rental',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Network error. Please check your connection.',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -312,7 +503,12 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
 Widget _buildModernBookingCard(Map<String, dynamic> booking) {
   final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
   final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
-  final imageUrl = ApiConfig.getCarImageUrl(booking['car_image']);
+  
+  // Safe image URL handling - ensure we never pass empty string to Image.network
+  final carImage = booking['car_image'];
+  final imageUrl = (carImage == null || carImage.toString().trim().isEmpty) 
+      ? 'https://via.placeholder.com/300' 
+      : ApiConfig.getCarImageUrl(carImage);
   
   // NEW: Check trip status
   final tripStatus = booking['trip_status'] ?? 'in_progress';
@@ -567,42 +763,70 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                   ),
                 ),
                 
-                // Live Tracking Button (show for all approved bookings)
+                // Action Buttons (Start Rent or Live Tracking)
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LiveTrackingScreen(
-                            bookingId: booking['booking_id'].toString(),
-                            carName: booking['car_full_name'] ?? 'Car',
-                            renterName: booking['renter_name'] ?? 'Unknown',
-                          ),
+                if (isUpcoming)
+                  // Start Rent Button for upcoming bookings
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleStartTrip(booking),
+                      icon: const Icon(Icons.play_circle_outline, size: 22),
+                      label: Text(
+                        'Start Rent / Picked Up',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.map, size: 20),
-                    label: Text(
-                      isUpcoming ? 'View Trip Details' : 'Track Car Location',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 2,
+                        shadowColor: Colors.green.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  )
+                else
+                  // Live Tracking Button for active bookings
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveTrackingScreen(
+                              bookingId: booking['booking_id'].toString(),
+                              carName: booking['car_full_name'] ?? 'Car',
+                              renterName: booking['renter_name'] ?? 'Unknown',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.map, size: 20),
+                      label: Text(
+                        'Track Car Location',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -761,7 +985,12 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   Widget build(BuildContext context) {
     final progress = double.tryParse(widget.booking['trip_progress']?.toString() ?? '0') ?? 0;
     final daysRemaining = int.tryParse(widget.booking['days_remaining']?.toString() ?? '0') ?? 0;
-    final imageUrl = ApiConfig.getCarImageUrl(widget.booking['car_image']);
+    
+    // Safe image URL handling
+    final carImage = widget.booking['car_image'];
+    final imageUrl = (carImage == null || carImage.toString().trim().isEmpty) 
+        ? 'https://via.placeholder.com/300' 
+        : ApiConfig.getCarImageUrl(carImage);
     
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

@@ -16,6 +16,7 @@ class Booking {
   final String status;
   final String ownerName;
   final String? refundStatus; // Added for refund tracking
+  final String? escrowStatus; // Added for escrow tracking
 
   Booking({
     required this.bookingId,
@@ -34,17 +35,22 @@ class Booking {
     required this.status,
     required this.ownerName,
     this.refundStatus, // Added for refund tracking
+    this.escrowStatus, // Added for escrow tracking
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+  // Safe image handling - ensure empty strings don't cause issues
+  final rawCarImage = json['carImage']?.toString() ?? '';
+  final rawOwnerAvatar = json['ownerAvatar']?.toString() ?? '';
+  
   return Booking(
     bookingId: json['bookingId'],
     carId: json['carId'],
-    ownerAvatar: json['ownerAvatar'] ?? '',
+    ownerAvatar: rawOwnerAvatar.trim(), // Trim whitespace
     ownerPhone: json['ownerPhone'] ?? '',
     ownerId: json['ownerId'],
     carName: json['carName'] ?? '',
-    carImage: json['carImage'] ?? '',
+    carImage: rawCarImage.trim(), // Trim whitespace
     location: json['location'] ?? '',
     pickupDate: json['pickupDate'] ?? '',
     pickupTime: json['pickupTime'] ?? '',
@@ -59,7 +65,8 @@ class Booking {
         .toLowerCase(),
 
     ownerName: json['ownerName'] ?? '',
-    refundStatus: json['refund_status']?.toString(), // Added for refund tracking
+    refundStatus: json['refundStatus']?.toString(), // Added for refund tracking
+    escrowStatus: json['escrowStatus']?.toString(), // Added for escrow tracking
   );
 }
 

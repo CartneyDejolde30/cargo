@@ -9,6 +9,7 @@ import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'motorcycle_detail_screen.dart';
 import 'motorcycle_list_screen.dart';
+import 'widgets/favorite_button.dart';
 
 class MotorcycleScreen extends StatefulWidget {
   const MotorcycleScreen({super.key});
@@ -368,33 +369,47 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: FutureBuilder<String>(
-                future: resolveImageUrlCached(image),
-                builder: (context, snap) {
-                  final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                  return Image.network(
-                    imageUrl,
-                    height: 110,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: FutureBuilder<String>(
+                    future: resolveImageUrlCached(image),
+                    builder: (context, snap) {
+                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
+                      return Image.network(
+                        imageUrl,
                         height: 110,
-                        color: Theme.of(context).dividerColor,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            height: 110,
+                            color: Theme.of(context).dividerColor,
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 110,
+                          color: Theme.of(context).dividerColor,
+                          child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
+                        ),
                       );
                     },
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 110,
-                      color: Theme.of(context).dividerColor,
-                      child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
-                    ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                // Favorite button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: FavoriteButton(
+                    vehicleType: 'motorcycle',
+                    vehicleId: motorcycleId,
+                    size: 20,
+                  ),
+                ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(10),
@@ -544,6 +559,16 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       ),
                     ),
                   ),
+                // Favorite button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: FavoriteButton(
+                    vehicleType: 'motorcycle',
+                    vehicleId: motorcycleId,
+                    size: 20,
+                  ),
+                ),
               ],
             ),
             Expanded(

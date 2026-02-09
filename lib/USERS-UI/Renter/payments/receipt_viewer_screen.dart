@@ -74,16 +74,30 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
 
     try {
       final receiptUrl = _receiptData!['receipt_url'];
+      
+      // Check if receipt_url is empty or null
+      if (receiptUrl == null || receiptUrl.toString().trim().isEmpty) {
+        _showSnackBar('Receipt PDF not available. Viewing on-screen only.', isError: true);
+        return;
+      }
+
       final url = Uri.parse(receiptUrl);
 
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
+        _showSnackBar('Opening receipt...', isError: false);
       } else {
-        _showSnackBar('Cannot open receipt', isError: true);
+        _showSnackBar('Cannot open receipt URL', isError: true);
       }
     } catch (e) {
-      _showSnackBar('Failed to download receipt', isError: true);
+      _showSnackBar('Receipt download not available: ${e.toString()}', isError: true);
     }
+  }
+
+  bool _hasReceiptUrl() {
+    if (_receiptData == null) return false;
+    final receiptUrl = _receiptData!['receipt_url'];
+    return receiptUrl != null && receiptUrl.toString().trim().isNotEmpty;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -119,7 +133,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
         ),
         centerTitle: true,
         actions: [
-          if (!_isLoading && _receiptData != null)
+          if (!_isLoading && _receiptData != null && _hasReceiptUrl())
             IconButton(
               icon: const Icon(Icons.download, color: Colors.black),
               onPressed: _downloadReceipt,
@@ -341,32 +355,54 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
 
         const SizedBox(height: 20),
 
-        // Download Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _downloadReceipt,
-            icon: const Icon(Icons.download),
-            label: Text(
-              'Download Receipt',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+        // Download Button (only show if receipt URL exists)
+        if (_hasReceiptUrl())
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _downloadReceipt,
+              icon: const Icon(Icons.download),
+              label: Text(
+                'Download Receipt PDF',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).iconTheme.color,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-               backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange.shade700),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'PDF download not available. You can view and screenshot this receipt.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
       ],
     );
   }

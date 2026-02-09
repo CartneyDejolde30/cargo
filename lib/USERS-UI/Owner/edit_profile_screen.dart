@@ -28,6 +28,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
+  final gcashNumberController = TextEditingController();
+  final gcashNameController = TextEditingController();
 
   String storedProfile = "";
   bool saving = false;
@@ -42,6 +44,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     nameController.addListener(_detectChanges);
     phoneController.addListener(_detectChanges);
     addressController.addListener(_detectChanges);
+    gcashNumberController.addListener(_detectChanges);
+    gcashNameController.addListener(_detectChanges);
   }
 
   void animate() {
@@ -60,7 +64,26 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     nameController.text = prefs.getString("fullname") ?? "";
     phoneController.text = prefs.getString("phone") ?? "";
     addressController.text = prefs.getString("address") ?? "";
-    storedProfile = prefs.getString("profile_image") ?? "";
+    gcashNumberController.text = prefs.getString("gcash_number") ?? "";
+    gcashNameController.text = prefs.getString("gcash_name") ?? "";
+    
+    // ✅ FIX: Clean up malformed profile image URLs
+    String profileImg = prefs.getString("profile_image") ?? "";
+    // Check if URL is malformed (has double http://)
+    if (profileImg.contains('http://') && profileImg.indexOf('http://') != profileImg.lastIndexOf('http://')) {
+      // Extract the actual Google/Facebook URL from the malformed path
+      int lastHttpIndex = profileImg.lastIndexOf('http://');
+      if (lastHttpIndex == -1) {
+        lastHttpIndex = profileImg.lastIndexOf('https://');
+      }
+      if (lastHttpIndex > 0) {
+        profileImg = profileImg.substring(lastHttpIndex);
+        // Save the corrected URL back to preferences
+        await prefs.setString("profile_image", profileImg);
+      }
+    }
+    storedProfile = profileImg;
+    
     // ✅ CRASH FIX: Check mounted before setState
     if (!mounted) return;
     setState(() {});
@@ -89,7 +112,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   ImageProvider? avatarImage() {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
-    if (storedProfile.isNotEmpty) return NetworkImage(storedProfile);
+    // Safe check for network image - avoid empty strings
+    if (storedProfile.isNotEmpty && 
+        storedProfile != "null" && 
+        storedProfile != "NULL" &&
+        storedProfile.trim().isNotEmpty &&
+        (storedProfile.startsWith('http://') || storedProfile.startsWith('https://'))) {
+      return NetworkImage(storedProfile);
+    }
     return null;
   }
 
@@ -106,6 +136,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     req.fields["fullname"] = nameController.text.trim();
     req.fields["phone"] = phoneController.text.trim();
     req.fields["address"] = addressController.text.trim();
+    req.fields["gcash_number"] = gcashNumberController.text.trim();
+    req.fields["gcash_name"] = gcashNameController.text.trim();
 
     if (imageFile != null) {
       req.files.add(await http.MultipartFile.fromPath("profile_image", imageFile!.path));
@@ -126,14 +158,25 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       await prefs.setString("fullname", json["user"]["fullname"]);
       await prefs.setString("phone", json["user"]["phone"]);
       await prefs.setString("address", json["user"]["address"]);
-      String baseURL = GlobalApiConfig.uploadsUrl + "/";
-
-        await prefs.setString(
-          "profile_image",
-          (json["user"]["profile_image"] != null && json["user"]["profile_image"] != "")
-              ? baseURL + json["user"]["profile_image"]
-              : ""
-        );
+      await prefs.setString("gcash_number", json["user"]["gcash_number"] ?? "");
+      await prefs.setString("gcash_name", json["user"]["gcash_name"] ?? "");
+      
+      // Handle profile image URL correctly
+      String profileImagePath = json["user"]["profile_image"] ?? "";
+      String profileImageUrl = "";
+      
+      if (profileImagePath.isNotEmpty) {
+        // If it's already a full URL (Google, Facebook, etc.), use it as-is
+        if (profileImagePath.startsWith('http://') || profileImagePath.startsWith('https://')) {
+          profileImageUrl = profileImagePath;
+        } else {
+          // Otherwise, prepend the uploads URL
+          String baseURL = GlobalApiConfig.uploadsUrl + "/";
+          profileImageUrl = baseURL + profileImagePath;
+        }
+      }
+      
+      await prefs.setString("profile_image", profileImageUrl);
 
 
       if (!mounted) return;
@@ -211,6 +254,56 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                   inputType: TextInputType.phone),
               _buildField("Address", addressController),
 
+              const SizedBox(height: 30),
+
+              // GCash Section Header
+              Row(
+                children: [
+                  Icon(Icons.account_balance_wallet, color: Colors.blue, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    "GCash Payout Settings",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Required for receiving payouts from your vehicle rentals",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              _buildField("GCash Number", gcashNumberController,
+                  inputType: TextInputType.phone,
+                  hintText: "09XX XXX XXXX",
+                  maxLength: 11),
+              _buildField("GCash Account Name", gcashNameController,
+                  hintText: "Name as shown in GCash"),
+
               const SizedBox(height: 100),
             ],
           ),
@@ -239,19 +332,24 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   Widget _buildField(String label, TextEditingController controller,
-      {TextInputType inputType = TextInputType.text}) {
+      {TextInputType inputType = TextInputType.text, 
+       String? hintText,
+       int? maxLength}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: TextField(
         controller: controller,
         keyboardType: inputType,
+        maxLength: maxLength,
         decoration: InputDecoration(
           labelText: label,
+          hintText: hintText,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14)),
+          counterText: maxLength != null ? "" : null, // Hide counter
         ),
       ),
     );

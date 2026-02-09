@@ -280,8 +280,8 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => WillPopScope(
-        onWillPop: () async => false, // ✅ Prevent back button during upload
+      builder: (_) => PopScope(
+        canPop: false, // ✅ Prevent back button during upload
         child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -350,15 +350,20 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
           ),
         );
 
-        // ✅ FIX: Simple and safe - just pop back to the root (OwnerHomeScreen)
-        // This returns us to the home screen with MyCars page intact
+        // ✅ FIX: Pop all car listing screens (9 total) to return to MyCarPage
+        // Flow: MyCarPage -> VehicleTypeSelection -> CarDetails -> CarPreferences 
+        // -> CarFeatures -> CarRules -> CarPricing -> CarLocation 
+        // -> UploadDocuments -> CarPhotosDiagram
         await Future.delayed(const Duration(milliseconds: 500));
 
         if (!mounted) return;
 
-        // Pop all screens in the listing flow and return to OwnerHomeScreen
-        // The MyCarPage will auto-refresh when it becomes visible again
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // Pop all 9 screens in the listing flow to return to MyCarPage
+        // The MyCarPage will auto-refresh and show the newly added vehicle
+        int count = 0;
+        Navigator.of(context).popUntil((route) {
+          return count++ >= 9; // Pop all 9 car listing screens
+        });
         
       } else {
         print("❌ Upload failed");

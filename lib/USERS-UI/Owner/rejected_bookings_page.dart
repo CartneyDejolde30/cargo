@@ -179,7 +179,11 @@ class _RejectedBookingsPageState extends State<RejectedBookingsPage> {
   }
 
   Widget _buildBookingCard(Map<String, dynamic> booking) {
-    final imageUrl = ApiConfig.getCarImageUrl(booking['car_image']);
+    // Safe image URL handling - ensure we never pass empty string to Image.network
+    final carImage = booking['car_image'];
+    final imageUrl = (carImage == null || carImage.toString().trim().isEmpty) 
+        ? 'https://via.placeholder.com/300' 
+        : ApiConfig.getCarImageUrl(carImage);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

@@ -10,6 +10,10 @@ import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/Google/google_sign_in_service.dart';
+import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_1/widgets/google_role_selection_dialog.dart';
 // ❌ REMOVED: Facebook import
 
 class CarGoApp extends StatelessWidget {
@@ -160,23 +164,15 @@ class _LoginPageState extends State<LoginPage> {
           // Extract the actual user data from the "data" field
           final data = responseData["data"];
           
-          // Save user data to SharedPreferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
+          // ✅ NEW: Sign in to Firebase Auth with custom token system
+          // This authenticates the user with Firebase so Realtime Database rules work
+          await _signInToFirebaseAuth(data);
           
-          if (data["token"] != null) {
-            await prefs.setString("auth_token", data["token"]);
-            print("🔐 TOKEN SAVED: ${data["token"]}");
-          }
+          // ✅ Save user session using PersistentAuthService
+          final authService = PersistentAuthService();
+          await authService.saveUserSession(data);
 
-          await prefs.setString("user_id", data["id"].toString());  
-          await prefs.setString("fullname", data["fullname"]);
-          await prefs.setString("email", data["email"]);
-          await prefs.setString("role", data["role"]);
-          await prefs.setString("phone", data["phone"] ?? "");
-          await prefs.setString("address", data["address"] ?? "");
-          await prefs.setString("profile_image", data["profile_image"] ?? "");
-
-          String role = data["role"];
+          String role = data["role"].toString().toLowerCase(); // Convert to lowercase for comparison
 
           // ✅ OPTIMIZATION: Navigate immediately, do Firebase operations in background
           // Close loading dialog
@@ -184,12 +180,12 @@ class _LoginPageState extends State<LoginPage> {
 
           // Navigate to home screen immediately
           if (mounted) {
-            if (role == "Renter") {
+            if (role == "renter") {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const HomeScreen()),
               );
-            } else if (role == "Owner") {
+            } else if (role == "owner") {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => OwnerHomeScreen()),
@@ -199,6 +195,9 @@ class _LoginPageState extends State<LoginPage> {
 
           // ✅ Do Firebase operations in background (non-blocking)
           _updateFirebaseInBackground(data);
+          
+          // ✅ Initialize presence service for online status tracking
+          _initializePresenceService();
 
           // Show success message
           if (mounted) {
@@ -230,6 +229,50 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text('Error connecting to server.')),
         );
       }
+    }
+  }
+
+  // ✅ NEW: Sign in to Firebase Auth anonymously but link to user ID
+  Future<void> _signInToFirebaseAuth(Map<String, dynamic> userData) async {
+    try {
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      
+      // Check if already signed in
+      if (auth.currentUser != null) {
+        debugPrint('🔐 Already signed in to Firebase Auth: ${auth.currentUser!.uid}');
+        return;
+      }
+      
+      // Sign in anonymously - this gives us Firebase Auth credentials
+      // We'll use the user's email as a unique identifier
+      debugPrint('🔐 Signing in to Firebase Auth anonymously...');
+      
+      try {
+        // Try to sign in with email (if Firebase Auth email is enabled)
+        // For now, use anonymous auth which always works
+        final userCredential = await auth.signInAnonymously();
+        debugPrint('✅ Firebase Auth sign-in successful: ${userCredential.user?.uid}');
+        
+        // Update display name to match user ID
+        await userCredential.user?.updateDisplayName(userData['id'].toString());
+        
+      } catch (e) {
+        debugPrint('⚠️ Firebase Auth error (non-critical): $e');
+        // Continue even if this fails - app will still work
+      }
+    } catch (e) {
+      debugPrint('❌ Firebase Auth sign-in error: $e');
+      // Don't throw - let the app continue
+    }
+  }
+
+  // ✅ NEW: Initialize presence service
+  Future<void> _initializePresenceService() async {
+    try {
+      await UserPresenceService().initialize();
+      debugPrint('✅ Presence service initialized after login');
+    } catch (e) {
+      debugPrint('❌ Error initializing presence service: $e');
     }
   }
 
@@ -323,92 +366,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showRoleSelectionDialog(Map<String, dynamic> googleData) {
-    String? selectedRole;
-    String? selectedMunicipality;
-
-    final municipalities = [
-      'Bayugan', 'Bunawan', 'Esperanza', 'La Paz', 'Loreto', 
-      'Prosperidad', 'Rosario', 'San Francisco', 'San Luis', 
-      'Santa Josefa', 'Sibagat', 'Talacogon', 'Trento', 'Veruela'
-    ];
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Complete Your Profile'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Welcome ${googleData['fullName']}!'),
-                    const SizedBox(height: 20),
-                    
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'I am a',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Renter', child: Text('Renter')),
-                        DropdownMenuItem(value: 'Owner', child: Text('Owner')),
-                      ],
-                      onChanged: (value) {
-                        setDialogState(() => selectedRole = value);
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Municipality',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: municipalities.map((municipality) {
-                        return DropdownMenuItem(
-                          value: municipality,
-                          child: Text(municipality),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setDialogState(() => selectedMunicipality = value);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _googleSignInService.signOut();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: (selectedRole != null && selectedMunicipality != null)
-                      ? () async {
-                          Navigator.pop(context);
-                          await _completeGoogleRegistration(
-                            googleData,
-                            selectedRole!,
-                            selectedMunicipality!,
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-
-                  ),
-                  child: const Text('Continue'),
-                ),
-              ],
+        return GoogleRoleSelectionDialog(
+          googleData: googleData,
+          onComplete: (role, municipality) async {
+            Navigator.pop(context);
+            await _completeGoogleRegistration(
+              googleData,
+              role,
+              municipality,
             );
+          },
+          onCancel: () {
+            Navigator.pop(context);
+            _googleSignInService.signOut();
           },
         );
       },
@@ -451,12 +425,15 @@ class _LoginPageState extends State<LoginPage> {
   // - _completeFacebookRegistration()
 
   void _navigateToHome(String role) {
-    if (role == "Renter") {
+    // Convert role to lowercase for comparison
+    final normalizedRole = role.toLowerCase();
+    
+    if (normalizedRole == "renter") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-    } else if (role == "Owner") {
+    } else if (normalizedRole == "owner") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => OwnerHomeScreen()),

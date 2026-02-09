@@ -24,10 +24,14 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    // Safe image handling - ensure empty strings are replaced with placeholder
+    final rawImage = json['car_image']?.toString() ?? '';
+    final safeImage = rawImage.trim().isEmpty ? '' : rawImage;
+    
     return Booking(
       id: int.tryParse(json['booking_id']?.toString() ?? '0') ?? 0,
       carFullName: json['car_full_name']?.toString() ?? 'Unknown Car',
-      carImage: json['car_image']?.toString() ?? 'uploads/default_car.png',
+      carImage: safeImage, // Let the image handler deal with empty strings
       renterName: json['renter_name']?.toString() ?? 'Unknown Renter',
       startDate: json['pickup_date']?.toString() ?? '',
       endDate: json['return_date']?.toString() ?? '',

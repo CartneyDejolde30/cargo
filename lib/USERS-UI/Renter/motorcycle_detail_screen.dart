@@ -15,6 +15,7 @@ import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_
 import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/motorcycle_booking_screen.dart';
 import 'widgets/renter_availability_calendar.dart'; 
+import 'widgets/favorite_button.dart';
 
 
 class MotorcycleDetailScreen extends StatefulWidget {
@@ -401,7 +402,17 @@ Future<void> fetchMotorcycleDetails() async {
                             child: const Icon(Icons.arrow_back, size: 24),
                           ),
                         ),
+                      ),                      // Favorite Button (CENTER RIGHT)
+                      Positioned(
+                        top: 16,
+                        right: 70,
+                        child: FavoriteButton(
+                          vehicleType: 'motorcycle',
+                          vehicleId: widget.motorcycleId,
+                          size: 24,
+                        ),
                       ),
+
                       // Report Button (RIGHT)
                       Positioned(
                         top: 16,
@@ -1488,3 +1499,4 @@ class FullscreenImageViewer extends StatelessWidget {
     );
   }
 }
+

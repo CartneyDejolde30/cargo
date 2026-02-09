@@ -8,6 +8,8 @@ import '../Renter/widgets/bottom_nav_bar.dart';
 import 'motorcycle_detail_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'widgets/sort_bottom_sheet.dart';
+import 'widgets/favorite_button.dart';
+import 'widgets/notification_icon.dart';
 import 'motorcycles_map_view_screen.dart';
 
 class MotorcycleListScreen extends StatefulWidget {
@@ -444,10 +446,10 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.black),
-          onPressed: () {},
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: NotificationIcon(),
         ),
       ],
     );
@@ -729,6 +731,16 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
                       color: Colors.grey.shade200,
                       child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
                     ),
+                  ),
+                ),
+                // Favorite button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: FavoriteButton(
+                    vehicleType: 'motorcycle',
+                    vehicleId: motorcycleId,
+                    size: 20,
                   ),
                 ),
                 if (hasUnlimitedMileage)

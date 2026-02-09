@@ -17,6 +17,9 @@ import 'package:flutter_application_1/USERS-UI/models/overdue_booking.dart';
 import 'package:flutter_application_1/USERS-UI/services/overdue_service.dart';
 import 'package:flutter_application_1/USERS-UI/widgets/overdue_badge.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:flutter_application_1/USERS-UI/Renter/insurance/insurance_policy_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -53,6 +56,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   @override
   void initState() {
     super.initState();
+    print('🚀 BookingDetailScreen initState - Booking ID: ${widget.booking.bookingId}, Status: ${widget.booking.status}');
     _loadUserIdAndPayment();
     _checkAndStartGpsTracking();
     _checkOverdueStatus();
@@ -163,39 +167,60 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Future<void> _loadUserIdAndPayment() async {
+    print('📱 _loadUserIdAndPayment called');
     final prefs = await SharedPreferences.getInstance();
     final loadedUserId = prefs.getString('user_id');
+    
+    print('👤 User ID: $loadedUserId');
     
     setState(() {
       userId = loadedUserId;
       _isLoading = false;
     });
 
+    print('💳 About to call _fetchPaymentInfo...');
     await _fetchPaymentInfo();
+    print('✅ _fetchPaymentInfo completed');
   }
 
   Future<void> _fetchPaymentInfo() async {
+    print('💳💳💳 _fetchPaymentInfo STARTED for booking ${widget.booking.bookingId}');
     setState(() => _isLoadingPayment = true);
 
     try {
-      final response = await http.get(
-        Uri.parse('${baseUrl}api/payment/get_booking_payment.php?booking_id=${widget.booking.bookingId}'),
-      );
+      final url = '${baseUrl}api/payment/get_booking_payment.php?booking_id=${widget.booking.bookingId}';
+      print('🌐 Making request to: $url');
+      
+      final response = await http.get(Uri.parse(url));
+
+      print('📡 Response Status Code: ${response.statusCode}');
+      print('📡 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('✅ Decoded JSON: $data');
         
         if (data['success'] == true && data['payment'] != null) {
+          print('💳 Payment Data Found: ${data['payment']}');
+          print('💳 Refund Status from API: ${data['payment']['refund_status']}');
+          print('💳 Refund Requested: ${data['payment']['refund_requested']}');
+          
           setState(() {
             _paymentData = data['payment'];
+            print('✅ _paymentData SET in state');
           });
+        } else {
+          print('❌ API returned success=false or payment is null');
         }
+      } else {
+        print('❌ API returned non-200 status');
       }
     } catch (e) {
-      print('Error fetching payment info: $e');
+      print('❌❌❌ Error fetching payment info: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoadingPayment = false);
+        print('✅ _isLoadingPayment = false');
       }
     }
   }
@@ -281,14 +306,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              widget.booking.carImage,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.directions_car, size: 100),
-              ),
-            ),
+            widget.booking.carImage.trim().isEmpty
+                ? Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.directions_car, size: 100),
+                  )
+                : Image.network(
+                    widget.booking.carImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.directions_car, size: 100),
+                    ),
+                  ),
             _imageGradient(),
             _statusBadge(),
           ],
@@ -341,6 +371,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         // GPS Tracking Section - Only for Active Bookings
         if (widget.status.toLowerCase() == 'active') ...[
           _buildGpsTrackingSection(),
+          const SizedBox(height: 20),
+        ],
+        
+        // Insurance Policy Section - Only for Active/Approved Bookings
+        if (widget.booking.status.toLowerCase() == 'approved') ...[
+          _buildInsurancePolicySection(),
           const SizedBox(height: 20),
         ],
         
@@ -401,6 +437,131 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         const SizedBox(height: 120),
       ],
     );
+  }
+
+  // NEW: Insurance Policy Section
+  Widget _buildInsurancePolicySection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.orange.shade50, Colors.orange.shade100],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.orange.shade200,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade700,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.shield,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Insurance Coverage',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'View your policy details and file claims',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _viewInsurancePolicy,
+                icon: const Icon(Icons.description, size: 18),
+                label: Text(
+                  'View Insurance Policy',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _viewInsurancePolicy() async {
+    try {
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User ID not found. Please login again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Navigate to Insurance Policy Screen
+      if (mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InsurancePolicyScreen(
+              bookingId: widget.booking.bookingId,
+              userId: int.parse(userId!),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // NEW: GPS Tracking Section
@@ -833,7 +994,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   'Message Owner',
                   Icons.chat_bubble_outline,
                   Colors.blue,
-                  () {},
+                  _messageOwner,
                 ),
               ),
               const SizedBox(width: 12),
@@ -842,7 +1003,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   'Call Support',
                   Icons.phone,
                   Colors.green,
-                  () {},
+                  _callSupport,
                 ),
               ),
             ],
@@ -870,6 +1031,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _buildRefundButton(BuildContext context) {
+    // Check if refund has been requested
+    final refundStatus = _paymentData?['refund_status'] ?? 'not_requested';
+    final hasRefundRequested = refundStatus != 'not_requested' && refundStatus.isNotEmpty;
+    
+    print('🔍 Building Refund Button:');
+    print('   Payment Data: $_paymentData');
+    print('   Refund Status: $refundStatus');
+    print('   Has Refund Requested: $hasRefundRequested');
+    
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -877,22 +1047,29 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.red.shade50,
+            color: hasRefundRequested ? Colors.orange.shade50 : Colors.red.shade50,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.shade200),
+            border: Border.all(
+              color: hasRefundRequested ? Colors.orange.shade200 : Colors.red.shade200,
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.red.shade700),
+              Icon(
+                hasRefundRequested ? Icons.pending : Icons.info_outline,
+                color: hasRefundRequested ? Colors.orange.shade700 : Colors.red.shade700,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  widget.booking.status == 'rejected'
-                      ? 'This booking was rejected by the owner'
-                      : 'This booking was cancelled',
+                  hasRefundRequested
+                      ? 'Your refund request is being processed'
+                      : (widget.booking.status == 'rejected'
+                          ? 'This booking was rejected by the owner'
+                          : 'This booking was cancelled'),
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: Colors.red.shade900,
+                    color: hasRefundRequested ? Colors.orange.shade900 : Colors.red.shade900,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -903,7 +1080,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () async {
+            onPressed: hasRefundRequested ? null : () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -922,19 +1099,25 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
               if (result == true) {
                 await _fetchPaymentInfo();
+                setState(() {}); // Refresh to show updated button
               }
             },
-            icon: const Icon(Icons.undo, size: 20),
+            icon: Icon(
+              hasRefundRequested ? Icons.hourglass_empty : Icons.undo,
+              size: 20,
+            ),
             label: Text(
-              'Request Refund',
+              hasRefundRequested ? 'Request Pending' : 'Request Refund',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
+              backgroundColor: hasRefundRequested ? Colors.orange.shade600 : Colors.red.shade600,
               foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey.shade400,
+              disabledForegroundColor: Colors.grey.shade600,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -953,6 +1136,88 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
+  }
+
+  // Message Owner - Opens chat with owner
+  void _messageOwner() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString('user_id');
+      
+      if (currentUserId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please login to message the owner'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Generate chat ID (consistent format: smaller_id_larger_id)
+      final ownerId = widget.booking.ownerId.toString();
+      final userIdInt = int.parse(currentUserId);
+      final ownerIdInt = int.parse(ownerId);
+      final chatId = userIdInt < ownerIdInt
+          ? '${currentUserId}_$ownerId'
+          : '${ownerId}_$currentUserId';
+
+      // Navigate to chat screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailScreen(
+            chatId: chatId,
+            peerId: ownerId,
+            peerName: widget.booking.ownerName,
+            peerAvatar: widget.booking.ownerAvatar,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error opening chat: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open chat'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Call Support - Makes a phone call
+  void _callSupport() async {
+    // You can use owner's phone or support number
+    final phoneNumber = widget.booking.ownerPhone.isNotEmpty 
+        ? widget.booking.ownerPhone 
+        : '09123456789'; // Fallback support number
+    
+    final uri = Uri.parse('tel:$phoneNumber');
+    
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot make phone call'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error making call: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to make call: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showCancelDialog(BuildContext context) {
@@ -1011,17 +1276,17 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               // Stop GPS tracking
               _stopGpsTracking();
 
-              final success = await BookingService.cancelBooking(
+              final result = await BookingService.cancelBooking(
                 bookingId: widget.booking.bookingId,
                 userId: userId!,
               );
 
               Navigator.pop(context);
 
-              if (success) {
+              if (result['success'] == true) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Booking cancelled successfully. GPS tracking stopped.'),
+                  SnackBar(
+                    content: Text(result['message'] ?? 'Booking cancelled successfully. GPS tracking stopped.'),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -1030,9 +1295,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 Navigator.pop(context, true);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Failed to cancel booking'),
+                  SnackBar(
+                    content: Text(result['message'] ?? 'Failed to cancel booking'),
                     backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
                   ),
                 );
               }

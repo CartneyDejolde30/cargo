@@ -1,0 +1,13 @@
+# ========================================
+# CarGO Philippines - Root Configuration
+# ========================================
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Set DirectoryIndex priority
+DirectoryIndex index.php index.html default.html
+
+# Redirect root to cargoAdmin
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ /cargoAdmin/index.php [L,R=301]

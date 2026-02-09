@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_application_1/config/maptiler_config.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/widgets/map_controls.dart';
 import 'package:flutter_application_1/widgets/map_style_switcher.dart';
+import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
 import 'car_detail_screen.dart';
 
 class CarsMapViewScreen extends StatefulWidget {
@@ -30,6 +32,8 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
   
   List<Marker> _markers = [];
   LatLng _center = LatLng(8.7167, 125.7500); // Bayugan, Agusan del Sur
+  Position? _currentPosition;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -38,8 +42,117 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
     _calculateCenter();
   }
 
+  Future<void> _getCurrentLocation() async {
+    if (_isLoadingLocation) return;
+
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Check and request permissions
+      final hasPermission = await LocationPermissionHelper.showPermissionDialog(context);
+      
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Location permission is required to show your location',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+
+        // Animate to user location
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          15,
+        );
+
+        // Rebuild markers to include user location
+        _buildMarkers();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(
+                  'Location updated',
+                  style: GoogleFonts.poppins(),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Failed to get location: ${e.toString()}',
+                    style: GoogleFonts.poppins(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+        });
+      }
+    }
+  }
+
   void _buildMarkers() {
-    _markers = widget.cars.where((car) {
+    List<Marker> carMarkers = widget.cars.where((car) {
       return car['latitude'] != null && 
              car['longitude'] != null &&
              car['latitude'] != 0 &&
@@ -50,59 +163,71 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
       
       return Marker(
         point: LatLng(lat, lng),
-        width: 50,
-        height: 50,
+        width: 60,
+        height: 75,
         child: GestureDetector(
           onTap: () => _showCarDetails(car),
           child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
             children: [
               // Custom marker
-              Container(
-                decoration: BoxDecoration(
-                  color: _selectedCar?['id'] == car['id']
-                      ? Theme.of(context).primaryColor
-                      : Colors.red,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+              Positioned(
+                top: 0,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: _selectedCar?['id'] == car['id']
+                        ? Theme.of(context).primaryColor
+                        : Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.directions_car,
+                      color: Colors.white,
+                      size: 24,
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.directions_car,
-                    color: Colors.white,
-                    size: 24,
                   ),
                 ),
               ),
               // Price badge
               if (car['price'] != null)
                 Positioned(
-                  bottom: -8,
-                  left: 0,
-                  right: 0,
+                  bottom: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedCar?['id'] == car['id']
+                            ? Theme.of(context).primaryColor
+                            : Colors.red,
+                        width: 1.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Text(
                       '₱${car['price']}',
                       style: GoogleFonts.poppins(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -113,6 +238,62 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
         ),
       );
     }).toList();
+
+    // Add user location marker if available
+    if (_currentPosition != null) {
+      carMarkers.add(
+        Marker(
+          point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          width: 60,
+          height: 60,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer pulse circle
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              // Inner circle
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              // Center dot
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    _markers = carMarkers;
   }
 
   void _calculateCenter() {
@@ -152,11 +333,14 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: 0,
+        backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF2C3E50),
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -165,7 +349,9 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
           widget.title,
           style: GoogleFonts.poppins(
             color: Colors.white,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: 0.5,
           ),
         ),
         actions: [
@@ -173,18 +359,36 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  '${widget.cars.length} cars',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.directions_car,
+                      size: 16,
+                      color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF2C3E50),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.cars.length}',
+                      style: GoogleFonts.poppins(
+                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF2C3E50),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -216,13 +420,35 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
             right: 16,
             child: MapControls(
               mapController: _mapController,
-              onCenterLocation: () {
-                if (_markers.isNotEmpty) {
-                  _mapController.move(_center, 12);
-                }
-              },
+              onCenterLocation: _getCurrentLocation,
             ),
           ),
+
+          // Loading indicator when getting location
+          if (_isLoadingLocation)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Material(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white,
+                shape: const CircleBorder(),
+                elevation: 4,
+                shadowColor: Colors.black.withValues(alpha: 0.2),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // Style Switcher Button (left side, top)
           Positioned(

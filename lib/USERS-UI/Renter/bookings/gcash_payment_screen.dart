@@ -133,14 +133,20 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   }
 
   bool _validateForm() {
-    final gcash = gcashNumberController.text.trim();
-    final ref = referenceNumberController.text.trim();
+    // ✅ FIX: Remove all non-digit characters before validation
+    final gcashRaw = gcashNumberController.text.trim();
+    final gcash = gcashRaw.replaceAll(RegExp(r'\D'), ''); // Remove all non-digits
+    
+    final refRaw = referenceNumberController.text.trim();
+    final ref = refRaw.replaceAll(RegExp(r'\D'), ''); // Remove all non-digits
 
+    // Validate GCash number (must be exactly 11 digits starting with 09)
     if (!RegExp(r'^09\d{9}$').hasMatch(gcash)) {
-      _showError('Invalid GCash number (must be 09XXXXXXXXX)');
+      _showError('Invalid GCash number (must be 11 digits starting with 09)');
       return false;
     }
 
+    // Validate reference number (must be exactly 13 digits)
     if (!RegExp(r'^\d{13}$').hasMatch(ref)) {
       _showError('Reference number must be exactly 13 digits');
       return false;
@@ -159,6 +165,10 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
 
     setState(() => isProcessing = true);
 
+    // ✅ FIX: Clean the numbers before sending to API
+    final cleanGcash = gcashNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+    final cleanRef = referenceNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+
     try {
       final response = await http.post(
         Uri.parse("${baseUrl}api/submit_payment.php"),
@@ -170,8 +180,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           "user_id": widget.userId,
           "total_amount": widget.totalAmount.toStringAsFixed(2),
           "payment_method": "gcash",
-          "gcash_number": gcashNumberController.text.trim(),
-          "payment_reference": referenceNumberController.text.trim(),
+          "gcash_number": cleanGcash, // Send cleaned number
+          "payment_reference": cleanRef, // Send cleaned reference
         },
       );
 
@@ -711,6 +721,18 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     required IconData icon,
     TextInputType? keyboardType,
   }) {
+    // ✅ FIX: Add input formatters to only allow digits
+    final List<TextInputFormatter> inputFormatters = [
+      FilteringTextInputFormatter.digitsOnly, // Only allow digits
+    ];
+    
+    // Add max length based on field
+    if (label.contains('GCash Number')) {
+      inputFormatters.add(LengthLimitingTextInputFormatter(11)); // Max 11 digits
+    } else if (label.contains('Reference')) {
+      inputFormatters.add(LengthLimitingTextInputFormatter(13)); // Max 13 digits
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -726,6 +748,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: GoogleFonts.poppins(fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
@@ -736,6 +759,12 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 20),
             filled: true,
             fillColor: Colors.grey.shade50,
+            // ✅ FIX: Add counter to show character count
+            counterText: label.contains('GCash') ? '11 digits' : '13 digits',
+            counterStyle: GoogleFonts.poppins(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),

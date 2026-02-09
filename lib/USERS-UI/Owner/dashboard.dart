@@ -27,6 +27,7 @@ import 'pending_requests_page.dart';
 import 'active_booking_page.dart';
 import 'cancelled_bookings_page.dart';
 import 'rejected_bookings_page.dart';
+import 'insurance/owner_insurance_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -92,6 +93,7 @@ class _DashboardPageState extends State<DashboardPage>
   // LOAD DATA + THEME
   // =====================
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
@@ -104,16 +106,24 @@ class _DashboardPageState extends State<DashboardPage>
           prefs.getInt("user_id")?.toString() ??
           "0";
 
+      // ✅ PERFORMANCE: Use Future.wait with error handling for each request
+      // This prevents one failed API call from blocking others
       await Future.wait([
-        _fetchDashboardStats(),
-        _fetchRecentBookings(),
-        _fetchUpcomingBookings(),
+        _fetchDashboardStats().catchError((e) {
+          debugPrint("⚠️ Dashboard stats fetch failed: $e");
+        }),
+        _fetchRecentBookings().catchError((e) {
+          debugPrint("⚠️ Recent bookings fetch failed: $e");
+        }),
+        _fetchUpcomingBookings().catchError((e) {
+          debugPrint("⚠️ Upcoming bookings fetch failed: $e");
+        }),
       ]);
     } catch (e) {
       debugPrint("Error loading dashboard data: $e");
     }
 
-    setState(() => isLoading = false);
+    if (mounted) setState(() => isLoading = false);
   }
 
   // =====================
@@ -132,19 +142,19 @@ class _DashboardPageState extends State<DashboardPage>
         await _dashboardService.fetchDashboardStats(ownerId);
     debugPrint("👤 OWNER ID => $ownerId");
 
-    setState(() => stats = fetchedStats);
+    if (mounted) setState(() => stats = fetchedStats);
   }
 
   Future<void> _fetchRecentBookings() async {
     final bookings =
         await _bookingService.fetchRecentBookings(ownerId, limit: 5);
-    setState(() => recentBookings = bookings);
+    if (mounted) setState(() => recentBookings = bookings);
   }
 
   Future<void> _fetchUpcomingBookings() async {
     final bookings =
         await _bookingService.fetchUpcomingBookings(ownerId);
-    setState(() => upcomingBookings = bookings);
+    if (mounted) setState(() => upcomingBookings = bookings);
   }
 
   String _formatCurrency(double amount) {
@@ -348,6 +358,26 @@ class _DashboardPageState extends State<DashboardPage>
                   builder: (_) =>
                       RejectedBookingsPage(
                           ownerId: ownerId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+
+          // NEW: Insurance Policies Card
+          QuickActionCard(
+            title: "Insurance Policies",
+            subtitle: "View your vehicle insurance coverage",
+            count: null, // Optional: Can add count if you fetch it
+            icon: Icons.shield_outlined,
+            backgroundColor: Colors.orange.shade600,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OwnerInsuranceScreen(
+                    ownerId: int.parse(ownerId),
+                  ),
                 ),
               );
             },

@@ -233,7 +233,13 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
   ImageProvider? getImage() {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
-    if (storedImage.isNotEmpty) return NetworkImage(storedImage);
+    // Safe check for network image - avoid empty strings
+    if (storedImage.trim().isNotEmpty &&
+        storedImage != "null" &&
+        storedImage != "NULL" &&
+        (storedImage.startsWith('http://') || storedImage.startsWith('https://'))) {
+      return NetworkImage(storedImage);
+    }
     return null;
   }
 

@@ -8,6 +8,6 @@ RewriteEngine On
 # Set DirectoryIndex priority
 DirectoryIndex index.php index.html default.html
 
-# Redirect root to cargoAdmin
+# Redirect root to carGOAdmin
 RewriteCond %{REQUEST_URI} ^/$
-RewriteRule ^$ /cargoAdmin/index.php [L,R=301]
+RewriteRule ^$ /carGOAdmin/index.php [L,R=301]

@@ -129,7 +129,8 @@ class NotificationService {
       final url = Uri.parse(
           "${ApiConstants.baseUrl}/api/dashboard/unread_counts.php?user_id=$userId");
 
-      debugPrint("📡 Fetch unread counts: $url");
+      // Removed verbose debug print to reduce log clutter
+      // debugPrint("📡 Fetch unread counts: $url");
 
       final response =
           await http.get(url).timeout(ApiConstants.apiTimeout);

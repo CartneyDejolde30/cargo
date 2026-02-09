@@ -37,14 +37,13 @@ class _OwnerInsuranceScreenState extends State<OwnerInsuranceScreen> {
     });
 
     try {
-      // Note: This is a placeholder - you'll need to create an API endpoint
-      // to fetch all insurance policies for an owner's bookings
-      
-      // Example API call (to be implemented in backend):
-      // GET /api/insurance/admin/get_owner_policies.php?owner_id=${widget.ownerId}
+      final policies = await InsuranceService.getOwnerPolicies(
+        ownerId: widget.ownerId,
+        status: _filterStatus,
+      );
       
       setState(() {
-        _policies = [];
+        _policies = policies;
         _isLoading = false;
       });
     } catch (e) {

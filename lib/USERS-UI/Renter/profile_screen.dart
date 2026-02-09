@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/bottom_nav_bar.dart';
+import 'widgets/notification_icon.dart';
 import 'package:flutter_application_1/USERS-UI/change_password.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
 import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/theme/theme_provider.dart';
+import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:flutter_application_1/services/persistent_auth_service.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -232,11 +235,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
       );
 
-      // Simulate logout process
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      // ✅ Set user offline and cleanup presence service
+      await UserPresenceService().setOffline();
+      await UserPresenceService().dispose();
+      
+      // ✅ Clear user session using PersistentAuthService
+      final authService = PersistentAuthService();
+      await authService.clearUserSession();
+      
+      // Small delay for smooth transition
+      await Future.delayed(const Duration(milliseconds: 500));
       
       if (!mounted) return;
       
@@ -292,6 +300,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: NotificationIcon(),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Image.asset("assets/cargo.png", width: 32),

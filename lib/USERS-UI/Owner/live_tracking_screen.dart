@@ -68,44 +68,74 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
     _updateTimer = null;
   }
 
-  Future<void> _fetchCurrentLocation() async {
-    final location = await _trackingService.fetchCurrentLocation(widget.bookingId);
-    
-    if (location != null && mounted) {
-      setState(() {
-        _currentLocation = LatLng(location['latitude'], location['longitude']);
-        _lastUpdate = _formatTimestamp(location['timestamp']);
-        _currentSpeed = location['speed'];
-        _isLoading = false;
-        
-        // Add to history
-        if (_currentLocation != null) {
-          _locationHistory.add(_currentLocation!);
-          // Keep only last 50 points
-          if (_locationHistory.length > 50) {
-            _locationHistory.removeAt(0);
-          }
-        }
-      });
+  bool _hasGpsData = true;
+  String? _errorMessage;
 
-      // Center map on first load
-      if (_locationHistory.length == 1) {
-        _centerOnCar();
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      final location = await _trackingService.fetchCurrentLocation(widget.bookingId);
+      
+      if (location != null && mounted) {
+        setState(() {
+          _currentLocation = LatLng(location['latitude'], location['longitude']);
+          _lastUpdate = _formatTimestamp(location['timestamp']);
+          _currentSpeed = location['speed'];
+          _isLoading = false;
+          _hasGpsData = true;
+          _errorMessage = null;
+          
+          // Add to history
+          if (_currentLocation != null) {
+            _locationHistory.add(_currentLocation!);
+            // Keep only last 50 points
+            if (_locationHistory.length > 50) {
+              _locationHistory.removeAt(0);
+            }
+          }
+        });
+
+        // Center map on first load
+        if (_locationHistory.length == 1) {
+          _centerOnCar();
+        }
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (_currentLocation == null) {
+            _hasGpsData = false;
+            _errorMessage = 'No GPS data available for this booking';
+          }
+        });
       }
-    } else if (mounted) {
-      setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasGpsData = false;
+          _errorMessage = 'Failed to fetch location data';
+        });
+      }
     }
   }
 
   Future<void> _fetchLocationHistory() async {
-    final history = await _trackingService.fetchLocationHistory(widget.bookingId);
-    
-    if (history.isNotEmpty && mounted) {
-      setState(() {
-        _locationHistory = history.map((loc) => 
-          LatLng(loc['latitude'], loc['longitude'])
-        ).toList();
-      });
+    try {
+      final history = await _trackingService.fetchLocationHistory(widget.bookingId);
+      
+      if (history.isNotEmpty && mounted) {
+        setState(() {
+          _locationHistory = history.map((loc) => 
+            LatLng(loc['latitude'], loc['longitude'])
+          ).toList();
+          _hasGpsData = true;
+        });
+      } else if (mounted && _locationHistory.isEmpty) {
+        setState(() {
+          _hasGpsData = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching history: $e');
     }
   }
 
@@ -159,15 +189,19 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
           _buildMap(),
           _buildTopBar(),
           
-          // Map Controls (right side)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 100,
-            right: 16,
-            child: MapControls(
-              mapController: _mapController,
-              onCenterLocation: _centerOnCar,
+          // Show empty state if no GPS data
+          if (!_hasGpsData && !_isLoading) _buildNoGpsDataOverlay(),
+          
+          // Map Controls (right side) - only show if we have GPS data
+          if (_hasGpsData)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 100,
+              right: 16,
+              child: MapControls(
+                mapController: _mapController,
+                onCenterLocation: _centerOnCar,
+              ),
             ),
-          ),
           
           // Style Switcher Button (left side)
           Positioned(
@@ -215,7 +249,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
               ),
             ),
           
-          _buildBottomCard(),
+          if (_hasGpsData) _buildBottomCard(),
           if (_isLoading) _buildLoadingOverlay(),
         ],
       ),
@@ -601,6 +635,123 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoGpsDataOverlay() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.5),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.location_off,
+                  size: 48,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'No GPS Data Available',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage ?? 
+                'The renter hasn\'t started tracking yet, or GPS tracking is not enabled for this rental.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _isLoading = true;
+                          _hasGpsData = true;
+                        });
+                        _fetchCurrentLocation();
+                        _fetchLocationHistory();
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text(
+                        'Retry',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue.shade700,
+                        side: BorderSide(color: Colors.blue.shade200),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      label: Text(
+                        'Go Back',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,20 +30,41 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   bool _loading = true;
   int _unreadNotifications = 0;
   int _unreadMessages = 0;
+  
+  // ✅ PERFORMANCE: Prevent multiple simultaneous API calls
+  bool _isLoadingBadges = false;
+  DateTime? _lastBadgeUpdate;
+  
+  // ✅ Timer for periodic updates
+  Timer? _badgeUpdateTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     
+    // ✅ Start periodic badge updates
+    _startPeriodicBadgeUpdate();
+    
     // ✅ OPTIMIZATION: Defer verification popup to avoid blocking initial render
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 500), () {
+        debugPrint("🔍 [OWNER SCREEN] About to check verification popup...");
+        debugPrint("🔍 [OWNER SCREEN] Mounted: $mounted");
         if (mounted) {
+          debugPrint("🔍 [OWNER SCREEN] Calling VerifyPopup.showIfNotVerified()");
           VerifyPopup.showIfNotVerified(context);
+        } else {
+          debugPrint("❌ [OWNER SCREEN] Widget not mounted, skipping popup");
         }
       });
     });
+  }
+  
+  @override
+  void dispose() {
+    _stopPeriodicBadgeUpdate();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -71,27 +93,94 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     }
   }
 
+  // ✅ Start periodic badge count updates
+  void _startPeriodicBadgeUpdate() {
+    // Update immediately
+    if (_ownerId > 0) {
+      _loadBadgeCounts();
+    }
+    
+    // Then update every 30 seconds (reduced frequency to prevent spam)
+    _badgeUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted && _ownerId > 0) {
+        _loadBadgeCounts();
+      }
+    });
+  }
+  
+  // ✅ Stop periodic updates
+  void _stopPeriodicBadgeUpdate() {
+    _badgeUpdateTimer?.cancel();
+    _badgeUpdateTimer = null;
+  }
+
   Future<void> _loadBadgeCounts() async {
+    // ✅ PERFORMANCE: Prevent multiple simultaneous calls
+    if (_isLoadingBadges) {
+      debugPrint("⏭️ Badge count request skipped (already loading)");
+      return;
+    }
+    
+    // ✅ CACHE: Skip if updated within last 10 seconds
+    if (_lastBadgeUpdate != null) {
+      final timeSinceLastUpdate = DateTime.now().difference(_lastBadgeUpdate!);
+      if (timeSinceLastUpdate.inSeconds < 10) {
+        debugPrint("⏭️ Badge count request skipped (cached, ${timeSinceLastUpdate.inSeconds}s ago)");
+        return;
+      }
+    }
+    
+    _isLoadingBadges = true;
+    
     try {
       final counts = await _notificationService.fetchUnreadCounts(_ownerId.toString());
       
-      setState(() {
-        _unreadNotifications = counts['notifications'] ?? 0;
-        _unreadMessages = counts['messages'] ?? 0;
-      });
+      if (mounted) {
+        setState(() {
+          _unreadNotifications = counts['notifications'] ?? 0;
+          _unreadMessages = counts['messages'] ?? 0;
+          _lastBadgeUpdate = DateTime.now();
+        });
+        debugPrint("🔔 Badge counts updated: Notifications=$_unreadNotifications, Messages=$_unreadMessages");
+      }
     } catch (e) {
-      debugPrint("Error loading badge counts: $e");
+      debugPrint("❌ Error loading badge counts: $e");
+    } finally {
+      _isLoadingBadges = false;
     }
   }
 
   void _onItemTapped(int index) {
+    final previousIndex = _selectedIndex;
+    
     setState(() {
       _selectedIndex = index;
     });
 
-    // Refresh badge counts when navigating to notifications or messages
-    if (index == 2 || index == 3) {
-      _loadBadgeCounts();
+    // ✅ Only refresh badge counts when LEAVING notifications/messages tab
+    // This updates the count after the user has potentially read some items
+    if (previousIndex == 2 || previousIndex == 3) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _loadBadgeCounts();
+      });
+    }
+  }
+
+  // ✅ PERFORMANCE: Build pages lazily - only create when first needed
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return const DashboardPage();
+      case 1:
+        return MyCarPage(ownerId: _ownerId);
+      case 2:
+        return EnhancedNotificationPage(userId: _ownerId);
+      case 3:
+        return const MessagePage();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return const DashboardPage();
     }
   }
 
@@ -112,20 +201,10 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       );
     }
 
-    final List<Widget> pages = [
-      const DashboardPage(),
-      MyCarPage(ownerId: _ownerId),
-      EnhancedNotificationPage(userId: _ownerId), // NEW: Using Enhanced Notifications
-      const MessagePage(),
-      const ProfileScreen(),
-    ];
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      ),
+      // ✅ PERFORMANCE: Only render the current page instead of all pages
+      body: _buildPage(_selectedIndex),
       bottomNavigationBar: _buildModernBottomNav(),
     );
   }

@@ -43,9 +43,19 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
     return officialReceiptFile != null && certificateOfRegistrationFile != null;
   }
 
+  // ✅ NEW: Show bottom sheet to choose camera or gallery
   Future<void> _pickDocument(bool isOR) async {
+    final ImageSource? source = await _showImageSourceBottomSheet();
+    
+    if (source == null) return; // User cancelled
+    
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 85, // Compress image to 85% quality
+      maxWidth: 1920, // Limit image size for better performance
+      maxHeight: 1920,
+    );
 
     if (image != null) {
       // FIXED: Properly convert XFile to File for both platforms
@@ -69,6 +79,117 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
         }
       });
     }
+  }
+
+  // ✅ NEW: Bottom sheet to select image source
+  Future<ImageSource?> _showImageSourceBottomSheet() async {
+    return await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Choose Image Source',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.blue,
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    'Camera',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Take a photo',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context, ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.photo_library,
+                      color: Colors.green,
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    'Gallery',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Choose from gallery',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context, ImageSource.gallery);
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildUploadBox(String label, File? file, VoidCallback onTap) {

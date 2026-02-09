@@ -11,6 +11,8 @@ import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'car_detail_screen.dart';
+import 'widgets/favorite_button.dart';
+import 'widgets/notification_icon.dart';
 
 import 'motorcycle_screen.dart';
 
@@ -27,9 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = true;
   List<Map<String, dynamic>> _cars = [];
-
-  // Cache to avoid repeated HEAD requests for the same image
-  final Map<String, String> _resolvedImageCache = {};
 
 Future<void> saveFcmToken() async {
   String? token = await FirebaseMessaging.instance.getToken();
@@ -74,43 +73,6 @@ void initState() {
 
     final cleanPath = path.replaceFirst("uploads/", "");
     return GlobalApiConfig.getImageUrl(cleanPath);
-  }
-
-  /// Async resolver that checks whether an image URL exists (via HEAD).
-  /// Returns a working URL or placeholder and caches the result.
-  Future<String> resolveImageUrlCached(String? rawPath) async {
-    const placeholder = "https://via.placeholder.com/400x250?text=No+Image";
-
-    final path = rawPath?.toString().trim() ?? '';
-    if (path.isEmpty) return placeholder;
-
-    String candidate;
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      candidate = path;
-    } else {
-      final clean = path.replaceFirst("uploads/", "");
-      candidate = GlobalApiConfig.getImageUrl(clean);
-    }
-
-    if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
-
-    try {
-      // ✅ CRASH FIX: Add timeout and proper error handling
-      final resp = await http.head(Uri.parse(candidate)).timeout(
-        const Duration(seconds: 4),
-        onTimeout: () => throw Exception('Image check timeout'),
-      );
-      if (resp.statusCode == 200) {
-        _resolvedImageCache[candidate] = candidate;
-        return candidate;
-      }
-    } catch (e) {
-      // ✅ CRASH FIX: Log error for debugging but don't crash
-      print("⚠️ Image check failed for $candidate: $e");
-    }
-
-    _resolvedImageCache[candidate] = placeholder;
-    return placeholder;
   }
 
 
@@ -218,6 +180,7 @@ void initState() {
                         letterSpacing: 1,
                       ),
                     ),
+                    const NotificationIcon(),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -308,17 +271,43 @@ void initState() {
                 const SizedBox(height: 12),
 
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
                     : _cars.isEmpty
-                        ? const Center(child: Text("No cars available"))
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.directions_car_outlined,
+                                    size: 60,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "No cars available",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
                         : GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 15,
-                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.65,
                             ),
                             itemCount: bestCars.length,
                             itemBuilder: (context, index) {
@@ -347,13 +336,40 @@ void initState() {
                 const SizedBox(height: 12),
 
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
                     : newlyListed.isEmpty
-                        ? const Center(child: Text("No new listings"))
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.new_releases_outlined,
+                                    size: 60,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "No new listings",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
                         : SizedBox(
                             height: 160,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.only(left: 0),
                               itemCount: newlyListed.length,
                               itemBuilder: (context, index) {
                                 final car = newlyListed[index];
@@ -464,83 +480,170 @@ void initState() {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image — now resolved via FutureBuilder to avoid 404 noise
+            // Image with aspect ratio
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: FutureBuilder<String>(
-                future: resolveImageUrlCached(image),
-                builder: (context, snap) {
-                  final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                  return Image.network(
-                    imageUrl,
-                    height: 110,
+              child: Stack(
+                children: [
+                  Image.network(
+                    image,
+                    height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) return child;
                       return Container(
-                        height: 110,
-                        color: Theme.of(context).dividerColor,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        height: 120,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
-                      height: 110,
-                      color: Theme.of(context).dividerColor,
-                      child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                      height: 120,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
                     ),
-                  );
-                },
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating.toString(),
-                        style: GoogleFonts.poppins(fontSize: 12),
+                  // Favorite button
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: FavoriteButton(
+                      vehicleType: 'car',
+                      vehicleId: carId,
+                      size: 20,
+                    ),
+                  ),
+                  // Rating badge overlay
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.event_seat, size: 14, color: Theme.of(context).hintColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        "$seats Seats",
-                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).hintColor),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "₱$price/day",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            // Card content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Car name
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Location
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Seats
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.event_seat,
+                          size: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          "$seats Seats",
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Price
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "₱$price/day",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -577,15 +680,15 @@ void initState() {
         );
       },
       child: Container(
-        width: 300,
+        width: 320,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -600,54 +703,83 @@ void initState() {
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
                   ),
-                  child: FutureBuilder<String>(
-                    future: resolveImageUrlCached(image),
-                    builder: (context, snap) {
-                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                      return Image.network(
-                        imageUrl,
+                  child: Image.network(
+                    image,
+                    height: 160,
+                    width: 140,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
                         height: 160,
                         width: 140,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            height: 160,
-                            width: 140,
-                            color: Theme.of(context).dividerColor,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 160,
-                          width: 140,
-                          color: Theme.of(context).dividerColor,
-                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       );
                     },
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      width: 140,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
+                    ),
                   ),
                 ),
+                // "NEW" badge
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      "NEW",
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                // Unlimited mileage badge
                 if (hasUnlimitedMileage)
                   Positioned(
-                    top: 8,
+                    bottom: 8,
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        "Unlimited Mileage",
-                        style: GoogleFonts.poppins(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).iconTheme.color,
-
-
-
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.all_inclusive, color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Unlimited",
+                            style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -657,44 +789,53 @@ void initState() {
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "₱$price",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).iconTheme.color,
-
-
-
-                      ),
+                    // Car name and year
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          year,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "$name $year",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).dividerColor,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
+                    
+                    // Location
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -702,33 +843,64 @@ void initState() {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
+                    
+                    // Seats and transmission
                     Row(
                       children: [
-                        Icon(Icons.event_seat, size: 14, color: Theme.of(context).hintColor),
+                        Icon(
+                          Icons.event_seat,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          "$seats-seater",
+                          "$seats",
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Theme.of(context).hintColor,
+                            color: Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.speed, size: 14, color: Theme.of(context).hintColor),
+                        Icon(
+                          Icons.settings,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             transmission,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Price
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "₱$price/day",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ],
                 ),

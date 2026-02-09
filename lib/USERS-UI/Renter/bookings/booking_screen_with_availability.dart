@@ -157,20 +157,27 @@ class _BookingScreenWithAvailabilityState extends State<BookingScreenWithAvailab
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              widget.carImage,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[200],
-                  child: Icon(Icons.directions_car, color: Colors.grey[400], size: 40),
-                );
-              },
-            ),
+            child: widget.carImage.trim().isEmpty
+                ? Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[200],
+                    child: Icon(Icons.directions_car, color: Colors.grey[400], size: 40),
+                  )
+                : Image.network(
+                    widget.carImage,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[200],
+                        child: Icon(Icons.directions_car, color: Colors.grey[400], size: 40),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(width: 16),
           Expanded(

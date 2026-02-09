@@ -1,11 +1,11 @@
-﻿-- phpMyAdmin SQL Dump
--- version 5.2.1
+-- phpMyAdmin SQL Dump
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Feb 03, 2026 at 12:17 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- Host: 127.0.0.1:3306
+-- Generation Time: Feb 08, 2026 at 04:29 AM
+-- Server version: 11.8.3-MariaDB-log
+-- PHP Version: 7.2.34
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,14 +18,70 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `dbcargo`
+-- Database: `u672913452_dbcargo`
 --
 
 DELIMITER $$
 --
 -- Procedures
 --
-CREATE PROCEDURE `sp_get_vehicle_availability` (IN `p_vehicle_id` INT, IN `p_vehicle_type` VARCHAR(20), IN `p_start_date` DATE, IN `p_end_date` DATE)   BEGIN
+CREATE DEFINER=`u672913452_ethan`@`127.0.0.1` PROCEDURE `sp_check_escrow_release_eligibility` (IN `p_booking_id` INT, OUT `p_can_release` BOOLEAN, OUT `p_failure_reason` VARCHAR(255))   BEGIN
+    DECLARE v_booking_status VARCHAR(50);
+    DECLARE v_escrow_status VARCHAR(50);
+    DECLARE v_escrow_hold_reason VARCHAR(100);
+    DECLARE v_owner_gcash VARCHAR(255);
+    DECLARE v_payment_verified_at DATETIME;
+    
+    -- Get booking details
+    SELECT 
+        b.status,
+        b.escrow_status,
+        b.escrow_hold_reason,
+        u.gcash_number,
+        b.payment_verified_at
+    INTO 
+        v_booking_status,
+        v_escrow_status,
+        v_escrow_hold_reason,
+        v_owner_gcash,
+        v_payment_verified_at
+    FROM bookings b
+    LEFT JOIN users u ON b.owner_id = u.id
+    WHERE b.id = p_booking_id;
+    
+    -- Check requirements
+    SET p_can_release = TRUE;
+    SET p_failure_reason = NULL;
+    
+    -- Requirement 1: Booking completed
+    IF v_booking_status != 'completed' THEN
+        SET p_can_release = FALSE;
+        SET p_failure_reason = 'Booking not completed (current status: ' + v_booking_status + ')';
+    
+    -- Requirement 2: Escrow status = held
+    ELSEIF v_escrow_status != 'held' THEN
+        SET p_can_release = FALSE;
+        SET p_failure_reason = 'Escrow not in held status (current: ' + v_escrow_status + ')';
+    
+    -- Requirement 3: No active holds
+    ELSEIF v_escrow_hold_reason IS NOT NULL AND v_escrow_hold_reason != '' THEN
+        SET p_can_release = FALSE;
+        SET p_failure_reason = 'Escrow on hold: ' + v_escrow_hold_reason;
+    
+    -- Requirement 4: Owner GCash configured
+    ELSEIF v_owner_gcash IS NULL OR v_owner_gcash = '' THEN
+        SET p_can_release = FALSE;
+        SET p_failure_reason = 'Owner GCash not configured';
+    
+    -- Requirement 5: Payment verified
+    ELSEIF v_payment_verified_at IS NULL THEN
+        SET p_can_release = FALSE;
+        SET p_failure_reason = 'Payment not verified';
+    END IF;
+    
+END$$
+
+CREATE DEFINER=`u672913452_ethan`@`127.0.0.1` PROCEDURE `sp_get_vehicle_availability` (IN `p_vehicle_id` INT, IN `p_vehicle_type` VARCHAR(20), IN `p_start_date` DATE, IN `p_end_date` DATE)   BEGIN
     -- Get blocked dates
     SELECT 
         blocked_date as date,
@@ -100,7 +156,7 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`id`, `fullname`, `email`, `password`, `phone`, `profile_image`) VALUES
-(1, 'cartney dejolde', 'cartney@gmail.com', '12345678', '09770433849', 'uploads/admin/admin_1_1765605888.png');
+(1, 'cartney dejolde', 'cartney@gmail.com', '12345678', '09770433849', 'uploads/admin/admin_1_1770126911.jpg');
 
 -- --------------------------------------------------------
 
@@ -155,10 +211,15 @@ INSERT INTO `admin_notifications` (`id`, `admin_id`, `type`, `title`, `message`,
 (1, NULL, 'booking', 'New Booking Pending', 'Booking #28 requires your approval', 'bookings.php?status=pending', 'bi-calendar-check', 'high', 'read', '2026-01-21 11:18:18', '2026-01-24 05:43:11'),
 (2, NULL, 'payment', 'Payment Verification Needed', '3 payments awaiting verification', 'payment.php?status=pending', 'bi-cash-coin', 'high', 'read', '2026-01-21 11:18:18', '2026-01-24 05:42:48'),
 (3, NULL, 'verification', 'User Verification Pending', '2 users awaiting identity verification', 'users.php?view=management&verification=pending', 'bi-shield-check', 'medium', 'read', '2026-01-21 11:18:18', '2026-01-24 05:42:58'),
-(4, NULL, 'report', 'New Report Filed', 'User reported inappropriate content', 'reports.php?status=pending', 'bi-flag', 'urgent', 'read', '2026-01-21 11:18:18', '2026-02-01 13:26:17'),
-(5, NULL, 'car', 'Car Listing Pending', '5 car listings need approval', 'get_cars_admin.php?status=pending', 'bi-car-front', 'medium', 'read', '2026-01-21 11:18:18', '2026-01-24 05:43:06'),
-(6, NULL, 'system', 'New Insurance Claim Filed', 'Claim #CLM-2026-000001-9CE9 - collision - ₱5,000.00', NULL, 'bi-bell', 'high', 'unread', '2026-02-01 13:02:04', NULL),
-(7, NULL, 'payment', 'New Payment Pending', 'New payment of ₱3,150.00 submitted by ethan jr for Mercedes-Benz A-Class (Booking #46). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-01 13:44:05', NULL);
+(4, NULL, 'report', 'New Report Filed', 'User reported inappropriate content', 'reports.php?status=pending', 'bi-flag', 'urgent', 'read', '2026-01-21 11:18:18', '2026-02-04 08:57:01'),
+(6, NULL, 'system', 'New Insurance Claim Filed', 'Claim #CLM-2026-000001-9CE9 - collision - ₱5,000.00', NULL, 'bi-bell', 'high', 'read', '2026-02-01 13:02:04', '2026-02-03 13:53:29'),
+(7, NULL, 'payment', 'New Payment Pending', 'New payment of ₱3,150.00 submitted by ethan jr for Mercedes-Benz A-Class (Booking #46). Please verify.', 'payment.php', 'credit-card', 'high', 'read', '2026-02-01 13:44:05', '2026-02-03 12:20:23'),
+(8, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,443.75 submitted by Ethan james Estino for Honda Click 125i (Booking #47). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-06 02:11:44', NULL),
+(9, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #48). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 02:25:04', NULL),
+(10, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #49). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:09:17', NULL),
+(11, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #50). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:40:29', NULL),
+(12, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #51). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:48:31', NULL),
+(13, NULL, 'system', 'New Insurance Claim Filed', 'Claim #CLM-2026-000051-E879 - collision - ₱2,000.00', NULL, 'bi-bell', 'high', 'unread', '2026-02-07 07:54:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -207,12 +268,15 @@ CREATE TABLE `bookings` (
   `rejected_at` timestamp NULL DEFAULT NULL,
   `pickup_date` date NOT NULL,
   `return_date` date NOT NULL,
+  `actual_return_date` datetime DEFAULT NULL COMMENT 'Actual vehicle return date/time',
   `pickup_time` time NOT NULL,
+  `trip_started_at` datetime DEFAULT NULL COMMENT 'Timestamp when owner confirmed vehicle pickup by renter',
   `return_time` time NOT NULL,
   `price_per_day` decimal(10,2) NOT NULL,
   `driver_fee` decimal(10,2) NOT NULL DEFAULT 0.00,
   `total_amount` decimal(10,2) NOT NULL,
   `status` enum('pending','approved','ongoing','rejected','completed','cancelled') NOT NULL DEFAULT 'pending',
+  `trip_started` tinyint(1) DEFAULT 0 COMMENT 'Whether trip has started',
   `payment_status` enum('unpaid','paid','partial','refunded','pending','escrowed','released') DEFAULT 'unpaid',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
@@ -296,48 +360,53 @@ CREATE TABLE `bookings` (
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `user_id`, `owner_id`, `car_id`, `vehicle_type`, `car_image`, `location`, `full_name`, `email`, `contact`, `gender`, `book_with_driver`, `rental_period`, `needs_delivery`, `delivery_address`, `special_requests`, `approved_at`, `approved_by`, `rejection_reason`, `rejected_at`, `pickup_date`, `return_date`, `pickup_time`, `return_time`, `price_per_day`, `driver_fee`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `payment_id`, `payment_method`, `payment_date`, `rating`, `cancellation_reason`, `cancelled_by`, `cancelled_at`, `gcash_number`, `gcash_reference`, `gcash_screenshot`, `escrow_status`, `platform_fee`, `owner_payout`, `payout_reference`, `payout_date`, `escrow_held_at`, `escrow_released_at`, `payout_status`, `payout_completed_at`, `verified_at`, `payment_verified_at`, `payment_verified_by`, `verified_by`, `is_reviewed`, `refund_requested`, `refund_status`, `refund_amount`, `escrow_refunded_at`, `escrow_hold_reason`, `escrow_hold_details`, `overdue_status`, `overdue_days`, `late_fee_amount`, `late_fee_charged`, `overdue_detected_at`, `extension_requested`, `extension_approved`, `extended_return_date`, `extension_fee`, `late_fee_payment_status`, `reminder_count`, `last_reminder_sent`, `late_fee_confirmed`, `late_fee_confirmed_at`, `late_fee_confirmed_by`, `late_fee_waived`, `late_fee_waived_by`, `late_fee_waived_at`, `late_fee_waived_reason`, `late_fee_adjusted`, `late_fee_adjusted_by`, `late_fee_adjusted_at`, `late_fee_adjustment_reason`, `completed_at`, `odometer_start`, `odometer_end`, `odometer_start_photo`, `odometer_end_photo`, `odometer_start_timestamp`, `odometer_end_timestamp`, `actual_mileage`, `allowed_mileage`, `excess_mileage`, `excess_mileage_fee`, `excess_mileage_paid`, `mileage_verified_by`, `mileage_verified_at`, `mileage_notes`, `gps_distance`, `insurance_required`, `insurance_policy_id`, `insurance_premium`, `insurance_coverage_type`, `insurance_verified`) VALUES
-(1, 7, 1, 26, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', '09:00:00', '05:00:00', 0.00, 0.00, 2100.00, 'completed', 'unpaid', '2025-12-13 06:50:29', '2026-02-01 12:57:45', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, '', 48, 109900.00, 1, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'paid', 1, '2026-01-31 21:30:02', 1, '2026-01-31 21:29:56', 1, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-31 21:32:57', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 1, 252.00, 'basic', 1),
-(2, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', '09:00:00', '05:00:00', 0.00, 0.00, 1680.00, 'rejected', 'unpaid', '2025-12-13 07:32:31', '2026-01-12 05:05:19', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(3, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', '09:00:00', '05:00:00', 0.00, 0.00, 1680.00, 'approved', 'unpaid', '2025-12-13 07:33:18', '2026-01-31 08:31:22', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 48, 109900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(4, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09128515463', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-18', '2025-12-19', '09:00:00', '05:00:00', 0.00, 0.00, 2100.00, 'approved', 'unpaid', '2025-12-13 08:14:35', '2026-01-31 08:31:22', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 43, 99900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(5, 7, 1, 33, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-22', '2025-12-23', '09:00:00', '05:00:00', 0.00, 0.00, 1743.00, 'rejected', 'pending', '2025-12-22 04:54:45', '2026-01-13 02:37:16', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(6, 11, 1, 33, 'car', NULL, NULL, 'Ethan James Estino', 'saberu1213@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-03', '2026-01-04', '09:00:00', '17:00:00', 830.00, 0.00, 1743.00, 'cancelled', 'paid', '2026-01-03 13:01:25', '2026-01-05 02:26:13', 2, 'gcash', '2026-01-03 13:02:22', 0, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323334353637383931323334, NULL, 'held', 174.30, 1568.70, NULL, NULL, '2026-01-03 21:41:07', NULL, 'pending', NULL, NULL, '2026-01-03 21:41:07', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(7, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-11', '2026-01-12', '09:00:00', '17:00:00', 122.00, 0.00, 256.20, 'approved', 'paid', '2026-01-11 07:04:50', '2026-01-31 08:31:22', 4, 'gcash', '2026-01-11 07:05:05', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-21 10:45:08', NULL, 'pending', NULL, NULL, '2026-01-21 10:45:08', 1, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 18, 55900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(8, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'rejected', 'pending', '2026-01-12 02:41:48', '2026-01-20 12:15:54', 6, 'gcash', '2026-01-12 02:42:00', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(9, 7, 1, 26, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'approved', '', '2026-01-12 02:47:38', '2026-01-31 08:31:22', 8, 'gcash', '2026-01-12 02:47:52', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 17, 53900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(10, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 'pending', '2026-01-12 05:38:38', '2026-01-13 02:37:51', 10, 'gcash', '2026-01-12 05:38:53', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(11, 7, 1, 33, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', '09:00:00', '17:00:00', 830.00, 0.00, 1743.00, 'rejected', 'pending', '2026-01-12 08:54:57', '2026-01-17 03:59:28', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(14, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'pending', 'pending', '2026-01-12 10:45:21', '2026-01-12 10:45:37', 13, 'gcash', '2026-01-12 10:45:37', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(15, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 122.00, 0.00, 256.20, 'approved', 'paid', '2026-01-12 23:14:35', '2026-01-31 08:31:22', 15, 'gcash', '2026-01-12 23:15:16', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-21 10:47:34', NULL, 'pending', NULL, NULL, '2026-01-21 10:47:34', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(16, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '14:00:00', 122.00, 0.00, 256.20, 'approved', 'paid', '2026-01-12 23:15:52', '2026-01-31 08:31:22', 17, 'gcash', '2026-01-12 23:16:15', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-21 10:48:09', NULL, 'pending', NULL, NULL, '2026-01-21 10:48:09', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 17, 44200.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(17, 7, 1, 25, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 'pending', '2026-01-13 02:03:58', '2026-01-21 00:13:37', 19, 'gcash', '2026-01-13 02:04:12', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(18, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 122.00, 0.00, 1680.00, 'cancelled', 'pending', '2026-01-13 05:26:16', '2026-01-21 00:10:34', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(19, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 122.00, 0.00, 1680.00, 'approved', 'paid', '2026-01-13 05:26:39', '2026-01-31 08:31:22', 22, 'gcash', '2026-01-13 05:26:51', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 168.00, 1512.00, NULL, NULL, '2026-01-21 10:46:19', NULL, 'pending', NULL, NULL, '2026-01-21 10:46:19', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(23, 7, 1, 35, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'approved', 'paid', '2026-01-13 07:24:40', '2026-01-31 12:57:42', 30, 'gcash', '2026-01-13 07:24:53', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 1, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'paid', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(24, 7, 1, 2, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', '09:00:00', '17:00:00', 500.00, 0.00, 1050.00, 'pending', 'pending', '2026-01-13 07:25:16', '2026-01-13 07:27:27', 32, 'gcash', '2026-01-13 07:25:29', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(25, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770436849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 'paid', '2026-01-17 00:56:31', '2026-01-21 11:42:47', 34, 'gcash', '2026-01-17 00:56:45', 0, NULL, NULL, NULL, 0x3039373730343336383439, 0x31323334353637383930313233, NULL, 'held', 168.00, 1512.00, NULL, NULL, '2026-01-21 10:55:31', NULL, 'pending', NULL, NULL, '2026-01-21 10:55:31', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(26, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 'pending', '2026-01-17 01:09:56', '2026-01-21 03:36:17', 36, 'gcash', '2026-01-17 01:10:17', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(27, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', '09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 'pending', '2026-01-17 01:11:03', '2026-01-20 07:02:33', 38, 'gcash', '2026-01-17 01:11:13', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(28, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433846', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-24', '2026-01-25', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'cancelled', 'paid', '2026-01-18 11:37:05', '2026-01-30 10:23:09', 40, 'gcash', '2026-01-18 11:37:19', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-20 18:14:44', NULL, 'pending', NULL, NULL, '2026-01-20 18:14:44', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(29, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-20', '2026-01-21', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 'pending', '2026-01-20 11:41:41', '2026-01-20 23:55:17', 42, 'gcash', '2026-01-20 11:41:53', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(30, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'rejected', 'paid', '2026-01-20 11:44:53', '2026-01-29 12:15:10', 44, 'gcash', '2026-01-20 11:45:03', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-21 10:54:30', NULL, 'pending', NULL, NULL, '2026-01-21 10:54:30', 1, NULL, 0, 1, 'completed', 2100.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(31, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'approved', 'paid', '2026-01-20 12:13:30', '2026-01-30 10:23:09', 46, 'gcash', '2026-01-20 12:13:42', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-21 10:01:57', NULL, 'pending', NULL, NULL, '2026-01-21 10:01:57', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(32, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-24', '2026-01-25', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'completed', 'paid', '2026-01-20 12:45:29', '2026-01-30 11:30:02', 48, 'gcash', '2026-01-20 12:45:41', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'released_to_owner', 210.00, 1890.00, NULL, NULL, '2026-01-21 09:42:38', '2026-01-30 19:30:02', 'pending', NULL, NULL, '2026-01-21 09:42:38', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(33, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-25', '2026-01-26', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 'pending', '2026-01-21 02:56:09', '2026-01-30 11:27:27', 50, 'gcash', '2026-01-21 02:56:25', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(34, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-27', '2026-01-28', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 'pending', '2026-01-21 02:58:41', '2026-01-30 11:27:44', 52, 'gcash', '2026-01-21 02:58:54', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(35, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-21', '2026-01-22', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 'pending', '2026-01-21 03:07:11', '2026-01-22 00:18:42', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(36, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-21', '2026-01-22', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'approved', 'paid', '2026-01-21 03:07:11', '2026-01-31 12:10:15', 54, 'gcash', '2026-01-21 03:07:25', 0, NULL, NULL, NULL, 0x3039373730343333383436, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-22 09:17:46', NULL, 'pending', NULL, NULL, '2026-01-22 09:17:46', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 8, 35900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(37, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'approved', 'paid', '2026-01-21 03:19:58', '2026-01-21 03:54:28', 56, 'gcash', '2026-01-21 03:20:13', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-21 11:54:28', NULL, 'pending', NULL, NULL, '2026-01-21 11:54:28', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(38, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433846', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'rejected', 'paid', '2026-01-21 03:26:20', '2026-01-29 11:56:39', 58, 'gcash', '2026-01-21 03:26:39', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-21 11:53:44', NULL, 'pending', NULL, NULL, '2026-01-21 11:53:44', 1, NULL, 0, 1, 'approved', 3150.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(39, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-28', '2026-01-29', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 'paid', '2026-01-21 03:32:32', '2026-01-30 13:42:31', 60, 'gcash', '2026-01-21 03:32:45', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'released_to_owner', 315.00, 2835.00, '1234567890909', NULL, '2026-01-21 11:52:31', '2026-01-30 19:29:59', 'completed', '2026-01-30 21:42:31', NULL, '2026-01-21 11:52:31', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(40, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-23', '2026-01-24', '09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 'paid', '2026-01-21 10:46:30', '2026-01-24 07:16:37', 62, 'gcash', '2026-01-21 10:46:46', NULL, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-24 15:16:37', NULL, 'pending', NULL, NULL, '2026-01-24 15:16:37', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(41, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-01-31', '09:00:00', '13:33:18', 1000.00, 0.00, 30450.00, 'completed', 'paid', '2026-01-21 10:51:43', '2026-02-01 02:25:43', 64, 'gcash', '2026-01-21 10:51:55', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'released_to_owner', 3045.00, 27405.00, NULL, NULL, '2026-01-22 09:17:14', '2026-02-01 10:25:43', 'processing', NULL, NULL, '2026-01-22 09:17:14', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, '', 0, 300.00, 1, '2026-01-31 08:33:19', 0, 0, NULL, 0.00, 'paid', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-31 21:33:24', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(42, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'rejected', 'paid', '2026-01-29 11:53:36', '2026-01-30 10:39:56', 66, 'gcash', '2026-01-29 11:53:53', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-30 18:39:56', NULL, 'pending', NULL, NULL, '2026-01-30 18:39:56', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(43, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', '09:00:00', '17:00:00', 122.00, 0.00, 256.20, 'rejected', 'paid', '2026-01-29 12:16:06', '2026-01-29 12:26:23', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-29 20:25:49', NULL, 'pending', NULL, NULL, '2026-01-29 20:25:49', 1, NULL, 0, 1, 'completed', 256.20, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(44, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', '09:00:00', '17:00:00', 122.00, 0.00, 256.20, 'rejected', 'paid', '2026-01-29 12:16:40', '2026-01-29 12:25:23', 69, 'gcash', '2026-01-29 12:16:57', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-29 20:25:23', NULL, 'pending', NULL, NULL, '2026-01-29 20:25:23', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(45, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-01', '2026-02-02', '09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'pending', 'pending', '2026-02-01 04:57:57', '2026-02-01 04:58:13', 91, 'gcash', '2026-02-01 04:58:13', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(46, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-01', '2026-02-02', '09:00:00', '23:00:00', 1500.00, 0.00, 3150.00, 'pending', 'pending', '2026-02-01 13:43:47', '2026-02-01 13:44:05', 93, 'gcash', '2026-02-01 13:44:05', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0);
+INSERT INTO `bookings` (`id`, `user_id`, `owner_id`, `car_id`, `vehicle_type`, `car_image`, `location`, `full_name`, `email`, `contact`, `gender`, `book_with_driver`, `rental_period`, `needs_delivery`, `delivery_address`, `special_requests`, `approved_at`, `approved_by`, `rejection_reason`, `rejected_at`, `pickup_date`, `return_date`, `actual_return_date`, `pickup_time`, `trip_started_at`, `return_time`, `price_per_day`, `driver_fee`, `total_amount`, `status`, `trip_started`, `payment_status`, `created_at`, `updated_at`, `payment_id`, `payment_method`, `payment_date`, `rating`, `cancellation_reason`, `cancelled_by`, `cancelled_at`, `gcash_number`, `gcash_reference`, `gcash_screenshot`, `escrow_status`, `platform_fee`, `owner_payout`, `payout_reference`, `payout_date`, `escrow_held_at`, `escrow_released_at`, `payout_status`, `payout_completed_at`, `verified_at`, `payment_verified_at`, `payment_verified_by`, `verified_by`, `is_reviewed`, `refund_requested`, `refund_status`, `refund_amount`, `escrow_refunded_at`, `escrow_hold_reason`, `escrow_hold_details`, `overdue_status`, `overdue_days`, `late_fee_amount`, `late_fee_charged`, `overdue_detected_at`, `extension_requested`, `extension_approved`, `extended_return_date`, `extension_fee`, `late_fee_payment_status`, `reminder_count`, `last_reminder_sent`, `late_fee_confirmed`, `late_fee_confirmed_at`, `late_fee_confirmed_by`, `late_fee_waived`, `late_fee_waived_by`, `late_fee_waived_at`, `late_fee_waived_reason`, `late_fee_adjusted`, `late_fee_adjusted_by`, `late_fee_adjusted_at`, `late_fee_adjustment_reason`, `completed_at`, `odometer_start`, `odometer_end`, `odometer_start_photo`, `odometer_end_photo`, `odometer_start_timestamp`, `odometer_end_timestamp`, `actual_mileage`, `allowed_mileage`, `excess_mileage`, `excess_mileage_fee`, `excess_mileage_paid`, `mileage_verified_by`, `mileage_verified_at`, `mileage_notes`, `gps_distance`, `insurance_required`, `insurance_policy_id`, `insurance_premium`, `insurance_coverage_type`, `insurance_verified`) VALUES
+(1, 7, 1, 26, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', NULL, '09:00:00', NULL, '05:00:00', 0.00, 0.00, 2100.00, 'completed', 0, 'unpaid', '2025-12-13 06:50:29', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, '', 48, 109900.00, 1, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'paid', 1, '2026-01-31 21:30:02', 1, '2026-01-31 21:29:56', 1, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-31 21:32:57', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 1, 252.00, 'basic', 1),
+(2, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', NULL, '09:00:00', NULL, '05:00:00', 0.00, 0.00, 1680.00, 'rejected', 0, 'unpaid', '2025-12-13 07:32:31', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(3, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-13', '2025-12-14', NULL, '09:00:00', '2025-12-13 09:00:00', '05:00:00', 0.00, 0.00, 1680.00, 'approved', 0, 'unpaid', '2025-12-13 07:33:18', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 48, 109900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(4, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09128515463', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-18', '2025-12-19', NULL, '09:00:00', '2025-12-18 09:00:00', '05:00:00', 0.00, 0.00, 2100.00, 'approved', 0, 'unpaid', '2025-12-13 08:14:35', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 43, 99900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(5, 7, 1, 33, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-22', '2025-12-23', NULL, '09:00:00', NULL, '05:00:00', 0.00, 0.00, 1743.00, 'rejected', 0, 'pending', '2025-12-22 04:54:45', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 174.30, 1568.70, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(6, 11, 1, 33, 'car', NULL, NULL, 'Ethan James Estino', 'saberu1213@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-03', '2026-01-04', NULL, '09:00:00', NULL, '17:00:00', 830.00, 0.00, 1743.00, 'cancelled', 0, 'paid', '2026-01-03 13:01:25', '2026-02-06 06:18:27', 2, 'gcash', '2026-01-03 13:02:22', 0, 'Booking cancelled by user', NULL, '2026-01-05 02:26:13', 0x3039343531353437333438, 0x31323334353637383931323334, NULL, 'held', 174.30, 1568.70, NULL, NULL, '2026-01-03 21:41:07', NULL, 'pending', NULL, NULL, '2026-01-03 21:41:07', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(7, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-11', '2026-01-12', NULL, '09:00:00', NULL, '17:00:00', 122.00, 0.00, 256.20, 'cancelled', 0, 'paid', '2026-01-11 07:04:50', '2026-02-06 07:28:51', 4, 'gcash', '2026-01-11 07:05:05', 0, 'Escrow refunded - Reason: car_unavailable', NULL, '2026-02-06 07:28:51', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'refunded', 25.62, 230.58, NULL, NULL, '2026-01-21 10:45:08', NULL, 'pending', NULL, NULL, '2026-01-21 10:45:08', 1, NULL, 1, 0, NULL, 0.00, '2026-02-06 07:28:51', NULL, NULL, 'severely_overdue', 18, 55900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(8, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'rejected', 0, 'pending', '2026-01-12 02:41:48', '2026-02-08 04:22:30', 6, 'gcash', '2026-01-12 02:42:00', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(9, 7, 1, 26, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', NULL, '09:00:00', '2026-01-12 09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'approved', 0, '', '2026-01-12 02:47:38', '2026-02-08 04:22:30', 8, 'gcash', '2026-01-12 02:47:52', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 17, 53900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(10, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', NULL, '09:00:00', NULL, '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 0, 'pending', '2026-01-12 05:38:38', '2026-02-08 04:22:30', 10, 'gcash', '2026-01-12 05:38:53', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(11, 7, 1, 33, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', NULL, '09:00:00', NULL, '17:00:00', 830.00, 0.00, 1743.00, 'rejected', 0, 'pending', '2026-01-12 08:54:57', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 174.30, 1568.70, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(14, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-12', '2026-01-13', NULL, '09:00:00', NULL, '17:00:00', 800.00, 0.00, 1680.00, 'pending', 0, 'pending', '2026-01-12 10:45:21', '2026-02-08 04:22:30', 13, 'gcash', '2026-01-12 10:45:37', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(15, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', '2026-01-13 09:00:00', '17:00:00', 122.00, 0.00, 256.20, 'approved', 0, 'paid', '2026-01-12 23:14:35', '2026-02-07 02:19:47', 15, 'gcash', '2026-01-12 23:15:16', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-21 10:47:34', NULL, 'pending', NULL, NULL, '2026-01-21 10:47:34', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(16, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', '2026-01-13 09:00:00', '14:00:00', 122.00, 0.00, 256.20, 'approved', 0, 'paid', '2026-01-12 23:15:52', '2026-02-07 02:19:47', 17, 'gcash', '2026-01-12 23:16:15', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-21 10:48:09', NULL, 'pending', NULL, NULL, '2026-01-21 10:48:09', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 17, 44200.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(17, 7, 1, 25, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 0, 'pending', '2026-01-13 02:03:58', '2026-02-08 04:22:30', 19, 'gcash', '2026-01-13 02:04:12', 0, 'Booking cancelled by user', NULL, '2026-01-21 00:13:37', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(18, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', NULL, '17:00:00', 122.00, 0.00, 1680.00, 'cancelled', 0, 'pending', '2026-01-13 05:26:16', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, 'Booking cancelled by user', NULL, '2026-01-21 00:10:34', NULL, NULL, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(19, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', '2026-01-13 09:00:00', '17:00:00', 122.00, 0.00, 1680.00, 'approved', 0, 'paid', '2026-01-13 05:26:39', '2026-02-07 02:19:47', 22, 'gcash', '2026-01-13 05:26:51', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 168.00, 1512.00, NULL, NULL, '2026-01-21 10:46:19', NULL, 'pending', NULL, NULL, '2026-01-21 10:46:19', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(23, 7, 1, 35, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', '2026-01-13 09:00:00', '17:00:00', 800.00, 0.00, 1680.00, 'approved', 0, 'paid', '2026-01-13 07:24:40', '2026-02-08 04:22:30', 30, 'gcash', '2026-01-13 07:24:53', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 16, 51900.00, 1, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'paid', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(24, 7, 1, 2, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-13', '2026-01-14', NULL, '09:00:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, 'pending', '2026-01-13 07:25:16', '2026-02-08 04:22:30', 32, 'gcash', '2026-01-13 07:25:29', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 105.00, 945.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(25, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770436849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', NULL, '09:00:00', NULL, '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 0, 'paid', '2026-01-17 00:56:31', '2026-01-21 11:42:47', 34, 'gcash', '2026-01-17 00:56:45', 0, NULL, NULL, NULL, 0x3039373730343336383439, 0x31323334353637383930313233, NULL, 'held', 168.00, 1512.00, NULL, NULL, '2026-01-21 10:55:31', NULL, 'pending', NULL, NULL, '2026-01-21 10:55:31', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(26, 7, 1, 1, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', NULL, '09:00:00', NULL, '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 0, 'pending', '2026-01-17 01:09:56', '2026-02-08 04:22:30', 36, 'gcash', '2026-01-17 01:10:17', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(27, 7, 1, 31, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-17', '2026-01-18', NULL, '09:00:00', NULL, '17:00:00', 800.00, 0.00, 1680.00, 'rejected', 0, 'pending', '2026-01-17 01:11:03', '2026-02-08 04:22:30', 38, 'gcash', '2026-01-17 01:11:13', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 168.00, 1512.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(28, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433846', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-24', '2026-01-25', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'cancelled', 0, 'paid', '2026-01-18 11:37:05', '2026-02-06 06:18:27', 40, 'gcash', '2026-01-18 11:37:19', 0, 'Booking cancelled by user', NULL, '2026-01-30 10:23:09', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-20 18:14:44', NULL, 'pending', NULL, NULL, '2026-01-20 18:14:44', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(29, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-20', '2026-01-21', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 0, 'pending', '2026-01-20 11:41:41', '2026-02-08 04:22:30', 42, 'gcash', '2026-01-20 11:41:53', 0, 'Booking cancelled by user', NULL, '2026-01-20 23:55:17', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 210.00, 1890.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(30, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'rejected', 0, 'paid', '2026-01-20 11:44:53', '2026-01-29 12:15:10', 44, 'gcash', '2026-01-20 11:45:03', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-21 10:54:30', NULL, 'pending', NULL, NULL, '2026-01-21 10:54:30', 1, NULL, 0, 1, 'completed', 2100.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(31, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', NULL, '09:00:00', '2026-01-31 09:00:00', '17:00:00', 1000.00, 0.00, 2100.00, 'approved', 0, 'paid', '2026-01-20 12:13:30', '2026-02-07 02:19:47', 46, 'gcash', '2026-01-20 12:13:42', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-21 10:01:57', NULL, 'pending', NULL, NULL, '2026-01-21 10:01:57', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(32, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-24', '2026-01-25', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'completed', 0, 'paid', '2026-01-20 12:45:29', '2026-02-08 04:22:30', 48, 'gcash', '2026-01-20 12:45:41', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'released_to_owner', 210.00, 1890.00, NULL, NULL, '2026-01-21 09:42:38', '2026-01-30 19:30:02', 'pending', NULL, NULL, '2026-01-21 09:42:38', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-30 11:30:02', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(33, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-25', '2026-01-26', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 0, 'pending', '2026-01-21 02:56:09', '2026-02-08 04:22:30', 50, 'gcash', '2026-01-21 02:56:25', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 315.00, 2835.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-02-08 04:22:30', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(34, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-27', '2026-01-28', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 0, 'pending', '2026-01-21 02:58:41', '2026-02-08 04:22:30', 52, 'gcash', '2026-01-21 02:58:54', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 315.00, 2835.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-02-08 04:22:30', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(35, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-21', '2026-01-22', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 0, 'pending', '2026-01-21 03:07:11', '2026-02-08 04:22:30', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 315.00, 2835.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-02-08 04:22:30', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(36, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-21', '2026-01-22', NULL, '09:00:00', '2026-01-21 09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'approved', 0, 'paid', '2026-01-21 03:07:11', '2026-02-07 02:19:47', 54, 'gcash', '2026-01-21 03:07:25', 0, NULL, NULL, NULL, 0x3039373730343333383436, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-22 09:17:46', NULL, 'pending', NULL, NULL, '2026-01-22 09:17:46', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'severely_overdue', 8, 35900.00, 0, '2026-01-30 13:07:54', 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(37, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', NULL, '09:00:00', '2026-01-31 09:00:00', '17:00:00', 1500.00, 0.00, 3150.00, 'approved', 0, 'paid', '2026-01-21 03:19:58', '2026-02-07 02:19:47', 56, 'gcash', '2026-01-21 03:20:13', 0, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-21 11:54:28', NULL, 'pending', NULL, NULL, '2026-01-21 11:54:28', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(38, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433846', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-02-01', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'rejected', 0, 'paid', '2026-01-21 03:26:20', '2026-01-29 11:56:39', 58, 'gcash', '2026-01-21 03:26:39', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-21 11:53:44', NULL, 'pending', NULL, NULL, '2026-01-21 11:53:44', 1, NULL, 0, 1, 'approved', 3150.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(39, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-28', '2026-01-29', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'completed', 0, 'paid', '2026-01-21 03:32:32', '2026-02-08 04:22:30', 60, 'gcash', '2026-01-21 03:32:45', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'released_to_owner', 315.00, 2835.00, '1234567890909', NULL, '2026-01-21 11:52:31', '2026-01-30 19:29:59', 'completed', '2026-01-30 21:42:31', NULL, '2026-01-21 11:52:31', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-30 13:42:31', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(40, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-23', '2026-01-24', NULL, '09:00:00', NULL, '17:00:00', 1000.00, 0.00, 2100.00, 'cancelled', 0, 'paid', '2026-01-21 10:46:30', '2026-02-06 06:18:27', 62, 'gcash', '2026-01-21 10:46:46', NULL, 'Booking cancelled by user', NULL, '2026-01-24 07:16:37', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 210.00, 1890.00, NULL, NULL, '2026-01-24 15:16:37', NULL, 'pending', NULL, NULL, '2026-01-24 15:16:37', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(41, 7, 5, 17, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-31', '2026-01-31', NULL, '09:00:00', NULL, '13:33:18', 1000.00, 0.00, 30450.00, 'completed', 0, 'paid', '2026-01-21 10:51:43', '2026-02-08 02:22:12', 64, 'gcash', '2026-01-21 10:51:55', NULL, NULL, NULL, NULL, 0x3039313233343536373839, 0x30393132333435363738393132, NULL, 'released_to_owner', 3045.00, 27405.00, NULL, NULL, '2026-01-22 09:17:14', '2026-02-01 10:25:43', 'processing', NULL, NULL, '2026-01-22 09:17:14', 1, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, '', 0, 300.00, 1, '2026-01-31 08:33:19', 0, 0, NULL, 0.00, 'paid', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, '2026-01-31 21:33:24', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(42, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'rejected', 0, 'paid', '2026-01-29 11:53:36', '2026-01-30 10:39:56', 66, 'gcash', '2026-01-29 11:53:53', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-01-30 18:39:56', NULL, 'pending', NULL, NULL, '2026-01-30 18:39:56', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(43, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', NULL, '09:00:00', NULL, '17:00:00', 122.00, 0.00, 256.20, 'rejected', 0, 'paid', '2026-01-29 12:16:06', '2026-01-29 12:26:23', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-29 20:25:49', NULL, 'pending', NULL, NULL, '2026-01-29 20:25:49', 1, NULL, 0, 1, 'completed', 256.20, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(44, 7, 1, 34, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-29', '2026-01-30', NULL, '09:00:00', NULL, '17:00:00', 122.00, 0.00, 256.20, 'rejected', 0, 'paid', '2026-01-29 12:16:40', '2026-01-29 12:25:23', 69, 'gcash', '2026-01-29 12:16:57', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 25.62, 230.58, NULL, NULL, '2026-01-29 20:25:23', NULL, 'pending', NULL, NULL, '2026-01-29 20:25:23', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(45, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-01', '2026-02-02', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'pending', 0, 'paid', '2026-02-01 04:57:57', '2026-02-07 14:09:08', 91, 'gcash', '2026-02-01 04:58:13', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-02-07 14:09:08', NULL, 'pending', NULL, NULL, '2026-02-07 14:09:08', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(46, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-01', '2026-02-02', NULL, '09:00:00', NULL, '23:00:00', 1500.00, 0.00, 3150.00, 'pending', 0, 'paid', '2026-02-01 13:43:47', '2026-02-07 14:09:05', 93, 'gcash', '2026-02-01 13:44:05', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 315.00, 2835.00, NULL, NULL, '2026-02-07 14:09:05', NULL, 'pending', NULL, NULL, '2026-02-07 14:09:05', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(47, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Monthly', 1, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:38:42', '2026-02-14', '2026-02-15', NULL, '09:00:00', NULL, '17:00:00', 500.00, 0.00, 1443.75, 'rejected', 0, '', '2026-02-06 02:07:38', '2026-02-07 07:38:42', 95, 'gcash', '2026-02-06 02:11:44', NULL, 'Cancelled by renter', NULL, '2026-02-06 04:32:42', 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'refunded', 144.38, 1299.37, NULL, NULL, '2026-02-06 03:05:05', NULL, 'pending', NULL, NULL, '2026-02-06 03:05:05', 1, NULL, 0, 1, 'completed', 1443.75, '2026-02-06 08:23:52', NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(48, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:38:39', '2026-02-07', '2026-02-08', NULL, '10:31:00', '2026-02-07 02:48:21', '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 02:24:42', '2026-02-07 07:38:39', 97, 'gcash', '2026-02-07 02:25:04', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-07 02:25:39', NULL, 'pending', NULL, NULL, '2026-02-07 02:25:39', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 1, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(49, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451517348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:38:35', '2026-02-07', '2026-02-08', NULL, '15:10:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 07:09:00', '2026-02-08 04:22:30', 99, 'gcash', '2026-02-07 07:09:17', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 105.00, 945.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(50, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:45:49', '2026-02-07', '2026-02-08', NULL, '15:40:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 07:40:05', '2026-02-08 04:22:30', 101, 'gcash', '2026-02-07 07:40:29', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 105.00, 945.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(51, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07', '2026-02-08', NULL, '15:48:00', '2026-02-07 07:50:25', '17:00:00', 500.00, 0.00, 1050.00, 'approved', 0, 'paid', '2026-02-07 07:48:13', '2026-02-07 07:50:25', 103, 'gcash', '2026-02-07 07:48:31', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-07 07:48:48', NULL, 'pending', NULL, NULL, '2026-02-07 07:48:48', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 2, 126.00, 'basic', 1);
 
 --
 -- Triggers `bookings`
@@ -574,7 +643,12 @@ INSERT INTO `escrow` (`id`, `booking_id`, `payment_id`, `amount`, `status`, `hel
 (25, 40, 62, 2100.00, 'held', '2026-01-24 15:16:37', NULL, NULL, NULL, NULL, 1, '2026-01-24 07:16:37', '2026-01-24 07:16:37'),
 (26, 44, 69, 256.20, 'held', '2026-01-29 20:25:14', NULL, NULL, NULL, NULL, 1, '2026-01-29 12:25:14', '2026-01-29 12:25:14'),
 (28, 43, 67, 256.20, 'held', '2026-01-29 20:25:49', NULL, NULL, NULL, NULL, 1, '2026-01-29 12:25:49', '2026-01-29 12:25:49'),
-(29, 42, 66, 3150.00, 'held', '2026-01-30 18:39:56', NULL, NULL, NULL, NULL, 1, '2026-01-30 10:39:56', '2026-01-30 10:39:56');
+(29, 42, 66, 3150.00, 'held', '2026-01-30 18:39:56', NULL, NULL, NULL, NULL, 1, '2026-01-30 10:39:56', '2026-01-30 10:39:56'),
+(32, 47, 95, 1443.75, 'held', '2026-02-06 03:05:05', NULL, NULL, NULL, NULL, 1, '2026-02-06 03:05:05', '2026-02-06 03:05:05'),
+(33, 48, 97, 1050.00, 'held', '2026-02-07 02:25:39', NULL, NULL, NULL, NULL, 1, '2026-02-07 02:25:39', '2026-02-07 02:25:39'),
+(34, 51, 103, 1050.00, 'held', '2026-02-07 07:48:48', NULL, NULL, NULL, NULL, 1, '2026-02-07 07:48:48', '2026-02-07 07:48:48'),
+(35, 46, 93, 3150.00, 'held', '2026-02-07 14:09:05', NULL, NULL, NULL, NULL, 1, '2026-02-07 14:09:05', '2026-02-07 14:09:05'),
+(36, 45, 91, 3150.00, 'held', '2026-02-07 14:09:08', NULL, NULL, NULL, NULL, 1, '2026-02-07 14:09:08', '2026-02-07 14:09:08');
 
 -- --------------------------------------------------------
 
@@ -599,7 +673,9 @@ CREATE TABLE `escrow_logs` (
 
 INSERT INTO `escrow_logs` (`id`, `booking_id`, `action`, `previous_status`, `new_status`, `admin_id`, `notes`, `created_at`) VALUES
 (1, 39, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-01-30 11:29:59'),
-(2, 32, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-01-30 11:30:02');
+(2, 32, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-01-30 11:30:02'),
+(3, 7, 'refund', 'held', 'refunded', 1, 'Refunded to renter - Reason: car_unavailable - asdasd', '2026-02-06 07:28:51'),
+(5, 1, '', 'none', 'complete', NULL, 'Escrow system migration completed successfully at 2026-02-08 04:25:29', '2026-02-08 04:25:29');
 
 -- --------------------------------------------------------
 
@@ -796,7 +872,492 @@ INSERT INTO `gps_locations` (`id`, `booking_id`, `latitude`, `longitude`, `speed
 (175, 37, 8.50995490, 125.97282850, 0.00, 56.42, '2026-02-01 14:11:12'),
 (176, 37, 8.50995620, 125.97283040, 0.00, 99.09, '2026-02-01 14:11:44'),
 (177, 37, 8.50995670, 125.97282890, 0.00, 56.23, '2026-02-01 14:12:13'),
-(178, 37, 8.50997930, 125.97282740, 0.00, 23.77, '2026-02-01 14:12:43');
+(178, 37, 8.50997930, 125.97282740, 0.00, 23.77, '2026-02-01 14:12:43'),
+(179, 47, 8.51006140, 125.97272440, 0.00, 41.13, '2026-02-06 03:46:29'),
+(180, 47, 8.51006140, 125.97272440, 0.00, 84.38, '2026-02-06 03:47:00'),
+(181, 47, 8.50997390, 125.97280310, 0.00, 68.65, '2026-02-06 03:47:30'),
+(182, 47, 8.50998070, 125.97281620, 0.00, 65.16, '2026-02-06 03:48:00'),
+(183, 47, 8.50991700, 125.97279220, 0.00, 96.69, '2026-02-06 03:48:31'),
+(184, 47, 8.50993930, 125.97278450, 0.00, 57.79, '2026-02-06 03:49:00'),
+(185, 47, 8.50992640, 125.97279070, 0.00, 92.03, '2026-02-06 03:49:31'),
+(186, 47, 8.50993280, 125.97279260, 0.00, 13.41, '2026-02-06 03:50:03'),
+(187, 47, 8.50993280, 125.97279260, 0.00, 50.39, '2026-02-06 03:50:30'),
+(188, 47, 8.50992860, 125.97279380, 0.00, 99.12, '2026-02-06 03:51:00'),
+(189, 47, 8.50992420, 125.97279440, 0.00, 54.24, '2026-02-06 03:51:31'),
+(190, 47, 8.50992250, 125.97278810, 0.00, 96.00, '2026-02-06 03:52:01'),
+(191, 47, 8.50990910, 125.97278880, 0.00, 53.52, '2026-02-06 03:52:31'),
+(192, 47, 8.50991990, 125.97279390, 0.00, 92.02, '2026-02-06 03:53:00'),
+(193, 47, 8.50992180, 125.97279420, 0.00, 96.16, '2026-02-06 03:53:30'),
+(194, 47, 8.50993280, 125.97278930, 0.00, 50.30, '2026-02-06 03:54:00'),
+(195, 47, 8.50992790, 125.97279150, 0.00, 92.44, '2026-02-06 03:54:30'),
+(196, 47, 8.50992770, 125.97278710, 0.00, 50.03, '2026-02-06 03:55:00'),
+(197, 47, 8.50992070, 125.97279170, 0.00, 94.51, '2026-02-06 03:55:31'),
+(198, 47, 8.50996420, 125.97278320, 0.00, 60.15, '2026-02-06 03:56:00'),
+(199, 47, 8.50991960, 125.97279390, 0.00, 94.35, '2026-02-06 03:56:31'),
+(200, 47, 8.50992190, 125.97278960, 0.00, 53.45, '2026-02-06 03:57:01'),
+(201, 47, 8.50992590, 125.97278540, 0.00, 56.86, '2026-02-06 03:57:30'),
+(202, 47, 8.50992880, 125.97278900, 0.00, 51.69, '2026-02-06 03:58:00'),
+(203, 47, 8.50993470, 125.97280180, 0.00, 14.98, '2026-02-06 03:58:30'),
+(204, 47, 8.50993470, 125.97280180, 0.00, 55.80, '2026-02-06 03:59:00'),
+(205, 47, 8.50992450, 125.97278920, 0.00, 52.21, '2026-02-06 03:59:30'),
+(206, 47, 8.50993100, 125.97278520, 0.00, 94.37, '2026-02-06 04:00:00'),
+(207, 47, 8.50995310, 125.97282020, 0.00, 62.51, '2026-02-06 04:00:30'),
+(208, 47, 8.50993750, 125.97279880, 0.00, 95.80, '2026-02-06 04:01:00'),
+(209, 47, 8.50992450, 125.97277790, 0.00, 56.47, '2026-02-06 04:01:30'),
+(210, 47, 8.51001100, 125.97277850, 0.00, 69.60, '2026-02-06 04:02:00'),
+(211, 47, 8.50993220, 125.97277970, 0.00, 93.60, '2026-02-06 04:02:31'),
+(212, 47, 8.50992250, 125.97279130, 0.00, 52.62, '2026-02-06 04:03:00'),
+(213, 47, 8.50992800, 125.97278650, 0.00, 14.09, '2026-02-06 04:03:30'),
+(214, 47, 8.50992800, 125.97278650, 0.00, 55.09, '2026-02-06 04:04:01'),
+(215, 47, 8.50990870, 125.97278830, 0.00, 53.47, '2026-02-06 04:04:31'),
+(216, 47, 8.50992710, 125.97279620, 0.00, 17.08, '2026-02-06 04:16:14'),
+(217, 47, 8.50992710, 125.97279620, 0.00, 17.08, '2026-02-06 04:16:14'),
+(218, 47, 8.50996560, 125.97283370, 0.00, 27.43, '2026-02-06 04:16:46'),
+(219, 47, 8.50994810, 125.97281470, 0.00, 23.53, '2026-02-06 04:18:12'),
+(220, 47, 8.50992450, 125.97279370, 0.00, 16.84, '2026-02-06 04:29:17'),
+(221, 37, 8.50994700, 125.97282690, 0.00, 20.10, '2026-02-07 01:55:55'),
+(222, 37, 8.50994700, 125.97282690, 0.00, 62.98, '2026-02-07 01:56:29'),
+(223, 37, 8.50994340, 125.97282400, 0.00, 63.24, '2026-02-07 01:56:57'),
+(224, 37, 8.50994340, 125.97282930, 0.00, 74.63, '2026-02-07 01:57:28'),
+(225, 37, 8.50994710, 125.97283220, 0.00, 16.84, '2026-02-07 01:57:56'),
+(226, 37, 8.50994710, 125.97283220, 0.00, 57.86, '2026-02-07 01:58:27'),
+(227, 37, 8.50995260, 125.97282540, 0.00, 52.28, '2026-02-07 01:58:57'),
+(228, 37, 8.50995960, 125.97282540, 0.00, 94.40, '2026-02-07 01:59:27'),
+(229, 37, 8.50995170, 125.97282590, 0.00, 15.06, '2026-02-07 02:01:09'),
+(230, 37, 8.50995500, 125.97282720, 0.00, 20.00, '2026-02-07 02:01:40'),
+(231, 37, 8.50995500, 125.97282720, 0.00, 61.29, '2026-02-07 02:02:10'),
+(232, 37, 8.50994120, 125.97283010, 0.00, 53.64, '2026-02-07 02:02:40'),
+(233, 37, 8.50993550, 125.97282600, 0.00, 17.82, '2026-02-07 02:03:10'),
+(234, 37, 8.50993550, 125.97282600, 0.00, 62.92, '2026-02-07 02:03:42'),
+(235, 37, 8.50995650, 125.97281300, 0.00, 17.21, '2026-02-07 02:04:10'),
+(236, 37, 8.50995650, 125.97281300, 0.00, 58.12, '2026-02-07 02:04:40'),
+(237, 37, 8.50993760, 125.97282600, 0.00, 17.42, '2026-02-07 02:05:10'),
+(238, 37, 8.50993760, 125.97282600, 0.00, 58.44, '2026-02-07 02:05:40'),
+(239, 37, 8.50994550, 125.97283250, 0.00, 99.67, '2026-02-07 02:06:10'),
+(240, 37, 8.50995630, 125.97282800, 0.00, 56.77, '2026-02-07 02:06:40'),
+(241, 37, 8.50994550, 125.97282320, 0.00, 23.60, '2026-02-07 02:07:10'),
+(242, 37, 8.50994550, 125.97282320, 0.00, 64.86, '2026-02-07 02:07:40'),
+(243, 37, 8.50995380, 125.97282500, 0.00, 52.39, '2026-02-07 02:08:10'),
+(244, 37, 8.50994380, 125.97283140, 0.00, 16.83, '2026-02-07 02:08:40'),
+(245, 37, 8.50994380, 125.97283140, 0.00, 57.69, '2026-02-07 02:09:10'),
+(246, 37, 8.50993470, 125.97282480, 0.00, 19.17, '2026-02-07 02:09:40'),
+(247, 37, 8.50993470, 125.97282480, 0.00, 60.50, '2026-02-07 02:10:11'),
+(248, 37, 8.50992250, 125.97282250, 0.00, 20.90, '2026-02-07 02:10:40'),
+(249, 37, 8.50993930, 125.97282870, 0.00, 18.89, '2026-02-07 02:11:10'),
+(250, 37, 8.50993930, 125.97282870, 0.00, 59.90, '2026-02-07 02:11:40'),
+(251, 37, 8.50995440, 125.97282370, 0.00, 31.82, '2026-02-07 02:12:10'),
+(252, 37, 8.50995440, 125.97282370, 0.00, 72.32, '2026-02-07 02:12:40'),
+(253, 37, 8.50995360, 125.97282370, 0.00, 15.59, '2026-02-07 02:13:13'),
+(254, 37, 8.50995230, 125.97281090, 0.00, 18.25, '2026-02-07 02:13:40'),
+(255, 37, 8.50995330, 125.97282460, 0.00, 16.19, '2026-02-07 02:14:10'),
+(256, 37, 8.50995330, 125.97282460, 0.00, 57.11, '2026-02-07 02:14:40'),
+(257, 37, 8.50995650, 125.97282690, 0.00, 15.09, '2026-02-07 02:15:10'),
+(258, 37, 8.50995650, 125.97282690, 0.00, 55.94, '2026-02-07 02:15:40'),
+(259, 37, 8.50995240, 125.97280010, 0.00, 21.60, '2026-02-07 02:16:10'),
+(260, 37, 8.50995240, 125.97280010, 0.00, 62.77, '2026-02-07 02:16:40'),
+(261, 37, 8.50995460, 125.97282200, 0.00, 15.11, '2026-02-07 02:17:13'),
+(262, 37, 8.50995000, 125.97282680, 0.00, 14.33, '2026-02-07 02:17:40'),
+(263, 37, 8.50995000, 125.97282680, 0.00, 55.14, '2026-02-07 02:18:10'),
+(264, 37, 8.50994920, 125.97282550, 0.00, 14.47, '2026-02-07 02:18:40'),
+(265, 37, 8.50994920, 125.97282550, 0.00, 55.79, '2026-02-07 02:19:11'),
+(266, 37, 8.50994580, 125.97283310, 0.00, 16.92, '2026-02-07 02:19:40'),
+(267, 37, 8.50994580, 125.97283310, 0.00, 58.01, '2026-02-07 02:20:10'),
+(268, 48, 8.50995220, 125.97283040, 0.00, 20.00, '2026-02-07 02:48:53'),
+(269, 48, 8.50995220, 125.97283040, 0.00, 64.23, '2026-02-07 02:49:25'),
+(270, 48, 8.50995370, 125.97283110, 0.00, 20.00, '2026-02-07 02:49:55'),
+(271, 48, 8.50995370, 125.97283110, 0.00, 60.85, '2026-02-07 02:50:25'),
+(272, 48, 8.50995320, 125.97282780, 0.00, 52.22, '2026-02-07 02:50:55'),
+(273, 48, 8.50993880, 125.97282310, 0.00, 23.63, '2026-02-07 02:51:25'),
+(274, 48, 8.50993880, 125.97282310, 0.00, 64.67, '2026-02-07 02:51:55'),
+(275, 48, 8.50994160, 125.97283170, 0.00, 53.08, '2026-02-07 02:52:25'),
+(276, 48, 8.50994480, 125.97283240, 0.00, 15.71, '2026-02-07 02:52:55'),
+(277, 48, 8.50994480, 125.97283240, 0.00, 56.63, '2026-02-07 02:53:25'),
+(278, 48, 8.50995480, 125.97282670, 0.00, 49.84, '2026-02-07 02:53:55'),
+(279, 48, 8.50995110, 125.97282730, 0.00, 11.94, '2026-02-07 02:54:25'),
+(280, 48, 8.50995110, 125.97282730, 0.00, 52.65, '2026-02-07 02:54:55'),
+(281, 48, 8.50995690, 125.97283190, 0.00, 51.67, '2026-02-07 02:55:25'),
+(282, 48, 8.50995040, 125.97276740, 0.00, 98.16, '2026-02-07 02:55:56'),
+(283, 48, 8.50995130, 125.97283000, 0.00, 20.00, '2026-02-07 02:56:25'),
+(284, 48, 8.50995130, 125.97283000, 0.00, 61.07, '2026-02-07 02:56:55'),
+(285, 48, 8.50995590, 125.97283350, 0.00, 51.47, '2026-02-07 02:57:25'),
+(286, 48, 8.50994070, 125.97282920, 0.00, 97.44, '2026-02-07 02:57:55'),
+(287, 48, 8.50995770, 125.97281300, 0.00, 97.39, '2026-02-07 02:58:29'),
+(288, 48, 8.50994880, 125.97282900, 0.00, 14.76, '2026-02-07 02:58:54'),
+(289, 48, 8.50994880, 125.97282900, 0.00, 55.71, '2026-02-07 02:59:25'),
+(290, 48, 8.50995560, 125.97282920, 0.00, 49.48, '2026-02-07 02:59:55'),
+(291, 48, 8.50995590, 125.97282450, 0.00, 91.61, '2026-02-07 03:00:25'),
+(292, 48, 8.50995400, 125.97282350, 0.00, 49.70, '2026-02-07 03:00:55'),
+(293, 48, 8.50994440, 125.97282960, 0.00, 95.97, '2026-02-07 03:01:25'),
+(294, 48, 8.50995210, 125.97282080, 0.00, 51.42, '2026-02-07 03:01:55'),
+(295, 48, 8.50994650, 125.97283110, 0.00, 92.72, '2026-02-07 03:02:25'),
+(296, 48, 8.50995570, 125.97282380, 0.00, 53.33, '2026-02-07 03:02:55'),
+(297, 48, 8.50994490, 125.97282490, 0.00, 62.00, '2026-02-07 03:03:25'),
+(298, 48, 8.50995150, 125.97283020, 0.00, 20.00, '2026-02-07 03:03:54'),
+(299, 48, 8.50995150, 125.97283020, 0.00, 61.03, '2026-02-07 03:04:25'),
+(300, 48, 8.50995300, 125.97282600, 0.00, 49.22, '2026-02-07 03:04:55'),
+(301, 48, 8.50994950, 125.97282950, 0.00, 14.06, '2026-02-07 03:05:24'),
+(302, 48, 8.50994950, 125.97282950, 0.00, 54.91, '2026-02-07 03:05:55'),
+(303, 48, 8.50994190, 125.97281630, 0.00, 55.00, '2026-02-07 03:06:25'),
+(304, 48, 8.50995420, 125.97282820, 0.00, 91.19, '2026-02-07 03:06:55'),
+(305, 48, 8.50996160, 125.97284120, 0.00, 67.58, '2026-02-07 03:07:25'),
+(306, 48, 8.50995420, 125.97282310, 0.00, 12.36, '2026-02-07 03:07:54'),
+(307, 48, 8.50995420, 125.97282310, 0.00, 54.69, '2026-02-07 03:08:25'),
+(308, 48, 8.50994640, 125.97283070, 0.00, 17.37, '2026-02-07 03:08:54'),
+(309, 48, 8.50994640, 125.97283070, 0.00, 17.37, '2026-02-07 03:09:24'),
+(310, 48, 8.50994640, 125.97283070, 0.00, 17.37, '2026-02-07 03:09:54'),
+(311, 48, 8.50994640, 125.97283070, 0.00, 17.37, '2026-02-07 03:10:24'),
+(312, 48, 8.50994280, 125.97282880, 0.00, 17.58, '2026-02-07 03:10:58'),
+(313, 48, 8.50993120, 125.97282380, 0.00, 19.14, '2026-02-07 03:11:24'),
+(314, 48, 8.50995090, 125.97283030, 0.00, 22.50, '2026-02-07 03:11:54'),
+(315, 48, 8.50995090, 125.97283030, 0.00, 63.62, '2026-02-07 03:12:25'),
+(316, 48, 8.50995460, 125.97281940, 0.00, 52.25, '2026-02-07 03:12:55'),
+(317, 48, 8.50994950, 125.97282130, 0.00, 93.99, '2026-02-07 03:13:25'),
+(318, 48, 8.50995460, 125.97283200, 0.00, 96.95, '2026-02-07 03:13:55'),
+(319, 48, 8.50995340, 125.97282260, 0.00, 50.04, '2026-02-07 03:14:25'),
+(320, 48, 8.50993720, 125.97282690, 0.00, 97.95, '2026-02-07 03:14:55'),
+(321, 48, 8.50994320, 125.97283110, 0.00, 52.85, '2026-02-07 03:15:25'),
+(322, 48, 8.50994710, 125.97283010, 0.00, 14.12, '2026-02-07 03:15:55'),
+(323, 48, 8.50994710, 125.97283010, 0.00, 55.06, '2026-02-07 03:16:25'),
+(324, 48, 8.50994880, 125.97279720, 0.00, 55.97, '2026-02-07 03:16:55'),
+(325, 48, 8.50993460, 125.97281130, 0.00, 18.88, '2026-02-07 03:17:25'),
+(326, 48, 8.50993460, 125.97281130, 0.00, 59.67, '2026-02-07 03:17:55'),
+(327, 48, 8.50995870, 125.97281690, 0.00, 51.27, '2026-02-07 03:18:25'),
+(328, 48, 8.50995100, 125.97281800, 0.00, 55.19, '2026-02-07 03:18:55'),
+(329, 48, 8.50994280, 125.97283010, 0.00, 17.43, '2026-02-07 03:19:24'),
+(330, 48, 8.50994280, 125.97283010, 0.00, 58.58, '2026-02-07 03:19:55'),
+(331, 48, 8.50994760, 125.97283410, 0.00, 16.46, '2026-02-07 03:20:27'),
+(332, 48, 8.50994790, 125.97283440, 0.00, 16.27, '2026-02-07 03:20:54'),
+(333, 48, 8.50994790, 125.97283440, 0.00, 57.22, '2026-02-07 03:21:25'),
+(334, 48, 8.50995440, 125.97282570, 0.00, 50.63, '2026-02-07 03:21:55'),
+(335, 48, 8.50995460, 125.97283200, 0.00, 93.46, '2026-02-07 03:22:25'),
+(336, 48, 8.50995270, 125.97282690, 0.00, 13.91, '2026-02-07 03:22:57'),
+(337, 48, 8.50995270, 125.97282690, 0.00, 50.77, '2026-02-07 03:23:25'),
+(338, 48, 8.50995540, 125.97283350, 0.00, 93.01, '2026-02-07 03:23:56'),
+(339, 48, 8.50995100, 125.97282740, 0.00, 11.86, '2026-02-07 03:24:25'),
+(340, 48, 8.50995100, 125.97282740, 0.00, 52.66, '2026-02-07 03:24:55'),
+(341, 48, 8.50995540, 125.97282870, 0.00, 97.62, '2026-02-07 03:25:25'),
+(342, 48, 8.50993670, 125.97282710, 0.00, 56.08, '2026-02-07 03:25:55'),
+(343, 48, 8.50994470, 125.97282520, 0.00, 99.42, '2026-02-07 03:26:25'),
+(344, 48, 8.50994270, 125.97283470, 0.03, 15.91, '2026-02-07 03:27:05'),
+(345, 48, 8.50994270, 125.97283470, 0.03, 15.91, '2026-02-07 03:28:09'),
+(346, 48, 8.50994270, 125.97283470, 0.03, 15.91, '2026-02-07 03:29:27'),
+(347, 48, 8.50994270, 125.97283470, 0.03, 15.91, '2026-02-07 03:34:40'),
+(348, 48, 8.50994270, 125.97283470, 0.03, 15.91, '2026-02-07 03:34:42'),
+(349, 48, 8.50994270, 125.97283470, 0.00, 100.00, '2026-02-07 03:44:46'),
+(350, 48, 8.50994970, 125.97282960, 0.00, 100.00, '2026-02-07 04:47:07'),
+(351, 48, 8.50994970, 125.97282960, 0.00, 100.00, '2026-02-07 04:47:07'),
+(352, 48, 8.50994970, 125.97282960, 0.00, 100.00, '2026-02-07 04:47:10'),
+(353, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:47:36'),
+(354, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:48:06'),
+(355, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:48:36'),
+(356, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:49:06'),
+(357, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:49:35'),
+(358, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:50:06'),
+(359, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:50:35'),
+(360, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:51:06'),
+(361, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:51:36'),
+(362, 48, 8.50994810, 125.97283460, 0.00, 16.24, '2026-02-07 04:52:06'),
+(363, 48, 8.50994540, 125.97283290, 0.00, 16.29, '2026-02-07 06:00:28'),
+(364, 48, 8.50994810, 125.97283460, 0.00, 100.00, '2026-02-07 06:00:29'),
+(365, 48, 8.50994810, 125.97283460, 0.00, 100.00, '2026-02-07 06:00:32'),
+(366, 48, 8.50994540, 125.97283290, 0.00, 16.29, '2026-02-07 06:01:19'),
+(367, 48, 8.50994540, 125.97283290, 0.00, 16.29, '2026-02-07 06:02:07'),
+(368, 48, 8.50994540, 125.97283290, 0.00, 16.29, '2026-02-07 06:02:57'),
+(369, 48, 8.50994540, 125.97283290, 0.00, 100.00, '2026-02-07 06:08:52'),
+(370, 48, 8.50994540, 125.97283290, 0.00, 100.00, '2026-02-07 06:08:54'),
+(371, 48, 8.50995170, 125.97283470, 0.00, 100.00, '2026-02-07 06:53:07'),
+(372, 48, 8.50995170, 125.97283470, 0.00, 100.00, '2026-02-07 06:53:09'),
+(373, 48, 8.50995170, 125.97283470, 0.00, 100.00, '2026-02-07 06:53:11'),
+(374, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:53:37'),
+(375, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:54:07'),
+(376, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:54:37'),
+(377, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:55:07'),
+(378, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:55:37'),
+(379, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:56:07'),
+(380, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:56:37'),
+(381, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:57:07'),
+(382, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:57:37'),
+(383, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:58:07'),
+(384, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:58:37'),
+(385, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:59:07'),
+(386, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 06:59:37'),
+(387, 48, 8.50994060, 125.97280830, 0.00, 15.18, '2026-02-07 07:00:07'),
+(388, 48, 8.50995400, 125.97282760, 0.00, 15.20, '2026-02-07 07:00:41'),
+(389, 48, 8.50995450, 125.97280740, 0.00, 13.90, '2026-02-07 07:01:08'),
+(390, 48, 8.50995450, 125.97280740, 0.00, 54.75, '2026-02-07 07:01:38'),
+(391, 48, 8.50995250, 125.97282860, 0.00, 97.15, '2026-02-07 07:02:08'),
+(392, 48, 8.50995490, 125.97282360, 0.00, 50.28, '2026-02-07 07:02:38'),
+(393, 48, 8.50995180, 125.97282500, 0.00, 94.74, '2026-02-07 07:03:09'),
+(394, 51, 8.50995260, 125.97282960, 0.00, 20.00, '2026-02-07 07:51:27'),
+(395, 51, 8.50995260, 125.97282960, 0.00, 20.00, '2026-02-07 07:51:27'),
+(396, 51, 8.50995310, 125.97282950, 0.00, 20.00, '2026-02-07 07:51:58'),
+(397, 51, 8.50995310, 125.97282950, 0.00, 61.18, '2026-02-07 07:52:29'),
+(398, 51, 8.50995320, 125.97282750, 0.00, 50.93, '2026-02-07 07:52:59'),
+(399, 51, 8.50992410, 125.97282220, 0.00, 22.97, '2026-02-07 07:53:31'),
+(400, 51, 8.50992410, 125.97282220, 0.00, 59.83, '2026-02-07 07:53:59'),
+(401, 51, 8.50992920, 125.97279950, 0.00, 20.00, '2026-02-07 07:54:28'),
+(402, 51, 8.50992920, 125.97279950, 0.00, 61.62, '2026-02-07 07:54:59'),
+(403, 51, 8.50995510, 125.97282890, 0.00, 20.00, '2026-02-07 07:55:28'),
+(404, 51, 8.50993300, 125.97280490, 0.00, 21.60, '2026-02-07 07:55:58'),
+(405, 51, 8.50993300, 125.97280490, 0.00, 62.93, '2026-02-07 07:56:29'),
+(406, 51, 8.50995920, 125.97282440, 0.00, 62.18, '2026-02-07 07:56:59'),
+(407, 51, 8.50995510, 125.97282950, 0.00, 14.77, '2026-02-07 07:57:28'),
+(408, 51, 8.50995510, 125.97282950, 0.00, 55.70, '2026-02-07 07:57:59'),
+(409, 51, 8.50995400, 125.97282870, 0.00, 49.42, '2026-02-07 07:58:29'),
+(410, 51, 8.50993680, 125.97281280, 0.00, 13.59, '2026-02-07 07:58:58'),
+(411, 51, 8.50993680, 125.97281280, 0.00, 54.53, '2026-02-07 07:59:29'),
+(412, 51, 8.50995540, 125.97282980, 0.00, 14.60, '2026-02-07 07:59:58'),
+(413, 51, 8.50995540, 125.97282980, 0.00, 55.75, '2026-02-07 08:00:29'),
+(414, 51, 8.50995060, 125.97282630, 0.00, 13.94, '2026-02-07 08:01:01'),
+(415, 51, 8.50995060, 125.97282630, 0.00, 50.83, '2026-02-07 08:01:29'),
+(416, 51, 8.50995380, 125.97282870, 0.00, 20.00, '2026-02-07 08:01:59'),
+(417, 51, 8.50995380, 125.97282870, 0.00, 60.85, '2026-02-07 08:02:29'),
+(418, 51, 8.50995040, 125.97281950, 0.00, 21.98, '2026-02-07 08:02:58'),
+(419, 51, 8.50995040, 125.97281950, 0.00, 63.06, '2026-02-07 08:03:29'),
+(420, 51, 8.50995510, 125.97282980, 0.00, 98.29, '2026-02-07 08:03:59'),
+(421, 51, 8.50994760, 125.97282670, 0.00, 14.49, '2026-02-07 08:04:29'),
+(422, 51, 8.50994760, 125.97282670, 0.00, 55.25, '2026-02-07 08:04:59'),
+(423, 51, 8.50994700, 125.97282870, 0.00, 13.56, '2026-02-07 08:05:31'),
+(424, 51, 8.50994700, 125.97282870, 0.00, 50.44, '2026-02-07 08:05:59'),
+(425, 51, 8.50995310, 125.97282710, 0.00, 12.41, '2026-02-07 08:06:28'),
+(426, 51, 8.50995310, 125.97282710, 0.00, 53.32, '2026-02-07 08:06:59'),
+(427, 51, 8.50993740, 125.97280500, 0.00, 50.76, '2026-02-07 08:07:29'),
+(428, 51, 8.50994350, 125.97280730, 0.00, 94.75, '2026-02-07 08:07:59'),
+(429, 51, 8.50995750, 125.97282480, 0.00, 23.34, '2026-02-07 08:08:28'),
+(430, 51, 8.50995470, 125.97282920, 0.00, 14.94, '2026-02-07 08:08:58'),
+(431, 51, 8.50995470, 125.97282920, 0.00, 56.19, '2026-02-07 08:09:29'),
+(432, 51, 8.50995180, 125.97282750, 0.00, 12.12, '2026-02-07 08:09:58'),
+(433, 51, 8.50995180, 125.97282750, 0.00, 53.11, '2026-02-07 08:10:29'),
+(434, 51, 8.50995100, 125.97282790, 0.00, 48.83, '2026-02-07 08:10:59'),
+(435, 51, 8.50995360, 125.97283010, 0.00, 12.97, '2026-02-07 08:11:28'),
+(436, 51, 8.50995360, 125.97283010, 0.00, 53.85, '2026-02-07 08:11:59'),
+(437, 51, 8.50993910, 125.97281080, 0.00, 50.76, '2026-02-07 08:12:29'),
+(438, 51, 8.50994050, 125.97280840, 0.00, 99.47, '2026-02-07 08:12:59'),
+(439, 51, 8.50995210, 125.97283000, 0.00, 49.18, '2026-02-07 08:13:29'),
+(440, 51, 8.50995200, 125.97283000, 0.00, 92.73, '2026-02-07 08:13:59'),
+(441, 51, 8.50993330, 125.97280540, 0.00, 57.91, '2026-02-07 08:14:29'),
+(442, 51, 8.50993620, 125.97280900, 0.00, 20.10, '2026-02-07 08:14:58'),
+(443, 51, 8.50993620, 125.97280900, 0.00, 61.38, '2026-02-07 08:15:29'),
+(444, 51, 8.50995450, 125.97282880, 0.00, 15.00, '2026-02-07 08:15:58'),
+(445, 51, 8.50995450, 125.97282880, 0.00, 56.18, '2026-02-07 08:16:29'),
+(446, 51, 8.50993210, 125.97280620, 0.00, 52.29, '2026-02-07 08:16:59'),
+(447, 51, 8.50994430, 125.97281760, 0.00, 96.11, '2026-02-07 08:17:29'),
+(448, 51, 8.50990260, 125.97279230, 0.00, 22.43, '2026-02-07 08:17:58'),
+(449, 51, 8.50990260, 125.97279230, 0.00, 63.54, '2026-02-07 08:18:29'),
+(450, 51, 8.50995090, 125.97282500, 0.00, 15.30, '2026-02-07 08:19:01'),
+(451, 51, 8.50995090, 125.97282500, 0.00, 52.18, '2026-02-07 08:19:29'),
+(452, 51, 8.50993300, 125.97280290, 0.00, 96.87, '2026-02-07 08:19:59'),
+(453, 51, 8.50995050, 125.97283030, 0.00, 51.66, '2026-02-07 08:20:29'),
+(454, 51, 8.50995200, 125.97283270, 0.00, 14.51, '2026-02-07 08:20:58'),
+(455, 51, 8.50995200, 125.97283270, 0.00, 55.40, '2026-02-07 08:21:29'),
+(456, 51, 8.50994970, 125.97281960, 0.00, 58.32, '2026-02-07 08:21:59'),
+(457, 51, 8.50995450, 125.97282900, 0.00, 94.25, '2026-02-07 08:22:29'),
+(458, 51, 8.50995470, 125.97283300, 0.00, 50.69, '2026-02-07 08:22:59'),
+(459, 51, 8.50995650, 125.97281930, 0.00, 94.61, '2026-02-07 08:23:29'),
+(460, 51, 8.50995130, 125.97283070, 0.00, 51.39, '2026-02-07 08:23:59'),
+(461, 51, 8.50995250, 125.97282460, 0.00, 90.78, '2026-02-07 08:24:29'),
+(462, 51, 8.50995180, 125.97280350, 0.00, 54.20, '2026-02-07 08:24:59'),
+(463, 51, 8.50995820, 125.97281330, 0.00, 14.05, '2026-02-07 08:25:28'),
+(464, 51, 8.50995820, 125.97281330, 0.00, 55.44, '2026-02-07 08:25:59'),
+(465, 51, 8.50994320, 125.97282770, 0.00, 22.16, '2026-02-07 08:26:28'),
+(466, 51, 8.50995620, 125.97282980, 0.00, 20.00, '2026-02-07 08:26:58'),
+(467, 51, 8.50995620, 125.97282980, 0.00, 61.25, '2026-02-07 08:27:29'),
+(468, 51, 8.50994800, 125.97282510, 0.00, 12.41, '2026-02-07 08:27:59'),
+(469, 51, 8.50994800, 125.97282510, 0.00, 53.19, '2026-02-07 08:28:29'),
+(470, 51, 8.50995250, 125.97282750, 0.00, 48.96, '2026-02-07 08:28:59'),
+(471, 51, 8.50995170, 125.97282630, 0.00, 91.41, '2026-02-07 08:29:29'),
+(472, 51, 8.50995260, 125.97282750, 0.00, 51.10, '2026-02-07 08:29:59'),
+(473, 51, 8.50995360, 125.97282960, 0.00, 98.94, '2026-02-07 08:30:29'),
+(474, 51, 8.50995090, 125.97282530, 0.00, 50.90, '2026-02-07 08:30:59'),
+(475, 51, 8.50995100, 125.97282400, 0.00, 98.93, '2026-02-07 08:31:29'),
+(476, 51, 8.50995430, 125.97283140, 0.00, 13.95, '2026-02-07 08:31:59'),
+(477, 51, 8.50995430, 125.97283140, 0.00, 54.92, '2026-02-07 08:32:29'),
+(478, 51, 8.50995130, 125.97282940, 0.00, 51.65, '2026-02-07 08:32:59'),
+(479, 51, 8.50995170, 125.97282630, 0.00, 12.41, '2026-02-07 08:33:28'),
+(480, 51, 8.50995170, 125.97282630, 0.00, 53.45, '2026-02-07 08:33:59'),
+(481, 51, 8.50995170, 125.97282760, 0.00, 48.98, '2026-02-07 08:34:29'),
+(482, 51, 8.50995610, 125.97283170, 0.00, 93.14, '2026-02-07 08:34:59'),
+(483, 51, 8.50995130, 125.97282520, 0.00, 96.04, '2026-02-07 08:35:29'),
+(484, 51, 8.50994460, 125.97281500, 0.00, 50.52, '2026-02-07 08:35:59'),
+(485, 51, 8.50995050, 125.97282830, 0.00, 14.09, '2026-02-07 08:36:28'),
+(486, 51, 8.50995050, 125.97282830, 0.00, 55.28, '2026-02-07 08:36:59'),
+(487, 51, 8.50995700, 125.97283150, 0.00, 48.52, '2026-02-07 08:37:29'),
+(488, 51, 8.50995680, 125.97283070, 0.00, 99.01, '2026-02-07 08:37:59'),
+(489, 51, 8.50995070, 125.97282350, 0.00, 51.56, '2026-02-07 08:38:29'),
+(490, 51, 8.50994920, 125.97282670, 0.00, 13.91, '2026-02-07 08:38:58'),
+(491, 51, 8.50994920, 125.97282670, 0.00, 54.89, '2026-02-07 08:39:29'),
+(492, 51, 8.50994630, 125.97282600, 0.00, 52.02, '2026-02-07 08:39:59'),
+(493, 51, 8.50995470, 125.97283390, 0.00, 92.74, '2026-02-07 08:40:29'),
+(494, 51, 8.50995290, 125.97283200, 0.00, 50.77, '2026-02-07 08:40:59'),
+(495, 51, 8.50994910, 125.97282770, 0.00, 14.59, '2026-02-07 08:41:28'),
+(496, 51, 8.50994910, 125.97282770, 0.00, 55.50, '2026-02-07 08:42:00'),
+(497, 51, 8.50994720, 125.97282520, 0.00, 52.78, '2026-02-07 08:42:29'),
+(498, 51, 8.50995180, 125.97282270, 0.00, 98.96, '2026-02-07 08:42:59'),
+(499, 51, 8.50995230, 125.97282870, 0.00, 49.21, '2026-02-07 08:43:29'),
+(500, 51, 8.50994920, 125.97282140, 0.00, 98.99, '2026-02-07 08:43:59'),
+(501, 51, 8.50995730, 125.97282760, 0.00, 60.38, '2026-02-07 08:44:29'),
+(502, 51, 8.50994270, 125.97281970, 0.00, 26.12, '2026-02-07 08:44:58'),
+(503, 51, 8.50994270, 125.97281970, 0.00, 67.07, '2026-02-07 08:45:29'),
+(504, 51, 8.50994370, 125.97281640, 0.00, 61.33, '2026-02-07 08:45:59'),
+(505, 51, 8.50995220, 125.97282630, 0.00, 94.09, '2026-02-07 08:46:29'),
+(506, 51, 8.50994920, 125.97282790, 0.00, 52.69, '2026-02-07 08:46:59'),
+(507, 51, 8.50995070, 125.97282310, 0.00, 95.46, '2026-02-07 08:47:29'),
+(508, 51, 8.50995260, 125.97282510, 0.00, 12.91, '2026-02-07 08:47:59'),
+(509, 51, 8.50995260, 125.97282510, 0.00, 53.74, '2026-02-07 08:48:29'),
+(510, 51, 8.50995320, 125.97282760, 0.00, 98.28, '2026-02-07 08:48:59'),
+(511, 51, 8.50995310, 125.97283170, 0.00, 51.60, '2026-02-07 08:49:29'),
+(512, 51, 8.50995390, 125.97282740, 0.00, 20.00, '2026-02-07 08:50:01'),
+(513, 51, 8.50995350, 125.97282690, 0.00, 20.00, '2026-02-07 08:50:28'),
+(514, 51, 8.50995320, 125.97282600, 0.00, 20.00, '2026-02-07 08:50:58'),
+(515, 51, 8.50995320, 125.97282600, 0.00, 61.41, '2026-02-07 08:51:29'),
+(516, 51, 8.50993450, 125.97279800, 0.00, 53.26, '2026-02-07 08:51:59'),
+(517, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:52:29'),
+(518, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:52:58'),
+(519, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:53:28'),
+(520, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:53:58'),
+(521, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:54:28'),
+(522, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:54:58'),
+(523, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:55:28'),
+(524, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:55:58'),
+(525, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:56:28'),
+(526, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:56:58'),
+(527, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:57:28'),
+(528, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:57:58'),
+(529, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:58:28'),
+(530, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:58:58'),
+(531, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:59:28'),
+(532, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 08:59:58'),
+(533, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 09:00:28'),
+(534, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 09:00:58'),
+(535, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 09:01:28'),
+(536, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 09:01:58'),
+(537, 51, 8.50994720, 125.97281050, 0.00, 13.57, '2026-02-07 09:02:28'),
+(538, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:02:59'),
+(539, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:03:28'),
+(540, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:03:58'),
+(541, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:04:28'),
+(542, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:04:58'),
+(543, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:05:28'),
+(544, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:05:58'),
+(545, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:06:28'),
+(546, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:06:58'),
+(547, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:07:28'),
+(548, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:07:58'),
+(549, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:08:28'),
+(550, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:08:58'),
+(551, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:09:28'),
+(552, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:09:58'),
+(553, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:10:28'),
+(554, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:10:58'),
+(555, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:11:28'),
+(556, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:11:58'),
+(557, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:12:28'),
+(558, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:12:58'),
+(559, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:13:28'),
+(560, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:13:58'),
+(561, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:14:28'),
+(562, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:14:58'),
+(563, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:15:29'),
+(564, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:15:58'),
+(565, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:16:28'),
+(566, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:16:58'),
+(567, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:17:28'),
+(568, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:17:58'),
+(569, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:18:28'),
+(570, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:18:58'),
+(571, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:19:28'),
+(572, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:19:58'),
+(573, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:20:28'),
+(574, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:20:58'),
+(575, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:21:28'),
+(576, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:21:58'),
+(577, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:22:28'),
+(578, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:22:58'),
+(579, 51, 8.50994720, 125.97281050, 0.00, 100.00, '2026-02-07 09:23:28'),
+(580, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:23:58'),
+(581, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:24:28'),
+(582, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:24:58'),
+(583, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:25:28'),
+(584, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:25:58'),
+(585, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:26:28'),
+(586, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:26:58'),
+(587, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:27:29'),
+(588, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:27:58'),
+(589, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:28:28'),
+(590, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:28:58'),
+(591, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:29:28'),
+(592, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:29:58'),
+(593, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:30:28'),
+(594, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:30:58'),
+(595, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:31:28'),
+(596, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:31:58'),
+(597, 51, 8.50995460, 125.97283540, 0.00, 14.27, '2026-02-07 09:32:29'),
+(598, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:32:58'),
+(599, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:33:28'),
+(600, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:33:58'),
+(601, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:34:28'),
+(602, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:34:58'),
+(603, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:35:28'),
+(604, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:35:57'),
+(605, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:36:29'),
+(606, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:36:58'),
+(607, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:37:28'),
+(608, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:37:58'),
+(609, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:38:28'),
+(610, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:38:58'),
+(611, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:39:28'),
+(612, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:39:58'),
+(613, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:40:29'),
+(614, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:40:58'),
+(615, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:41:28'),
+(616, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:41:59'),
+(617, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:42:28'),
+(618, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:43:00'),
+(619, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:43:29'),
+(620, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:43:58'),
+(621, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:44:28'),
+(622, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:44:58'),
+(623, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:45:28'),
+(624, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:45:58'),
+(625, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:46:29'),
+(626, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:46:58'),
+(627, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:47:28'),
+(628, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:47:58'),
+(629, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:48:42'),
+(630, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:49:16'),
+(631, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:50:25'),
+(632, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:51:28'),
+(633, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:52:37'),
+(634, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 09:58:20'),
+(635, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 10:08:30'),
+(636, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 10:08:31'),
+(637, 51, 8.50995460, 125.97283540, 0.00, 100.00, '2026-02-07 10:08:32'),
+(638, 51, 8.50992550, 125.97280950, 0.00, 100.00, '2026-02-07 10:22:50'),
+(639, 51, 8.50992550, 125.97280950, 0.00, 100.00, '2026-02-07 10:22:51'),
+(640, 51, 8.50992550, 125.97280950, 0.00, 19.72, '2026-02-07 10:22:55'),
+(641, 51, 8.50992550, 125.97280950, 0.00, 100.00, '2026-02-07 10:23:25'),
+(642, 51, 8.50992550, 125.97280950, 0.00, 100.00, '2026-02-07 10:23:56'),
+(643, 51, 8.50995110, 125.97283080, 0.00, 14.80, '2026-02-07 10:25:14'),
+(644, 51, 8.50995110, 125.97283080, 0.00, 14.80, '2026-02-07 10:30:53'),
+(645, 51, 8.50995110, 125.97283080, 0.00, 14.80, '2026-02-07 10:30:55'),
+(646, 51, 8.50995110, 125.97283080, 0.00, 14.80, '2026-02-07 10:30:58'),
+(647, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:35:33'),
+(648, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:35:49'),
+(649, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:35:52'),
+(650, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:36:18'),
+(651, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:36:48'),
+(652, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:37:18'),
+(653, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:37:48'),
+(654, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:38:18'),
+(655, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:38:48'),
+(656, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:39:18'),
+(657, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:39:47'),
+(658, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 11:40:19'),
+(659, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 12:47:05'),
+(660, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 12:47:08'),
+(661, 51, 8.50992000, 125.97280830, 0.00, 25.81, '2026-02-07 12:47:31'),
+(662, 51, 8.50995350, 125.97282630, 0.00, 100.00, '2026-02-07 12:47:36'),
+(663, 51, 8.50998280, 125.97282980, 0.00, 29.16, '2026-02-07 12:48:01');
 
 -- --------------------------------------------------------
 
@@ -826,7 +1387,8 @@ INSERT INTO `insurance_audit_log` (`id`, `policy_id`, `claim_id`, `action_type`,
 (4, 1, NULL, 'policy_created', 7, '{\"coverage_type\":\"basic\",\"premium_amount\":252,\"policy_number\":\"INS-2026-000001-BAS\"}', NULL, '2026-02-01 12:57:45'),
 (5, NULL, 1, 'claim_filed', 7, '{\"claim_type\":\"collision\",\"claimed_amount\":5000,\"claim_number\":\"CLM-2026-000001-9CE9\"}', NULL, '2026-02-01 13:02:04'),
 (6, NULL, 1, 'claim_approved', 1, '{\"approved_amount\":4500,\"payout_amount\":0,\"review_notes\":\"Claim verified. Approved for payout after deductible.\"}', NULL, '2026-02-01 13:02:15'),
-(7, NULL, 2, 'claim_rejected', 1, '{\"rejection_reason\":\"Insufficient evidence provided. Incident does not fall under policy coverage.\"}', NULL, '2026-02-01 13:02:17');
+(7, NULL, 2, 'claim_rejected', 1, '{\"rejection_reason\":\"Insufficient evidence provided. Incident does not fall under policy coverage.\"}', NULL, '2026-02-01 13:02:17'),
+(8, NULL, 2, 'claim_filed', 15, '{\"claim_type\":\"collision\",\"claimed_amount\":2000,\"claim_number\":\"CLM-2026-000051-E879\"}', NULL, '2026-02-07 07:54:59');
 
 -- --------------------------------------------------------
 
@@ -870,7 +1432,8 @@ CREATE TABLE `insurance_claims` (
 --
 
 INSERT INTO `insurance_claims` (`id`, `claim_number`, `policy_id`, `booking_id`, `user_id`, `claim_type`, `incident_date`, `incident_location`, `incident_description`, `police_report_number`, `police_report_file`, `claimed_amount`, `approved_amount`, `deductible_paid`, `payout_amount`, `evidence_photos`, `witness_statements`, `damage_assessment`, `status`, `priority`, `reviewed_by`, `reviewed_at`, `review_notes`, `rejection_reason`, `paid_at`, `payout_reference`, `created_at`, `updated_at`) VALUES
-(1, 'CLM-2026-000001-9CE9', 1, 1, 7, 'collision', '2026-02-01 00:00:00', 'San Francisco, Caraga', 'Vehicle collision with another car during rental period. Front bumper and headlight damaged.', '', NULL, 5000.00, 4500.00, 0.00, 0.00, '[]', NULL, NULL, 'approved', 'normal', 1, '2026-02-01 21:02:15', 'Claim verified. Approved for payout after deductible.', NULL, NULL, NULL, '2026-02-01 13:02:04', '2026-02-01 13:02:15');
+(1, 'CLM-2026-000001-9CE9', 1, 1, 7, 'collision', '2026-02-01 00:00:00', 'San Francisco, Caraga', 'Vehicle collision with another car during rental period. Front bumper and headlight damaged.', '', NULL, 5000.00, 4500.00, 0.00, 0.00, '[]', NULL, NULL, 'approved', 'normal', 1, '2026-02-01 21:02:15', 'Claim verified. Approved for payout after deductible.', NULL, NULL, NULL, '2026-02-01 13:02:04', '2026-02-01 13:02:15'),
+(2, 'CLM-2026-000051-E879', 2, 51, 15, 'collision', '2026-02-07 15:51:33', 'brgy', 'bangaajsjsjsjsjsnsnsavvavahsb', NULL, NULL, 2000.00, 0.00, 0.00, 0.00, '[\"\\/data\\/user\\/0\\/com.example.flutter_application_1\\/cache\\/scaled_Screenshot_2026-02-07-11-09-00-77.jpg\"]', NULL, NULL, 'submitted', 'normal', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07 07:54:59', '2026-02-07 07:54:59');
 
 -- --------------------------------------------------------
 
@@ -943,7 +1506,8 @@ CREATE TABLE `insurance_policies` (
 --
 
 INSERT INTO `insurance_policies` (`id`, `policy_number`, `provider_id`, `booking_id`, `vehicle_type`, `vehicle_id`, `user_id`, `owner_id`, `coverage_type`, `policy_start`, `policy_end`, `premium_amount`, `coverage_limit`, `deductible`, `collision_coverage`, `liability_coverage`, `theft_coverage`, `personal_injury_coverage`, `roadside_assistance`, `status`, `policy_document`, `terms_accepted`, `terms_accepted_at`, `issued_at`, `cancelled_at`, `cancellation_reason`, `created_at`, `updated_at`) VALUES
-(1, 'INS-2026-000001-BAS', 1, 1, 'car', 26, 7, 1, '', '2025-12-13 00:00:00', '2025-12-14 00:00:00', 252.00, 100000.00, 5000.00, 50000.00, 50000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, '2026-02-01 20:57:45', '2026-02-01 20:57:45', NULL, NULL, '2026-02-01 12:57:45', '2026-02-01 13:02:04');
+(1, 'INS-2026-000001-BAS', 1, 1, 'car', 26, 7, 1, '', '2025-12-13 00:00:00', '2025-12-14 00:00:00', 252.00, 100000.00, 5000.00, 50000.00, 50000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, '2026-02-01 20:57:45', '2026-02-01 20:57:45', NULL, NULL, '2026-02-01 12:57:45', '2026-02-01 13:02:04'),
+(2, 'POL-20260207-000051', 1, 51, 'motorcycle', 6, 15, 16, 'basic', '2026-02-07 00:00:00', '2026-02-08 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, NULL, '2026-02-07 07:49:53', NULL, NULL, '2026-02-07 07:49:53', '2026-02-07 08:49:56');
 
 -- --------------------------------------------------------
 
@@ -1111,7 +1675,8 @@ INSERT INTO `motorcycles` (`id`, `owner_id`, `color`, `description`, `motorcycle
 (2, 1, 'black', 'wow', '2025', 'Standard/Naked', 'Honda', 'Wave 110', '100-125cc', '12345', 500.00, 'uploads/motorcycle_main_6963250d10290.jpg', 'p2 lapinigan', '2026-01-11 04:20:29', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Traction Control\",\"Riding Modes\"]', '[\"No eating or drinking inside\"]', 1, 0.00, 8.430216699999999, 125.9751094, 'uploads/or_6963250d103bc.jpg', 'uploads/cr_6963250d10473.jpg', '[\"uploads\\/extra_6963250d10511.jpg\",\"uploads\\/extra_6963250d105f0.jpg\"]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
 (3, 1, 'blue', 'wew', '2025', 'Café Racer', 'CFMoto', '400NK', '100-125cc', '12345677', 750.00, 'uploads/motorcycle_main_696aec2843857.jpg', 'Purok 4, San Francisco, Caraga', '2026-01-17 01:55:52', '3 hours', '3 days', '2 weeks', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\",\"No eating or drinking inside\"]', 1, 0.00, 8.432009, 125.9829288, 'uploads/or_696aec2843b36.jpg', 'uploads/cr_696aec2843c07.jpg', '[]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
 (4, 5, 'red', 'wew', '2025', 'Touring', 'Kymco', 'Xciting 400i', '100-125cc', '987268191', 850.00, 'uploads/motorcycle_main_696aed424d965.jpg', 'P-2, San Francisco, Caraga', '2026-01-17 02:00:34', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Traction Control\",\"Riding Modes\"]', '[\"No Littering\",\"No eating or drinking inside\"]', 1, 0.00, 8.4317083, 125.9814032, 'uploads/or_696aed424dc70.jpg', 'uploads/cr_696aed424dd2e.jpg', '[]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
-(5, 1, 'red', 'wt', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 'rars', 50.00, 'uploads/motorcycle_main_6980942f5fb70.jpg', 'Isetann Cinerama Complex, Manila, Metro Manila', '2026-02-02 12:10:23', '30 minutes', '1 day', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\"]', 1, 0.00, 14.60133824658561, 120.98485355139668, 'uploads/or_6980942f601e1.jpg', 'uploads/cr_6980942f604cc.jpg', '[\"uploads\\/extra_6980942f6080b.jpg\"]', NULL, 'pending', 5, 'Manual', 0, NULL, 10.00);
+(5, 1, 'red', 'wt', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 'rars', 50.00, 'uploads/motorcycle_main_6980942f5fb70.jpg', 'Isetann Cinerama Complex, Manila, Metro Manila', '2026-02-02 12:10:23', '30 minutes', '1 day', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\"]', 1, 0.00, 14.60133824658561, 120.98485355139668, 'uploads/or_6980942f601e1.jpg', 'uploads/cr_6980942f604cc.jpg', '[\"uploads\\/extra_6980942f6080b.jpg\"]', NULL, 'pending', 5, 'Manual', 0, NULL, 10.00),
+(6, 16, 'gtee', 'jayd', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 're', 500.00, 'uploads/motorcycle_main_69854c0c24472.jpg', '904, Philippines', '2026-02-06 02:03:56', 'Others', '3 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Cruise Control\",\"Quick Shifter\",\"ABS Brakes\",\"Traction Control\"]', '[\"No eating or drinking inside\",\"No inter-island travel\"]', 0, 0.00, 8.607775074226366, 125.90965140232585, 'uploads/or_69854c0c245d7.jpg', 'uploads/cr_69854c0c247b7.jpg', '[\"uploads\\/extra_69854c0c2496d.jpg\"]', '', 'approved', 5, 'Manual', 0, NULL, 10.00);
 
 -- --------------------------------------------------------
 
@@ -1326,16 +1891,47 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (255, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:19:25'),
 (256, 5, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Audi A1. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 12:19:55'),
 (257, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:19:55'),
-(258, 1, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Toyota Vios. Total: â‚±53580.00 (Rental + Late Fee)', 'info', 'unread', '2026-01-31 12:38:21'),
+(258, 1, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Toyota Vios. Total: â‚±53580.00 (Rental + Late Fee)', 'info', 'read', '2026-01-31 12:38:21'),
 (259, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±53580.00 for Toyota Vios has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:38:21'),
 (260, 7, 'Late Fee Payment Approved', 'Your late fee payment of â‚±53580.00 has been verified and approved.', 'info', 'unread', '2026-01-31 12:57:42'),
-(261, 1, 'Late Fee Payment Approved', 'Late fee payment of â‚±53580.00 for Toyota Vios has been verified.', 'info', 'unread', '2026-01-31 12:57:42'),
+(261, 1, 'Late Fee Payment Approved', 'Late fee payment of â‚±53580.00 for Toyota Vios has been verified.', 'info', 'read', '2026-01-31 12:57:42'),
 (262, 7, 'Late Fee Confirmed âš ï¸', 'Your overdue booking #BK-0001 has a confirmed late fee of â‚±109,900.00. Please submit payment to complete your booking.', 'info', 'unread', '2026-01-31 13:29:56'),
 (263, 7, 'âš ï¸ Overdue Booking Reminder #1', 'Your booking #BK-0001 for Audi A1 is 48 days overdue. Late fee: â‚±109,900.00. Please return the vehicle and complete payment immediately.', 'info', 'unread', '2026-01-31 13:30:02'),
 (264, 7, 'Booking Completed âœ…', 'Your booking #BK-0001 has been completed. Late fee: â‚±109,900.00', 'info', 'unread', '2026-01-31 13:32:57'),
 (265, 7, 'Booking Completed âœ…', 'Your booking #BK-0041 has been completed. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 13:33:24'),
 (266, 5, 'Payment Released ðŸ’°', 'Your payout of â‚±27,405.00 is being processed.', 'info', 'unread', '2026-02-01 02:25:43'),
-(267, 1, 'Motorcycle Submitted ✅', 'Your motorcycle \'Honda Click 125i\' has been submitted for approval.', 'info', 'unread', '2026-02-02 12:10:23');
+(267, 1, 'Motorcycle Submitted ✅', 'Your motorcycle \'Honda Click 125i\' has been submitted for approval.', 'info', 'read', '2026-02-02 12:10:23'),
+(268, 13, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2026-02-04 09:14:51'),
+(269, 15, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2026-02-06 01:36:45'),
+(270, 16, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2026-02-06 01:58:01'),
+(271, 16, 'Motorcycle Submitted ✅', 'Your motorcycle \'Honda Click 125i\' has been submitted for approval.', 'info', 'unread', '2026-02-06 02:03:56'),
+(272, 16, 'Motorcycle Approved ✅', 'Your motorcycle \'Honda Click 125i\' has been approved and is now visible to renters.', 'info', 'unread', '2026-02-06 02:04:30'),
+(273, 15, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-06 03:05:05'),
+(274, 16, 'New Booking 🚗', 'Booking #47 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-06 03:05:05'),
+(275, 15, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved.', 'booking_approved', 'unread', '2026-02-06 03:16:38'),
+(276, 16, 'You Approved a Booking', 'You approved booking #47 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-06 03:16:38'),
+(277, 7, 'Refund Approved ✓', 'Your booking #7 has been cancelled and refund of ₱256.20 has been approved. Reference: REF-20260206-8198', 'refund_approved', 'unread', '2026-02-06 07:28:51'),
+(278, 1, 'Booking Cancelled ⚠️', 'Booking #7 has been cancelled and refunded to renter. Reason: car_unavailable', 'booking_cancelled', 'read', '2026-02-06 07:28:51'),
+(279, 15, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 02:25:39'),
+(280, 16, 'New Booking 🚗', 'Booking #48 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 02:25:39'),
+(281, 15, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved.', 'booking_approved', 'unread', '2026-02-07 02:26:08'),
+(282, 16, 'You Approved a Booking', 'You approved booking #48 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-07 02:26:08'),
+(283, 15, 'Trip Started! 🚗', 'Your rental for booking #48 has started. The owner has confirmed vehicle pickup. Enjoy your trip!', 'info', 'unread', '2026-02-07 02:48:21'),
+(284, 15, 'Trip Completed ✓', 'Your rental for booking #48 has been completed. Thank you!', 'info', 'unread', '2026-02-07 07:06:38'),
+(285, 15, 'Payment Rejected ✗', 'Your payment was rejected. Reason: Payment verification failed', 'info', 'unread', '2026-02-07 07:38:03'),
+(286, 15, 'Payment Rejected ✗', 'Your payment was rejected. Reason: Payment verification failed', 'info', 'unread', '2026-02-07 07:38:35'),
+(287, 15, 'Payment Rejected ✗', 'Your payment was rejected. Reason: Payment verification failed', 'info', 'unread', '2026-02-07 07:38:39'),
+(288, 15, 'Payment Rejected ✗', 'Your payment was rejected. Reason: Payment verification failed', 'info', 'unread', '2026-02-07 07:38:42'),
+(289, 15, 'Payment Rejected ✗', 'Your payment was rejected. Reason: Payment verification failed', 'info', 'unread', '2026-02-07 07:45:49'),
+(290, 15, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 07:48:48'),
+(291, 16, 'New Booking 🚗', 'Booking #51 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 07:48:48'),
+(292, 15, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved. Your insurance policy is now active.', 'booking_approved', 'unread', '2026-02-07 07:49:53'),
+(293, 16, 'You Approved a Booking', 'You approved booking #51 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-07 07:49:53'),
+(294, 15, 'Trip Started! 🚗', 'Your rental for booking #51 has started. The owner has confirmed vehicle pickup. Enjoy your trip!', 'info', 'unread', '2026-02-07 07:50:25'),
+(295, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 14:09:05'),
+(296, 1, 'New Booking 🚗', 'Booking #46 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 14:09:05'),
+(297, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 14:09:08'),
+(298, 1, 'New Booking 🚗', 'Booking #45 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 14:09:08');
 
 -- --------------------------------------------------------
 
@@ -1429,7 +2025,7 @@ CREATE TABLE `payments` (
 --
 
 INSERT INTO `payments` (`id`, `booking_id`, `user_id`, `amount`, `payment_method`, `payment_reference`, `payment_status`, `verification_notes`, `verified_by`, `verified_at`, `created_at`, `updated_at`, `payment_date`) VALUES
-(4, 7, 7, 256.20, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-01-21 10:44:34', '2026-01-11 07:05:05', '2026-01-21 02:44:34', NULL),
+(4, 7, 7, 256.20, 'gcash', '1234567890123', 'refunded', NULL, 1, '2026-01-21 10:44:34', '2026-01-11 07:05:05', '2026-02-06 07:28:51', NULL),
 (15, 15, 7, 256.20, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-01-21 10:47:34', '2026-01-12 23:15:16', '2026-01-21 02:47:34', NULL),
 (17, 16, 7, 256.20, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-01-21 10:48:09', '2026-01-12 23:16:15', '2026-01-21 02:48:09', NULL),
 (22, 19, 7, 1680.00, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-01-21 10:46:19', '2026-01-13 05:26:51', '2026-01-21 02:46:19', NULL),
@@ -1448,12 +2044,14 @@ INSERT INTO `payments` (`id`, `booking_id`, `user_id`, `amount`, `payment_method
 (64, 41, 7, 30450.00, 'gcash', '0912345678912', 'verified', NULL, 1, '2026-01-22 09:17:14', '2026-01-21 10:51:55', '2026-01-22 01:17:14', NULL),
 (66, 42, 7, 3150.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-01-30 18:39:56', '2026-01-29 11:53:53', '2026-01-30 10:39:56', NULL),
 (67, 43, 7, 256.20, 'gcash', NULL, 'verified', NULL, 1, '2026-01-29 20:25:49', '2026-01-29 12:16:06', '2026-01-29 12:25:49', NULL),
-(68, 44, 7, 256.20, 'gcash', NULL, 'verified', NULL, 1, '2026-01-29 20:25:23', '2026-01-29 12:16:40', '2026-01-29 12:25:23', NULL),
 (69, 44, 7, 256.20, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-01-29 20:25:14', '2026-01-29 12:16:57', '2026-01-29 12:25:14', NULL),
-(90, 45, 7, 3150.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-01 04:57:57', '2026-02-01 04:57:57', NULL),
-(91, 45, 7, 3150.00, 'gcash', '1212121212121', 'pending', NULL, NULL, NULL, '2026-02-01 04:58:13', '2026-02-01 04:58:13', NULL),
-(92, 46, 7, 3150.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-01 13:43:47', '2026-02-01 13:43:47', NULL),
-(93, 46, 7, 3150.00, 'gcash', '1212121212121', 'pending', NULL, NULL, NULL, '2026-02-01 13:44:05', '2026-02-01 13:44:05', NULL);
+(91, 45, 7, 3150.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 14:09:08', '2026-02-01 04:58:13', '2026-02-07 14:09:08', NULL),
+(93, 46, 7, 3150.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 14:09:05', '2026-02-01 13:44:05', '2026-02-07 14:09:05', NULL),
+(95, 47, 15, 1443.75, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-06 03:05:05', '2026-02-06 02:11:44', '2026-02-06 03:05:05', NULL),
+(97, 48, 15, 1050.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 02:25:39', '2026-02-07 02:25:04', '2026-02-07 02:25:39', NULL),
+(99, 49, 15, 1050.00, 'gcash', '1212121212121', 'rejected', 'Payment verification failed', 1, '2026-02-07 07:38:03', '2026-02-07 07:09:17', '2026-02-07 07:38:03', NULL),
+(101, 50, 15, 1050.00, 'gcash', '1212121212121', 'rejected', 'Payment verification failed', 1, '2026-02-07 07:45:49', '2026-02-07 07:40:29', '2026-02-07 07:45:49', NULL),
+(103, 51, 15, 1050.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 07:48:48', '2026-02-07 07:48:31', '2026-02-07 07:48:48', NULL);
 
 --
 -- Triggers `payments`
@@ -1474,6 +2072,43 @@ CREATE TRIGGER `trg_payment_verified_to_booking_paid` AFTER UPDATE ON `payments`
 END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payments_incomplete_backup`
+--
+
+CREATE TABLE `payments_incomplete_backup` (
+  `id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_reference` varchar(255) DEFAULT NULL,
+  `payment_status` enum('pending','verified','rejected','processing','completed','failed','refunded') DEFAULT 'pending',
+  `verification_notes` text DEFAULT NULL,
+  `verified_by` int(11) DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `payment_date` datetime DEFAULT NULL,
+  `deleted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `deletion_reason` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payments_incomplete_backup`
+--
+
+INSERT INTO `payments_incomplete_backup` (`id`, `booking_id`, `user_id`, `amount`, `payment_method`, `payment_reference`, `payment_status`, `verification_notes`, `verified_by`, `verified_at`, `created_at`, `updated_at`, `payment_date`, `deleted_at`, `deletion_reason`) VALUES
+(68, 44, 7, 256.20, 'gcash', NULL, 'verified', NULL, 1, '2026-01-29 20:25:23', '2026-01-29 12:16:40', '2026-01-29 12:25:23', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(90, 45, 7, 3150.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-01 04:57:57', '2026-02-01 04:57:57', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(92, 46, 7, 3150.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-01 13:43:47', '2026-02-01 13:43:47', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(94, 47, 15, 1443.75, 'gcash', NULL, 'rejected', 'Payment verification failed', 1, '2026-02-07 07:38:42', '2026-02-06 02:07:38', '2026-02-07 07:38:42', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(96, 48, 15, 1050.00, 'gcash', NULL, 'rejected', 'Payment verification failed', 1, '2026-02-07 07:38:39', '2026-02-07 02:24:42', '2026-02-07 07:38:39', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(98, 49, 15, 1050.00, 'gcash', NULL, 'rejected', 'Payment verification failed', 1, '2026-02-07 07:38:35', '2026-02-07 07:09:00', '2026-02-07 07:38:35', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)'),
+(100, 50, 15, 1050.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-07 07:40:05', '2026-02-07 07:40:05', NULL, '2026-02-07 07:45:31', 'Incomplete payment record with NULL reference (duplicate)');
 
 -- --------------------------------------------------------
 
@@ -1560,7 +2195,38 @@ INSERT INTO `payment_transactions` (`id`, `booking_id`, `transaction_type`, `amo
 (62, 23, 'payment', 53580.00, 'Late fee payment with rental - Rental: â‚±1680.00, Late Fee: â‚±51900.00', 2147483647, '0', 7, '2026-01-31 12:38:21'),
 (63, 23, '', 53580.00, 'Late fee payment with rental verified', 2147483647, '0', 1, '2026-01-31 12:57:42'),
 (64, 41, 'escrow_release', 30450.00, 'Escrow released by admin', NULL, '{\"escrow_id\":23}', 1, '2026-02-01 02:25:43'),
-(65, 41, 'payout', 27405.00, 'Payout scheduled for owner (Payout ID: 9)', NULL, '{\"payout_id\":9,\"owner_id\":5}', 1, '2026-02-01 02:25:43');
+(65, 41, 'payout', 27405.00, 'Payout scheduled for owner (Payout ID: 9)', NULL, '{\"payout_id\":9,\"owner_id\":5}', 1, '2026-02-01 02:25:43'),
+(66, 47, 'payment', 1443.75, 'Payment verified via gcash', NULL, '{\"payment_id\":95,\"escrow_id\":32,\"platform_fee\":144.38,\"owner_payout\":1299.37}', 1, '2026-02-06 03:05:05'),
+(67, 47, 'refund', 1443.75, 'Refund completed - Reference: 1212121212121', NULL, NULL, 1, '2026-02-06 07:02:31'),
+(68, 48, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":97,\"escrow_id\":33,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-07 02:25:39'),
+(69, 49, 'payment', 1050.00, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":99,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:38:03'),
+(70, 49, 'payment', 1050.00, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":98,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:38:35'),
+(71, 48, 'payment', 1050.00, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":96,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:38:39'),
+(72, 47, 'payment', 1443.75, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":94,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:38:42'),
+(73, 50, 'payment', 1050.00, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":101,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:45:49'),
+(74, 51, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":103,\"escrow_id\":34,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-07 07:48:48'),
+(75, 46, 'payment', 3150.00, 'Payment verified via gcash', NULL, '{\"payment_id\":93,\"escrow_id\":35,\"platform_fee\":315,\"owner_payout\":2835}', 1, '2026-02-07 14:09:05'),
+(76, 45, 'payment', 3150.00, 'Payment verified via gcash', NULL, '{\"payment_id\":91,\"escrow_id\":36,\"platform_fee\":315,\"owner_payout\":2835}', 1, '2026-02-07 14:09:08');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payment_transactions_deleted_backup`
+--
+
+CREATE TABLE `payment_transactions_deleted_backup` (
+  `id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `transaction_type` enum('payment','escrow_hold','escrow_release','payout','refund') NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `description` text NOT NULL,
+  `reference_id` varchar(255) DEFAULT NULL,
+  `metadata` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `deleted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `deletion_reason` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1724,7 +2390,9 @@ CREATE TABLE `refunds` (
 INSERT INTO `refunds` (`id`, `refund_id`, `booking_id`, `payment_id`, `user_id`, `owner_id`, `refund_amount`, `original_amount`, `refund_method`, `account_number`, `account_name`, `bank_name`, `refund_reason`, `reason_details`, `original_payment_method`, `original_payment_reference`, `status`, `processed_by`, `processed_at`, `approved_at`, `completed_at`, `completion_reference`, `refund_reference`, `transfer_proof`, `rejection_reason`, `created_at`, `deduction_amount`, `deduction_reason`) VALUES
 (1, 'REF-20260121-35B5', 30, 44, 7, 5, 2100.00, 2100.00, 'gcash', '09770433849', 'Cartney Dejolde', NULL, 'cancelled_by_user', NULL, 'gcash', '30', 'completed', 1, '2026-01-29 20:15:10', '2026-01-21 12:42:56', '2026-01-29 20:15:10', '1212121212121', '1212121212121', NULL, NULL, '2026-01-21 12:34:38', 0.00, NULL),
 (2, 'REF-20260121-6907', 38, 58, 7, 1, 3150.00, 3150.00, 'gcash', '09770433849', 'Cartney Dejolde', NULL, 'cancelled_by_user', NULL, 'gcash', '38', 'approved', 1, '2026-01-29 19:56:39', '2026-01-29 19:56:39', NULL, NULL, NULL, NULL, NULL, '2026-01-21 12:34:10', 0.00, NULL),
-(3, 'REF-20260129-FF9A', 43, 67, 7, 1, 256.20, 256.20, 'gcash', '09451547348', 'axc', NULL, 'cancelled_by_user', NULL, 'gcash', '43', 'completed', 1, '2026-01-29 20:26:23', '2026-01-29 20:26:12', '2026-01-29 20:26:23', '1212121212121', '1212121212121', NULL, NULL, '2026-01-29 20:25:54', 0.00, NULL);
+(3, 'REF-20260129-FF9A', 43, 67, 7, 1, 256.20, 256.20, 'gcash', '09451547348', 'axc', NULL, 'cancelled_by_user', NULL, 'gcash', '43', 'completed', 1, '2026-01-29 20:26:23', '2026-01-29 20:26:12', '2026-01-29 20:26:23', '1212121212121', '1212121212121', NULL, NULL, '2026-01-29 20:25:54', 0.00, NULL),
+(4, 'REF-20260206-B5CA', 47, 95, 15, 16, 1443.75, 1443.75, 'gcash', '09451547348', 'ethan', NULL, 'cancelled_by_user', NULL, 'gcash', '47', 'completed', 1, '2026-02-06 07:02:31', '2026-02-06 06:41:14', '2026-02-06 07:02:31', '1212121212121', '1212121212121', NULL, NULL, '2026-02-06 05:15:17', 0.00, NULL),
+(5, 'REF-20260206-8198', 7, 4, 7, 1, 256.20, 256.20, 'gcash', 'N/A', 'ethan jr', NULL, 'car_unavailable', 'asdasd', 'gcash', '4', 'approved', 1, '2026-02-06 07:28:51', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-06 07:28:51', 0.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -1839,7 +2507,8 @@ CREATE TABLE `reviews` (
 INSERT INTO `reviews` (`id`, `booking_id`, `car_id`, `renter_id`, `owner_id`, `rating`, `review`, `categories`, `created_at`) VALUES
 (1, 10, 31, 7, 1, 4.4, 'CAR REVIEW:\nExactly as described\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4.8,\"owner_rating\":4,\"car\":{\"Cleanliness\":4,\"Condition\":5,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":4,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-01-13 02:28:06'),
 (2, 10, 31, 7, 1, 4.9, 'CAR REVIEW:\nVery clean and well-maintained\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":5,\"owner_rating\":4.7,\"car\":{\"Cleanliness\":5,\"Condition\":5,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":4,\"Responsiveness\":5,\"Friendliness\":5}}', '2026-01-13 02:37:51'),
-(3, 11, 33, 7, 1, 4.4, 'CAR REVIEW:\nExactly as described\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4.5,\"owner_rating\":4.3,\"car\":{\"Cleanliness\":4,\"Condition\":4,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":5,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-01-17 03:59:28');
+(3, 11, 33, 7, 1, 4.4, 'CAR REVIEW:\nExactly as described\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4.5,\"owner_rating\":4.3,\"car\":{\"Cleanliness\":4,\"Condition\":4,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":5,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-01-17 03:59:28'),
+(4, 41, 17, 7, 5, 3.6, 'CAR REVIEW:\nGreat car and excellent condition!\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":3.5,\"owner_rating\":3.7,\"car\":{\"Cleanliness\":4,\"Condition\":3,\"Accuracy\":4,\"Value\":3},\"owner\":{\"Communication\":3,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-02-08 02:22:12');
 
 -- --------------------------------------------------------
 
@@ -1866,23 +2535,30 @@ CREATE TABLE `users` (
   `gcash_number` varchar(15) DEFAULT NULL,
   `gcash_name` varchar(100) DEFAULT NULL,
   `report_count` int(11) DEFAULT 0,
-  `api_token` varchar(255) DEFAULT NULL
+  `api_token` varchar(255) DEFAULT NULL,
+  `is_online` tinyint(1) DEFAULT 0 COMMENT 'Current online status',
+  `last_seen` timestamp NULL DEFAULT NULL COMMENT 'Last time user was seen online'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `fullname`, `email`, `facebook_id`, `google_uid`, `auth_provider`, `password`, `role`, `municipality`, `address`, `phone`, `profile_image`, `created_at`, `last_login`, `fcm_token`, `gcash_number`, `gcash_name`, `report_count`, `api_token`) VALUES
-(1, 'Cartney Dejolde jr', 'cart@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'Lapinigan SFADS', '09770433849', 'user_1_1768732059.jpg', '2025-11-12 11:38:49', NULL, NULL, NULL, NULL, 0, 'MXwxNzcwMDM5MjEz'),
-(3, 'cartney dejolde', 'cartskie@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'lapinigan', '097712345', 'profile_3_1763342696.jpg', '2025-11-12 12:03:33', NULL, NULL, NULL, NULL, 0, NULL),
-(4, 'kristian', 'kristian@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Pasta SFADS', '09770433849', 'user_4_1765375801.jpg', '2025-11-13 06:58:26', NULL, NULL, NULL, NULL, 0, NULL),
-(5, 'ethan', 'ethan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'san Francisco ADS', '0123456789', 'user_5_1769045131.jpg', '2025-11-13 23:47:33', NULL, NULL, NULL, NULL, 0, 'NXwxNzY5NzcyMzA5'),
-(6, 'Johan Malanog', 'johan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-16 03:29:43', NULL, NULL, NULL, NULL, 0, NULL),
-(7, 'ethan jr', 'renter@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Lapinigan SFADS', '09123456789', 'user_7_1765092355.jpg', '2025-11-18 09:27:46', NULL, 'eJ43yxPqQImQcFlosByZl1:APA91bGtY5AXvrwaG8LH3WHDIsqRbZztVFvXwBcI2qjebCGfvw0ZHEZkOizgwpoi6Ox4B8EAbpi_7zvIpJOxyx9vSfPs09bpNqORtJtU0tVDZS5nXs57GYo', NULL, NULL, 0, 'N3wxNzY5OTUzMTE4'),
-(8, 'migs', 'migs@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-19 06:09:08', NULL, NULL, NULL, NULL, 0, NULL),
-(9, 'mikko johan', 'johanmalanog@gmail.com', NULL, NULL, 'email', '12345', 'Renter', 'San Francisco', '', NULL, NULL, '2025-11-25 08:49:12', NULL, NULL, NULL, NULL, 0, NULL),
-(10, 'cart ney', 'owner@gmail.com', NULL, NULL, 'email', '12345', 'Owner', 'San Francisco', '', NULL, NULL, '2025-11-29 11:49:29', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO `users` (`id`, `fullname`, `email`, `facebook_id`, `google_uid`, `auth_provider`, `password`, `role`, `municipality`, `address`, `phone`, `profile_image`, `created_at`, `last_login`, `fcm_token`, `gcash_number`, `gcash_name`, `report_count`, `api_token`, `is_online`, `last_seen`) VALUES
+(1, 'Cartney Dejolde jr', 'cart@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'Lapinigan SFADS', '09770433849', 'user_1_1768732059.jpg', '2025-11-12 11:38:49', '2026-02-07 03:02:15', NULL, NULL, NULL, 0, 'MXwxNzcwNDMzMzM1', 0, NULL),
+(3, 'cartney dejolde', 'cartskie@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'lapinigan', '097712345', 'profile_3_1763342696.jpg', '2025-11-12 12:03:33', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(4, 'kristian', 'kristian@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Pasta SFADS', '09770433849', 'user_4_1765375801.jpg', '2025-11-13 06:58:26', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(5, 'ethan', 'ethan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'san Francisco ADS', '0123456789', 'user_5_1769045131.jpg', '2025-11-13 23:47:33', NULL, NULL, NULL, NULL, 0, 'NXwxNzY5NzcyMzA5', 0, NULL),
+(6, 'Johan Malanog', 'johan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-16 03:29:43', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(7, 'ethan jr', 'renter@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Lapinigan SFADS', '09123456789', 'user_7_1765092355.jpg', '2025-11-18 09:27:46', '2026-02-08 03:05:57', 'eJ43yxPqQImQcFlosByZl1:APA91bGtY5AXvrwaG8LH3WHDIsqRbZztVFvXwBcI2qjebCGfvw0ZHEZkOizgwpoi6Ox4B8EAbpi_7zvIpJOxyx9vSfPs09bpNqORtJtU0tVDZS5nXs57GYo', NULL, NULL, 0, 'N3wxNzcwNTE5OTU3', 0, NULL),
+(8, 'migs', 'migs@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-19 06:09:08', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(9, 'mikko johan', 'johanmalanog@gmail.com', NULL, NULL, 'email', '12345', 'Renter', 'San Francisco', '', NULL, NULL, '2025-11-25 08:49:12', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(10, 'cart ney', 'owner@gmail.com', NULL, NULL, 'email', '12345', 'Owner', 'San Francisco', '', NULL, NULL, '2025-11-29 11:49:29', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
+(12, 'itanjimss', 'itan@gmail.com', NULL, NULL, 'email', '123456', 'Renter', 'San Luis', '', NULL, NULL, '2026-02-03 14:20:55', '2026-02-03 14:21:14', NULL, NULL, NULL, 0, 'MTJ8MTc3MDEyODQ3NA==', 0, NULL),
+(13, 'Ethan James Estino', 'saberu1213@gmail.com', NULL, 'bXHVrLwdsrgg2ttjs8tz3622YOJ2', 'google', '$2y$10$RuP8Qbx/LP3EaScwuGhj2OSnKtYylaCADHGU1jSXyTXVsG/vaPg/u', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocIwTNMSY5xrLV8w1nekg42FN98V28h3KSefSWr5MynFKPreEKIr=s96-c', '2026-02-03 14:23:44', '2026-02-06 03:17:33', NULL, NULL, NULL, 0, NULL, 0, NULL),
+(14, 'Cartney Dejolde', 'malanogmelchie@gmail.com', NULL, '2d1x4iVWLJPtqb29XrXKYlXUxWd2', 'google', '$2y$10$lXb9os7H0FKDn8OoLVGA2ev1uc5qsw7QVtaYKK1ceO23aF/Z7XZCW', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocI4JoHeIlLjAnXQJKqMGY_u1il6g8yPY8TzBfibbS-aWoi5dXQu=s96-c', '2026-02-03 15:07:22', '2026-02-03 22:54:38', NULL, NULL, NULL, 0, NULL, 0, NULL),
+(15, 'Ethan james Estino', 'ethanjamesestino@gmail.com', NULL, 'o0jZ9sVm7RduVnlUTpYOyqT7iBb2', 'google', '$2y$10$XqFj.LpnUumNPkZ8SFDRNenJ103kIBlPROE.QZ6bd9MXjJSv3k.nW', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocJGkqZQBE_xRfqA2BSHR9X1L5UjsbZivxFDRllD5YQXHeCBcQI=s96-c', '2026-02-06 01:11:23', '2026-02-07 07:50:57', NULL, NULL, NULL, 0, NULL, 0, NULL),
+(16, 'Lex Istaint', 'lexistaint@gmail.com', NULL, 'u9qE7PvwZXNUzTXdbD5xpSLSJiE3', 'google', '$2y$10$SFzM00Qq4U95SKVTAFLkQOtx.2YYF8WgZ7Fq4iV6IKf.Jm5IF8Jqy', 'Owner', 'San Francisco', '', '09451547348', 'https://lh3.googleusercontent.com/a/ACg8ocJdI-XfoLuAI3vg9HUZ6pq1YuG-1922m1kny8JNZHkZtaZ59Q=s96-c', '2026-02-06 01:37:53', '2026-02-07 14:53:27', NULL, '09451547348', 'Ethan James', 0, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -1922,7 +2598,10 @@ INSERT INTO `user_verifications` (`id`, `user_id`, `first_name`, `last_name`, `e
 (1, 7, 'cartney', 'dejolde', 'cart@gmail.com', '09770433849', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'Prosperidad', 'Libertad', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u7_1765373369_76d78803.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u7_1765373369_8e161a5a.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u7_1765373369_28c69452.jpg', 'approved', NULL, '2025-12-10 06:29:29', '2025-12-10 14:31:38', '2025-12-10 14:31:38'),
 (2, 1, 'Cartney', 'Dejolde', 'cart@gmail.com', '09770433849', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Lapinigan', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u1_1765612212_5a86c434.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u1_1765612212_786f7078.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u1_1765612212_41279515.jpg', 'approved', NULL, '2025-12-13 00:50:12', '2025-12-13 07:51:07', '2025-12-13 07:51:07'),
 (3, 4, 'Kristian', 'Marty', 'kristian@gmail.com', '09123456789', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'Talacogon', 'San Agustin', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u4_1765612426_691871e5.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u4_1765612426_20ebb0bb.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u4_1765612426_caddbf7b.jpg', 'approved', NULL, '2025-12-13 00:53:46', '2025-12-13 07:54:13', '2025-12-13 07:54:13'),
-(4, 5, 'Ethan', 'Owner', 'ethan@gmail.com', '0123456789', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'San Francisco ADS', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u5_verified.jpg', 'approved', 'Manually verified via SQL', '2025-12-22 05:29:53', NULL, '2025-12-22 05:29:53');
+(4, 5, 'Ethan', 'Owner', 'ethan@gmail.com', '0123456789', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'San Francisco ADS', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u5_verified.jpg', 'approved', 'Manually verified via SQL', '2025-12-22 05:29:53', NULL, '2025-12-22 05:29:53'),
+(6, 13, 'ethan', 'estino', 'taning@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'Rosario', 'Bayugan 3', '2000-01-28', 'national_id', 'api/../uploads/verifications/2026/02/id_front_u13_1770196029_2c9ee6cd.jpg', 'api/../uploads/verifications/2026/02/id_back_u13_1770196029_5ede9da5.jpg', 'api/../uploads/verifications/2026/02/selfie_u13_1770196029_e6232073.jpg', 'approved', NULL, '2026-02-04 17:07:09', '2026-02-04 09:14:51', '2026-02-04 09:14:51'),
+(7, 15, 'Ethan', 'Estino', 'ethan@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Lapinigan', '2000-01-28', 'drivers_license', 'api/../uploads/verifications/2026/02/id_front_u15_1770341374_18692cbe.jpg', 'api/../uploads/verifications/2026/02/id_back_u15_1770341374_a0bbf84c.jpg', 'api/../uploads/verifications/2026/02/selfie_u15_1770341374_25e011b5.jpg', 'approved', NULL, '2026-02-06 09:29:34', '2026-02-06 01:36:45', '2026-02-06 01:36:45'),
+(8, 16, 'ethan', 'isko', 'itajims@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Oriente', '2000-01-08', 'passport', 'api/../uploads/verifications/2026/02/id_front_u16_1770343005_42c74088.jpg', 'api/../uploads/verifications/2026/02/id_back_u16_1770343005_8eb51cbf.jpg', 'api/../uploads/verifications/2026/02/selfie_u16_1770343005_b45a5e06.jpg', 'approved', NULL, '2026-02-06 09:56:45', '2026-02-06 01:58:01', '2026-02-06 01:58:01');
 
 --
 -- Triggers `user_verifications`
@@ -2002,7 +2681,55 @@ CREATE TABLE `v_active_insurance_policies` (
 ,`policy_end` datetime
 ,`status` enum('active','expired','cancelled','claimed')
 ,`provider_name` varchar(255)
-,`days_remaining` int(7)
+,`days_remaining` int(8)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_escrows_ready_for_release`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_escrows_ready_for_release` (
+`booking_id` int(11)
+,`owner_id` int(11)
+,`renter_id` int(11)
+,`owner_payout` decimal(10,2)
+,`platform_fee` decimal(10,2)
+,`total_amount` decimal(10,2)
+,`escrow_status` enum('pending','held','released_to_owner','refunded','released')
+,`payout_status` enum('pending','processing','completed','failed')
+,`return_date` date
+,`completed_at` datetime
+,`escrow_held_at` datetime
+,`days_since_return` int(8)
+,`days_since_completion` int(8)
+,`owner_name` varchar(100)
+,`owner_email` varchar(100)
+,`owner_gcash` varchar(15)
+,`owner_gcash_name` varchar(100)
+,`renter_name` varchar(100)
+,`req_booking_completed` int(1)
+,`req_escrow_held` int(1)
+,`req_no_hold` int(1)
+,`req_gcash_configured` int(1)
+,`req_payment_verified` int(1)
+,`req_holding_period` int(1)
+,`all_requirements_met` int(1)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_escrow_statistics`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_escrow_statistics` (
+`funds_in_escrow` decimal(32,2)
+,`pending_releases` bigint(21)
+,`released_this_month` decimal(32,2)
+,`on_hold_count` bigint(21)
+,`avg_escrow_duration_days` decimal(11,4)
 );
 
 -- --------------------------------------------------------
@@ -2039,7 +2766,7 @@ CREATE TABLE `v_mileage_statistics` (
 ,`owner_id` int(11)
 ,`pickup_date` date
 ,`return_date` date
-,`rental_days` int(8)
+,`rental_days` int(9)
 ,`odometer_start` int(11)
 ,`odometer_end` int(11)
 ,`actual_mileage` int(11)
@@ -2085,44 +2812,8 @@ CREATE TABLE `v_overdue_bookings` (
 ,`owner_contact` varchar(50)
 ,`vehicle_name` varchar(101)
 ,`hours_overdue_now` bigint(21)
-,`days_overdue_now` int(7)
+,`days_overdue_now` int(8)
 );
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_active_insurance_policies`
---
-DROP TABLE IF EXISTS `v_active_insurance_policies`;
-
-CREATE VIEW `v_active_insurance_policies`  AS SELECT `ip`.`id` AS `id`, `ip`.`policy_number` AS `policy_number`, `ip`.`booking_id` AS `booking_id`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `u`.`fullname` AS `renter_name`, `ip`.`coverage_type` AS `coverage_type`, `ip`.`premium_amount` AS `premium_amount`, `ip`.`coverage_limit` AS `coverage_limit`, `ip`.`policy_start` AS `policy_start`, `ip`.`policy_end` AS `policy_end`, `ip`.`status` AS `status`, `prov`.`provider_name` AS `provider_name`, to_days(`ip`.`policy_end`) - to_days(current_timestamp()) AS `days_remaining` FROM (((`insurance_policies` `ip` join `bookings` `b` on(`ip`.`booking_id` = `b`.`id`)) join `users` `u` on(`b`.`user_id` = `u`.`id`)) join `insurance_providers` `prov` on(`ip`.`provider_id` = `prov`.`id`)) WHERE `ip`.`status` = 'active' AND `ip`.`policy_end` > current_timestamp() ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_insurance_claims_summary`
---
-DROP TABLE IF EXISTS `v_insurance_claims_summary`;
-
-CREATE VIEW `v_insurance_claims_summary`  AS SELECT `ic`.`id` AS `id`, `ic`.`claim_number` AS `claim_number`, `ic`.`claim_type` AS `claim_type`, `ic`.`status` AS `status`, `ic`.`claimed_amount` AS `claimed_amount`, `ic`.`approved_amount` AS `approved_amount`, `b`.`id` AS `booking_id`, `u`.`fullname` AS `claimant_name`, `ip`.`policy_number` AS `policy_number`, `ic`.`incident_date` AS `incident_date`, `ic`.`created_at` AS `claim_date` FROM (((`insurance_claims` `ic` join `insurance_policies` `ip` on(`ic`.`policy_id` = `ip`.`id`)) join `bookings` `b` on(`ic`.`booking_id` = `b`.`id`)) join `users` `u` on(`ic`.`user_id` = `u`.`id`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_mileage_statistics`
---
-DROP TABLE IF EXISTS `v_mileage_statistics`;
-
-CREATE VIEW `v_mileage_statistics`  AS SELECT `b`.`id` AS `booking_id`, `b`.`car_id` AS `car_id`, `b`.`vehicle_type` AS `vehicle_type`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `b`.`pickup_date` AS `pickup_date`, `b`.`return_date` AS `return_date`, to_days(`b`.`return_date`) - to_days(`b`.`pickup_date`) + 1 AS `rental_days`, `b`.`odometer_start` AS `odometer_start`, `b`.`odometer_end` AS `odometer_end`, `b`.`actual_mileage` AS `actual_mileage`, `b`.`allowed_mileage` AS `allowed_mileage`, `b`.`excess_mileage` AS `excess_mileage`, `b`.`excess_mileage_fee` AS `excess_mileage_fee`, `b`.`gps_distance` AS `gps_distance`, CASE WHEN `b`.`actual_mileage` is not null AND `b`.`gps_distance` is not null THEN abs(`b`.`actual_mileage` - `b`.`gps_distance`) ELSE NULL END AS `odometer_gps_discrepancy`, CASE WHEN `b`.`actual_mileage` is not null AND `b`.`gps_distance` is not null THEN round(abs(`b`.`actual_mileage` - `b`.`gps_distance`) / `b`.`actual_mileage` * 100,2) ELSE NULL END AS `discrepancy_percentage`, `b`.`mileage_verified_by` AS `mileage_verified_by`, `b`.`mileage_verified_at` AS `mileage_verified_at`, CASE WHEN `b`.`excess_mileage` > 0 AND `b`.`excess_mileage_paid` = 1 THEN 'paid' WHEN `b`.`excess_mileage` > 0 AND `b`.`excess_mileage_paid` = 0 THEN 'unpaid' ELSE 'no_excess' END AS `excess_status`, `u`.`fullname` AS `renter_name`, `o`.`fullname` AS `owner_name` FROM ((`bookings` `b` left join `users` `u` on(`b`.`user_id` = `u`.`id`)) left join `users` `o` on(`b`.`owner_id` = `o`.`id`)) WHERE `b`.`status` in ('completed','active') ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_overdue_bookings`
---
-DROP TABLE IF EXISTS `v_overdue_bookings`;
-
-CREATE VIEW `v_overdue_bookings`  AS SELECT `b`.`id` AS `id`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `b`.`car_id` AS `car_id`, `b`.`vehicle_type` AS `vehicle_type`, `b`.`pickup_date` AS `pickup_date`, `b`.`return_date` AS `return_date`, `b`.`return_time` AS `return_time`, `b`.`status` AS `status`, `b`.`overdue_status` AS `overdue_status`, `b`.`overdue_days` AS `overdue_days`, `b`.`late_fee_amount` AS `late_fee_amount`, `b`.`late_fee_charged` AS `late_fee_charged`, `b`.`total_amount` AS `total_amount`, concat(`u`.`fullname`) AS `renter_name`, `u`.`email` AS `renter_email`, `u`.`phone` AS `renter_contact`, concat(`o`.`fullname`) AS `owner_name`, `o`.`email` AS `owner_email`, `o`.`phone` AS `owner_contact`, concat(coalesce(`c`.`brand`,`m`.`brand`),' ',coalesce(`c`.`model`,`m`.`model`)) AS `vehicle_name`, timestampdiff(HOUR,concat(`b`.`return_date`,' ',`b`.`return_time`),current_timestamp()) AS `hours_overdue_now`, to_days(current_timestamp()) - to_days(`b`.`return_date`) AS `days_overdue_now` FROM ((((`bookings` `b` left join `users` `u` on(`b`.`user_id` = `u`.`id`)) left join `users` `o` on(`b`.`owner_id` = `o`.`id`)) left join `cars` `c` on(`b`.`car_id` = `c`.`id` and `b`.`vehicle_type` = 'car')) left join `motorcycles` `m` on(`b`.`car_id` = `m`.`id` and `b`.`vehicle_type` = 'motorcycle')) WHERE `b`.`status` = 'approved' AND concat(`b`.`return_date`,' ',`b`.`return_time`) < current_timestamp() ORDER BY timestampdiff(HOUR,concat(`b`.`return_date`,' ',`b`.`return_time`),current_timestamp()) DESC ;
 
 --
 -- Indexes for dumped tables
@@ -2184,7 +2875,14 @@ ALTER TABLE `bookings`
   ADD KEY `fk_mileage_verifier` (`mileage_verified_by`),
   ADD KEY `idx_odometer_tracking` (`odometer_start`,`odometer_end`,`actual_mileage`),
   ADD KEY `idx_excess_mileage` (`excess_mileage`,`excess_mileage_paid`),
-  ADD KEY `idx_insurance_policy` (`insurance_policy_id`);
+  ADD KEY `idx_insurance_policy` (`insurance_policy_id`),
+  ADD KEY `idx_trip_started` (`trip_started_at`),
+  ADD KEY `idx_escrow_release` (`escrow_status`,`status`,`escrow_released_at`),
+  ADD KEY `idx_owner_payout` (`owner_id`,`escrow_status`,`payout_status`),
+  ADD KEY `idx_auto_release` (`status`,`escrow_status`,`return_date`),
+  ADD KEY `idx_payment_verified` (`payment_verified_at`,`escrow_status`),
+  ADD KEY `idx_escrow_hold` (`escrow_hold_reason`),
+  ADD KEY `fk_payment_verified_by` (`payment_verified_by`);
 
 --
 -- Indexes for table `cars`
@@ -2375,6 +3073,12 @@ ALTER TABLE `payments`
   ADD KEY `idx_payment_user_status` (`user_id`,`payment_status`,`created_at`);
 
 --
+-- Indexes for table `payments_incomplete_backup`
+--
+ALTER TABLE `payments_incomplete_backup`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `payment_attempts`
 --
 ALTER TABLE `payment_attempts`
@@ -2387,6 +3091,12 @@ ALTER TABLE `payment_transactions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_booking_id` (`booking_id`),
   ADD KEY `idx_transaction_type` (`transaction_type`);
+
+--
+-- Indexes for table `payment_transactions_deleted_backup`
+--
+ALTER TABLE `payment_transactions_deleted_backup`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `payouts`
@@ -2477,7 +3187,8 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `facebook_id` (`facebook_id`),
   ADD UNIQUE KEY `idx_google_uid` (`google_uid`),
   ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_auth_provider` (`auth_provider`);
+  ADD KEY `idx_auth_provider` (`auth_provider`),
+  ADD KEY `idx_online_status` (`is_online`,`last_seen`);
 
 --
 -- Indexes for table `user_verifications`
@@ -2518,7 +3229,7 @@ ALTER TABLE `admin_action_logs`
 -- AUTO_INCREMENT for table `admin_notifications`
 --
 ALTER TABLE `admin_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `archived_notifications`
@@ -2530,7 +3241,7 @@ ALTER TABLE `archived_notifications`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT for table `cars`
@@ -2560,13 +3271,13 @@ ALTER TABLE `car_rules`
 -- AUTO_INCREMENT for table `escrow`
 --
 ALTER TABLE `escrow`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `escrow_logs`
 --
 ALTER TABLE `escrow_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `escrow_transactions`
@@ -2584,19 +3295,19 @@ ALTER TABLE `gps_distance_tracking`
 -- AUTO_INCREMENT for table `gps_locations`
 --
 ALTER TABLE `gps_locations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=179;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=664;
 
 --
 -- AUTO_INCREMENT for table `insurance_audit_log`
 --
 ALTER TABLE `insurance_audit_log`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `insurance_claims`
 --
 ALTER TABLE `insurance_claims`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `insurance_coverage_types`
@@ -2608,7 +3319,7 @@ ALTER TABLE `insurance_coverage_types`
 -- AUTO_INCREMENT for table `insurance_policies`
 --
 ALTER TABLE `insurance_policies`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `insurance_providers`
@@ -2638,13 +3349,13 @@ ALTER TABLE `mileage_logs`
 -- AUTO_INCREMENT for table `motorcycles`
 --
 ALTER TABLE `motorcycles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=268;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=299;
 
 --
 -- AUTO_INCREMENT for table `overdue_logs`
@@ -2656,7 +3367,7 @@ ALTER TABLE `overdue_logs`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- AUTO_INCREMENT for table `payment_attempts`
@@ -2668,7 +3379,7 @@ ALTER TABLE `payment_attempts`
 -- AUTO_INCREMENT for table `payment_transactions`
 --
 ALTER TABLE `payment_transactions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
 
 --
 -- AUTO_INCREMENT for table `payouts`
@@ -2692,7 +3403,7 @@ ALTER TABLE `platform_settings`
 -- AUTO_INCREMENT for table `refunds`
 --
 ALTER TABLE `refunds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `rental_extensions`
@@ -2716,25 +3427,79 @@ ALTER TABLE `report_logs`
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `user_verifications`
 --
 ALTER TABLE `user_verifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `vehicle_availability`
 --
 ALTER TABLE `vehicle_availability`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_active_insurance_policies`
+--
+DROP TABLE IF EXISTS `v_active_insurance_policies`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_active_insurance_policies`  AS SELECT `ip`.`id` AS `id`, `ip`.`policy_number` AS `policy_number`, `ip`.`booking_id` AS `booking_id`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `u`.`fullname` AS `renter_name`, `ip`.`coverage_type` AS `coverage_type`, `ip`.`premium_amount` AS `premium_amount`, `ip`.`coverage_limit` AS `coverage_limit`, `ip`.`policy_start` AS `policy_start`, `ip`.`policy_end` AS `policy_end`, `ip`.`status` AS `status`, `prov`.`provider_name` AS `provider_name`, to_days(`ip`.`policy_end`) - to_days(current_timestamp()) AS `days_remaining` FROM (((`insurance_policies` `ip` join `bookings` `b` on(`ip`.`booking_id` = `b`.`id`)) join `users` `u` on(`b`.`user_id` = `u`.`id`)) join `insurance_providers` `prov` on(`ip`.`provider_id` = `prov`.`id`)) WHERE `ip`.`status` = 'active' AND `ip`.`policy_end` > current_timestamp() ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_escrows_ready_for_release`
+--
+DROP TABLE IF EXISTS `v_escrows_ready_for_release`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_escrows_ready_for_release`  AS SELECT `b`.`id` AS `booking_id`, `b`.`owner_id` AS `owner_id`, `b`.`user_id` AS `renter_id`, `b`.`owner_payout` AS `owner_payout`, `b`.`platform_fee` AS `platform_fee`, `b`.`total_amount` AS `total_amount`, `b`.`escrow_status` AS `escrow_status`, `b`.`payout_status` AS `payout_status`, `b`.`return_date` AS `return_date`, `b`.`completed_at` AS `completed_at`, `b`.`escrow_held_at` AS `escrow_held_at`, to_days(current_timestamp()) - to_days(`b`.`return_date`) AS `days_since_return`, to_days(current_timestamp()) - to_days(`b`.`completed_at`) AS `days_since_completion`, `u`.`fullname` AS `owner_name`, `u`.`email` AS `owner_email`, `u`.`gcash_number` AS `owner_gcash`, `u`.`gcash_name` AS `owner_gcash_name`, `r`.`fullname` AS `renter_name`, `b`.`status`= 'completed' AS `req_booking_completed`, `b`.`escrow_status`= 'held' AS `req_escrow_held`, `b`.`escrow_hold_reason` is null or `b`.`escrow_hold_reason` = '' AS `req_no_hold`, `u`.`gcash_number` is not null and `u`.`gcash_number` <> '' AS `req_gcash_configured`, `b`.`payment_verified_at` is not null AS `req_payment_verified`, to_days(current_timestamp()) - to_days(`b`.`return_date`) >= 3 AS `req_holding_period`, `b`.`status`= 'completed' and `b`.`escrow_status` = 'held' and (`b`.`escrow_hold_reason` is null or `b`.`escrow_hold_reason` = '') and `u`.`gcash_number` is not null and `u`.`gcash_number` <> '' and `b`.`payment_verified_at` is not null AS `all_requirements_met` FROM ((`bookings` `b` left join `users` `u` on(`b`.`owner_id` = `u`.`id`)) left join `users` `r` on(`b`.`user_id` = `r`.`id`)) WHERE `b`.`escrow_status` = 'held' AND `b`.`status` = 'completed' ORDER BY to_days(current_timestamp()) - to_days(`b`.`completed_at`) DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_escrow_statistics`
+--
+DROP TABLE IF EXISTS `v_escrow_statistics`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_escrow_statistics`  AS SELECT coalesce(sum(case when `bookings`.`escrow_status` = 'held' then `bookings`.`owner_payout` else 0 end),0) AS `funds_in_escrow`, count(case when `bookings`.`status` = 'completed' and `bookings`.`escrow_status` = 'held' then 1 end) AS `pending_releases`, coalesce(sum(case when `bookings`.`escrow_status` in ('released_to_owner','released') and month(`bookings`.`escrow_released_at`) = month(current_timestamp()) and year(`bookings`.`escrow_released_at`) = year(current_timestamp()) then `bookings`.`owner_payout` else 0 end),0) AS `released_this_month`, count(case when `bookings`.`escrow_status` = 'held' and `bookings`.`escrow_hold_reason` is not null and `bookings`.`escrow_hold_reason` <> '' then 1 end) AS `on_hold_count`, avg(case when `bookings`.`escrow_status` in ('released_to_owner','released') and `bookings`.`escrow_released_at` is not null then to_days(`bookings`.`escrow_released_at`) - to_days(coalesce(`bookings`.`escrow_held_at`,`bookings`.`payment_verified_at`,`bookings`.`created_at`)) else NULL end) AS `avg_escrow_duration_days` FROM `bookings` ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_insurance_claims_summary`
+--
+DROP TABLE IF EXISTS `v_insurance_claims_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_insurance_claims_summary`  AS SELECT `ic`.`id` AS `id`, `ic`.`claim_number` AS `claim_number`, `ic`.`claim_type` AS `claim_type`, `ic`.`status` AS `status`, `ic`.`claimed_amount` AS `claimed_amount`, `ic`.`approved_amount` AS `approved_amount`, `b`.`id` AS `booking_id`, `u`.`fullname` AS `claimant_name`, `ip`.`policy_number` AS `policy_number`, `ic`.`incident_date` AS `incident_date`, `ic`.`created_at` AS `claim_date` FROM (((`insurance_claims` `ic` join `insurance_policies` `ip` on(`ic`.`policy_id` = `ip`.`id`)) join `bookings` `b` on(`ic`.`booking_id` = `b`.`id`)) join `users` `u` on(`ic`.`user_id` = `u`.`id`)) ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_mileage_statistics`
+--
+DROP TABLE IF EXISTS `v_mileage_statistics`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_mileage_statistics`  AS SELECT `b`.`id` AS `booking_id`, `b`.`car_id` AS `car_id`, `b`.`vehicle_type` AS `vehicle_type`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `b`.`pickup_date` AS `pickup_date`, `b`.`return_date` AS `return_date`, to_days(`b`.`return_date`) - to_days(`b`.`pickup_date`) + 1 AS `rental_days`, `b`.`odometer_start` AS `odometer_start`, `b`.`odometer_end` AS `odometer_end`, `b`.`actual_mileage` AS `actual_mileage`, `b`.`allowed_mileage` AS `allowed_mileage`, `b`.`excess_mileage` AS `excess_mileage`, `b`.`excess_mileage_fee` AS `excess_mileage_fee`, `b`.`gps_distance` AS `gps_distance`, CASE WHEN `b`.`actual_mileage` is not null AND `b`.`gps_distance` is not null THEN abs(`b`.`actual_mileage` - `b`.`gps_distance`) ELSE NULL END AS `odometer_gps_discrepancy`, CASE WHEN `b`.`actual_mileage` is not null AND `b`.`gps_distance` is not null THEN round(abs(`b`.`actual_mileage` - `b`.`gps_distance`) / `b`.`actual_mileage` * 100,2) ELSE NULL END AS `discrepancy_percentage`, `b`.`mileage_verified_by` AS `mileage_verified_by`, `b`.`mileage_verified_at` AS `mileage_verified_at`, CASE WHEN `b`.`excess_mileage` > 0 AND `b`.`excess_mileage_paid` = 1 THEN 'paid' WHEN `b`.`excess_mileage` > 0 AND `b`.`excess_mileage_paid` = 0 THEN 'unpaid' ELSE 'no_excess' END AS `excess_status`, `u`.`fullname` AS `renter_name`, `o`.`fullname` AS `owner_name` FROM ((`bookings` `b` left join `users` `u` on(`b`.`user_id` = `u`.`id`)) left join `users` `o` on(`b`.`owner_id` = `o`.`id`)) WHERE `b`.`status` in ('completed','active') ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_overdue_bookings`
+--
+DROP TABLE IF EXISTS `v_overdue_bookings`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`u672913452_ethan`@`127.0.0.1` SQL SECURITY DEFINER VIEW `v_overdue_bookings`  AS SELECT `b`.`id` AS `id`, `b`.`user_id` AS `user_id`, `b`.`owner_id` AS `owner_id`, `b`.`car_id` AS `car_id`, `b`.`vehicle_type` AS `vehicle_type`, `b`.`pickup_date` AS `pickup_date`, `b`.`return_date` AS `return_date`, `b`.`return_time` AS `return_time`, `b`.`status` AS `status`, `b`.`overdue_status` AS `overdue_status`, `b`.`overdue_days` AS `overdue_days`, `b`.`late_fee_amount` AS `late_fee_amount`, `b`.`late_fee_charged` AS `late_fee_charged`, `b`.`total_amount` AS `total_amount`, concat(`u`.`fullname`) AS `renter_name`, `u`.`email` AS `renter_email`, `u`.`phone` AS `renter_contact`, concat(`o`.`fullname`) AS `owner_name`, `o`.`email` AS `owner_email`, `o`.`phone` AS `owner_contact`, concat(coalesce(`c`.`brand`,`m`.`brand`),' ',coalesce(`c`.`model`,`m`.`model`)) AS `vehicle_name`, timestampdiff(HOUR,concat(`b`.`return_date`,' ',`b`.`return_time`),current_timestamp()) AS `hours_overdue_now`, to_days(current_timestamp()) - to_days(`b`.`return_date`) AS `days_overdue_now` FROM ((((`bookings` `b` left join `users` `u` on(`b`.`user_id` = `u`.`id`)) left join `users` `o` on(`b`.`owner_id` = `o`.`id`)) left join `cars` `c` on(`b`.`car_id` = `c`.`id` and `b`.`vehicle_type` = 'car')) left join `motorcycles` `m` on(`b`.`car_id` = `m`.`id` and `b`.`vehicle_type` = 'motorcycle')) WHERE `b`.`status` = 'approved' AND concat(`b`.`return_date`,' ',`b`.`return_time`) < current_timestamp() ORDER BY timestampdiff(HOUR,concat(`b`.`return_date`,' ',`b`.`return_time`),current_timestamp()) DESC ;
 
 --
 -- Constraints for dumped tables
@@ -2744,7 +3509,8 @@ ALTER TABLE `vehicle_availability`
 -- Constraints for table `bookings`
 --
 ALTER TABLE `bookings`
-  ADD CONSTRAINT `fk_mileage_verifier` FOREIGN KEY (`mileage_verified_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_mileage_verifier` FOREIGN KEY (`mileage_verified_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_payment_verified_by` FOREIGN KEY (`payment_verified_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `cars`
@@ -2783,8 +3549,7 @@ ALTER TABLE `escrow`
 -- Constraints for table `escrow_logs`
 --
 ALTER TABLE `escrow_logs`
-  ADD CONSTRAINT `fk_escrow_log_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_escrow_log_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_escrow_log_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `gps_distance_tracking`

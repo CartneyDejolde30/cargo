@@ -12,14 +12,14 @@ class BookingService {
     final url = Uri.parse("${ApiConfig.cancelledBookingsEndpoint}?owner_id=$ownerId");
     final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-    debugPrint("📡 Cancelled Bookings API: $url");
-    debugPrint("📥 Response: ${response.body}");
+    // Removed verbose logging to reduce console clutter
+    // debugPrint("📡 Cancelled Bookings API: $url");
+    // debugPrint("📥 Response: ${response.body}");
 
     if (response.statusCode == 200) {
 
       if (!response.body.trim().startsWith("{")) {
-        debugPrint("❌ Not JSON Response:");
-        debugPrint(response.body);
+        debugPrint("❌ Invalid JSON response for cancelled bookings");
         return [];
       }
 
@@ -27,11 +27,9 @@ class BookingService {
 
       if (data['success'] == true && data['bookings'] is List) {
         return List<Map<String, dynamic>>.from(data['bookings']);
-      } else {
-        debugPrint("⚠️ API returned success=false: ${data['message']}");
       }
     } else {
-      debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+      debugPrint("⚠️ Cancelled bookings HTTP error: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("❌ Error fetching cancelled bookings: $e");
@@ -48,8 +46,9 @@ class BookingService {
       final url = Uri.parse("${ApiConfig.upcomingBookingsEndpoint}?owner_id=$ownerId");
       final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 Upcoming Bookings API: $url");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 Upcoming Bookings API: $url");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -74,19 +73,18 @@ class BookingService {
       final url = Uri.parse("${ApiConfig.pendingRequestsEndpoint}?owner_id=$ownerId");
       final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 Pending Requests API: $url");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 Pending Requests API: $url");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
         if (data['success'] == true && data['requests'] is List) {
           return List<Map<String, dynamic>>.from(data['requests']);
-        } else {
-          debugPrint("⚠️ API returned success=false: ${data['message']}");
         }
       } else {
-        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+        debugPrint("⚠️ Pending requests HTTP error: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("❌ Error fetching pending requests: $e");
@@ -102,19 +100,18 @@ class BookingService {
       final url = Uri.parse("${ApiConfig.activeBookingsEndpoint}?owner_id=$ownerId");
       final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 Active Bookings API: $url");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 Active Bookings API: $url");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
         if (data['success'] == true && data['bookings'] is List) {
           return List<Map<String, dynamic>>.from(data['bookings']);
-        } else {
-          debugPrint("⚠️ API returned success=false: ${data['message']}");
         }
       } else {
-        debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+        debugPrint("⚠️ Active bookings HTTP error: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("❌ Error fetching active bookings: $e");
@@ -133,14 +130,14 @@ class BookingService {
     final url = Uri.parse("${ApiConfig.rejectedBookingsEndpoint}?owner_id=$ownerId");
     final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-    debugPrint("📡 Rejected Bookings API: $url");
-    debugPrint("📥 Response: ${response.body}");
+    // Removed verbose logging
+    // debugPrint("📡 Rejected Bookings API: $url");
+    // debugPrint("📥 Response: ${response.body}");
 
     if (response.statusCode == 200) {
 
       if (!response.body.trim().startsWith("{")) {
-        debugPrint("❌ Not JSON Response:");
-        debugPrint(response.body);
+        debugPrint("❌ Invalid JSON response for rejected bookings");
         return [];
       }
 
@@ -148,11 +145,9 @@ class BookingService {
 
       if (data['success'] == true && data['bookings'] is List) {
         return List<Map<String, dynamic>>.from(data['bookings']);
-      } else {
-        debugPrint("⚠️ API returned success=false: ${data['message']}");
       }
     } else {
-      debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+      debugPrint("⚠️ Rejected bookings HTTP error: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("❌ Error fetching rejected bookings: $e");
@@ -168,14 +163,14 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
     final url = Uri.parse("${ApiConfig.recentBookingsEndpoint}?owner_id=$ownerId&limit=$limit");
     final response = await http.get(url).timeout(ApiConfig.apiTimeout);
 
-    debugPrint("📡 Recent Bookings API: $url");
-    debugPrint("📥 Response: ${response.body}");
+    // Removed verbose logging
+    // debugPrint("📡 Recent Bookings API: $url");
+    // debugPrint("📥 Response: ${response.body}");
 
     if (response.statusCode == 200) {
 
       if (!response.body.trim().startsWith("{")) {
-        debugPrint("❌ Not JSON Response:");
-        debugPrint(response.body);
+        debugPrint("❌ Invalid JSON response for recent bookings");
         return [];
       }
 
@@ -185,11 +180,9 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
         return (data['bookings'] as List)
             .map((booking) => Booking.fromJson(booking))
             .toList();
-      } else {
-        debugPrint("⚠️ API returned success=false: ${data['message']}");
       }
     } else {
-      debugPrint("⚠️ HTTP Error: ${response.statusCode}");
+      debugPrint("⚠️ Recent bookings HTTP error: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("❌ Error fetching recent bookings: $e");
@@ -211,9 +204,10 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
         },
       ).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 Approve Booking API: $url");
-      debugPrint("📤 Body: booking_id=$bookingId, owner_id=$ownerId");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 Approve Booking API: $url");
+      // debugPrint("📤 Body: booking_id=$bookingId, owner_id=$ownerId");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -246,8 +240,9 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
         },
       ).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 Reject Booking API: $url");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 Reject Booking API: $url");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -264,6 +259,35 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
     }
   }
 
+  /* ---------------- START TRIP/MARK AS PICKED UP ---------------- */
+  Future<Map<String, dynamic>> startTrip(String bookingId, String ownerId) async {
+    try {
+      final url = Uri.parse(ApiConfig.startTripEndpoint);
+      final response = await http.post(
+        url,
+        body: {
+          'booking_id': bookingId,
+          'owner_id': ownerId,
+        },
+      ).timeout(ApiConfig.apiTimeout);
+
+      debugPrint("📡 Start Trip API: $url");
+      debugPrint("📥 Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}'
+        };
+      }
+    } catch (e) {
+      debugPrint("❌ Error starting trip: $e");
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
   /* ---------------- END TRIP/MARK AS COMPLETED ---------------- */
   Future<Map<String, dynamic>> endTrip(String bookingId, String ownerId) async {
     try {
@@ -276,8 +300,9 @@ Future<List<Booking>> fetchRecentBookings(String ownerId, {int limit = 5}) async
         },
       ).timeout(ApiConfig.apiTimeout);
 
-      debugPrint("📡 End Trip API: $url");
-      debugPrint("📥 Response: ${response.body}");
+      // Removed verbose logging
+      // debugPrint("📡 End Trip API: $url");
+      // debugPrint("📥 Response: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);

@@ -16,42 +16,98 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   String? selectedMunicipality;
   String? selectedRole;
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      var url = Uri.parse(GlobalApiConfig.registerEndpoint); 
-      var response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "fullname": _fullNameController.text,
-          "email": _emailController.text,
-          "password": _passwordController.text,
-          "municipality": selectedMunicipality,
-          "role": selectedRole,
-        }),
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
       );
 
       try {
+        var url = Uri.parse(GlobalApiConfig.registerEndpoint);
+        
+        final requestBody = {
+          "fullname": _fullNameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text,
+          "phone": _phoneController.text.trim(),
+          "municipality": selectedMunicipality,
+          "role": selectedRole?.toLowerCase() ?? "renter", // Convert to lowercase
+        };
+        
+        print("📤 Registration URL: $url");
+        print("📤 Request Body: ${jsonEncode(requestBody)}");
+        
+        // Perform network request off main thread
+        var response = await http.post(
+          url,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(requestBody),
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception('Connection timeout');
+          },
+        );
+
+        print("📥 Response Status: ${response.statusCode}");
+        print("📥 Response Body: ${response.body}");
+
+        // Dismiss loading indicator
+        if (mounted) {
+          Navigator.pop(context);
+        }
+
         var data = jsonDecode(response.body);
 
-        if (data["status"] == "success") {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Registration Successful")),
-          );
-          Navigator.pop(context);
+        if (data["success"] == true || data["status"] == "success") {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Registration Successful! Please login."),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            Navigator.pop(context);
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data["message"] ?? "Registration failed")),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(data["message"] ?? "Registration failed"),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Server error. Check your PHP API.")),
-        );
+        print("❌ Error: $e");
+        
+        // Dismiss loading indicator
+        if (mounted) {
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Network error: ${e.toString()}"),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     }
   }
@@ -121,12 +177,47 @@ class _RegisterPageState extends State<RegisterPage> {
                       // Email
                       TextFormField(
                         controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
                         ),
-                        validator: (value) =>
-                            value!.isEmpty ? 'Please enter your email' : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Phone Number
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.phone),
+                          hintText: '09XXXXXXXXX',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your phone number';
+                          }
+                          // Remove spaces and dashes
+                          String cleaned = value.replaceAll(RegExp(r'[\s\-]'), '');
+                          
+                          // Check if it starts with 09 and has 11 digits
+                          if (!RegExp(r'^09\d{9}$').hasMatch(cleaned)) {
+                            return 'Please enter a valid PH number (09XXXXXXXXX)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 15),
 

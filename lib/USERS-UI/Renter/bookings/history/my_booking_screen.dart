@@ -238,21 +238,48 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   void _updateBadgeCountsFromBookings(List<Booking> bookings) {
     final now = DateTime.now();
     
+    // Store old counts to check if changed
+    final oldActive = _activeCount;
+    final oldPending = _pendingCount;
+    final oldCompleted = _completedCount;
+    final oldRejected = _rejectedCount;
+    
+    // Active = approved bookings that have started
     _activeCount = bookings.where((b) {
-      if (b.status != 'approved') return false;
+      if (b.status.toLowerCase() != 'approved') return false;
       final pickup = _parseDate(b.pickupDate);
       final returnDate = _parseDate(b.returnDate);
       return pickup != null && returnDate != null && 
              !pickup.isAfter(now) && !returnDate.isBefore(now);
     }).length;
     
-    _pendingCount = bookings.where((b) => b.status == 'pending').length;
+    // Pending = unpaid + upcoming (approved but not started)
+    _pendingCount = bookings.where((b) {
+      // Unpaid bookings
+      if (b.status.toLowerCase() == 'pending') return true;
+      
+      // Upcoming bookings (approved but not started)
+      if (b.status.toLowerCase() == 'approved') {
+        final pickup = _parseDate(b.pickupDate);
+        if (pickup == null) return false;
+        return pickup.isAfter(now);
+      }
+      
+      return false;
+    }).length;
     
-    _completedCount = bookings.where((b) => b.status == 'completed').length;
+    _completedCount = bookings.where((b) => b.status.toLowerCase() == 'completed').length;
     
+    // ✅ FIXED: Case-insensitive comparison for rejected/cancelled
     _rejectedCount = bookings.where((b) => 
-      b.status == 'rejected' || b.status == 'cancelled'
+      b.status.toLowerCase() == 'rejected' || b.status.toLowerCase() == 'cancelled'
     ).length;
+    
+    // Only log if counts changed
+    if (oldActive != _activeCount || oldPending != _pendingCount || 
+        oldCompleted != _completedCount || oldRejected != _rejectedCount) {
+      debugPrint('📊 Badge counts updated: Active=$_activeCount, Pending=$_pendingCount, Completed=$_completedCount, Rejected=$_rejectedCount');
+    }
   }
 
   void _showLoginRequiredDialog() {
@@ -286,15 +313,35 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   }
 
   List<Booking> _filterBookings(List<Booking> all) {
+    final now = DateTime.now();
+    
     switch (_currentTabIndex) {
-      case 0: // Active
-        return all.where((b) => b.status == 'approved').toList();
+      case 0: // Active - only approved bookings that have started
+        return all.where((b) {
+          if (b.status.toLowerCase() != 'approved') return false;
+          final pickup = _parseDate(b.pickupDate);
+          if (pickup == null) return false;
+          // Active = pickup date has passed (booking has started)
+          return !pickup.isAfter(now);
+        }).toList();
 
-      case 1: // Pending
-        return all.where((b) => b.status == 'pending').toList();
+      case 1: // Pending - includes unpaid AND upcoming (approved but not started)
+        return all.where((b) {
+          // Unpaid bookings
+          if (b.status.toLowerCase() == 'pending') return true;
+          
+          // Upcoming bookings (approved but not started yet)
+          if (b.status.toLowerCase() == 'approved') {
+            final pickup = _parseDate(b.pickupDate);
+            if (pickup == null) return false;
+            return pickup.isAfter(now); // Pickup is in the future
+          }
+          
+          return false;
+        }).toList();
 
       case 2: // Completed
-        return all.where((b) => b.status == 'completed').toList();
+        return all.where((b) => b.status.toLowerCase() == 'completed').toList();
 
       case 3: // Rejected (NEWEST → OLDEST)
         final rejected = all.where((b) =>
@@ -558,21 +605,53 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
         final allBookings = snapshot.data!;
         
+        // ✅ Calculate badge counts
+        final now = DateTime.now();
+        final activeCount = allBookings.where((b) {
+          if (b.status.toLowerCase() != 'approved') return false;
+          final pickup = _parseDate(b.pickupDate);
+          final returnDate = _parseDate(b.returnDate);
+          return pickup != null && returnDate != null && 
+                 !pickup.isAfter(now) && !returnDate.isBefore(now);
+        }).length;
+        
+        final pendingCount = allBookings.where((b) {
+          if (b.status.toLowerCase() == 'pending') return true;
+          if (b.status.toLowerCase() == 'approved') {
+            final pickup = _parseDate(b.pickupDate);
+            if (pickup == null) return false;
+            return pickup.isAfter(now);
+          }
+          return false;
+        }).length;
+        
+        final completedCount = allBookings.where((b) => b.status.toLowerCase() == 'completed').length;
+        
+        final rejectedCount = allBookings.where((b) => 
+          b.status.toLowerCase() == 'rejected' || b.status.toLowerCase() == 'cancelled'
+        ).length;
+        
+        // Only update state if counts changed
+        if (_activeCount != activeCount || _pendingCount != pendingCount || 
+            _completedCount != completedCount || _rejectedCount != rejectedCount) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _activeCount = activeCount;
+                _pendingCount = pendingCount;
+                _completedCount = completedCount;
+                _rejectedCount = rejectedCount;
+              });
+              debugPrint('📊 Badge counts: Active=$_activeCount, Pending=$_pendingCount, Completed=$_completedCount, Rejected=$_rejectedCount');
+            }
+          });
+        }
+        
         // ✅ FIXED: Only auto-start GPS once after data loads
         if (!_hasCheckedGpsTracking && !_isCheckingGps) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              _updateBadgeCountsFromBookings(allBookings);
               _autoStartGpsForActiveBookings();
-            }
-          });
-        } else {
-          // Just update badge counts without GPS check
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _updateBadgeCountsFromBookings(allBookings);
-              });
             }
           });
         }

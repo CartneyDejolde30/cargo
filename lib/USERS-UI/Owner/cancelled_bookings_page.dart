@@ -66,6 +66,59 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
     return NumberFormat.currency(symbol: '₱', decimalDigits: 0).format(value);
   }
 
+  Color _getRefundStatusColor(String? status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
+      case 'requested':
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      case 'processing':
+      case 'approved':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getRefundStatusIcon(String? status) {
+    switch (status) {
+      case 'completed':
+        return Icons.check_circle;
+      case 'requested':
+      case 'pending':
+        return Icons.hourglass_empty;
+      case 'rejected':
+        return Icons.cancel;
+      case 'processing':
+      case 'approved':
+        return Icons.sync;
+      default:
+        return Icons.info;
+    }
+  }
+
+  String _getRefundStatusLabel(String? status) {
+    switch (status) {
+      case 'completed':
+        return 'REFUNDED';
+      case 'requested':
+        return 'REQUESTED';
+      case 'pending':
+        return 'PENDING';
+      case 'rejected':
+        return 'REJECTED';
+      case 'processing':
+        return 'PROCESSING';
+      case 'approved':
+        return 'APPROVED';
+      default:
+        return 'NO REFUND';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,7 +232,11 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
   }
 
   Widget _buildBookingCard(Map<String, dynamic> booking) {
-    final imageUrl = ApiConfig.getCarImageUrl(booking['car_image']);
+    // Safe image URL handling - ensure we never pass empty string to Image.network
+    final carImage = booking['car_image'];
+    final imageUrl = (carImage == null || carImage.toString().trim().isEmpty) 
+        ? 'https://via.placeholder.com/300' 
+        : ApiConfig.getCarImageUrl(carImage);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -319,6 +376,83 @@ class _CancelledBookingsPageState extends State<CancelledBookingsPage> {
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ],
+                // Refund information
+                if (booking['refund_requested'] == 1 || (booking['refund_status'] != null && booking['refund_status'] != 'not_requested')) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _getRefundStatusColor(booking['refund_status']).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _getRefundStatusColor(booking['refund_status']),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _getRefundStatusIcon(booking['refund_status']),
+                              color: _getRefundStatusColor(booking['refund_status']),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Refund Status',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getRefundStatusColor(booking['refund_status']),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _getRefundStatusLabel(booking['refund_status']),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (booking['refund_amount'] != null && booking['refund_amount'] > 0) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                'Refund Amount:',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatCurrency(booking['refund_amount'].toString()),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

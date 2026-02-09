@@ -40,7 +40,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/my_bookings');
         break;
       case 2:
-        _openNotifications(context);   // ✅ FIXED
+        Navigator.pushReplacementNamed(context, '/favorites');
         break;
       case 3:
         Navigator.pushReplacementNamed(context, '/chat_list');
@@ -76,7 +76,7 @@ class BottomNavBar extends StatelessWidget {
             children: [
               _buildNavItem(context, Icons.home_rounded, 0, currentIndex == 0),
               _buildNavItem(context, Icons.book, 1, currentIndex == 1),
-              _buildNavItem(context, Icons.notifications, 2, currentIndex == 2),
+              _buildNavItem(context, Icons.favorite_border, 2, currentIndex == 2),
               _buildNavItem(context, Icons.chat_bubble_outline_rounded, 3, currentIndex == 3),
               _buildNavItem(context, Icons.person_outline_rounded, 4, currentIndex == 4),
             ],
