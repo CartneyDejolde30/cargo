@@ -96,13 +96,16 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+         icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -118,8 +121,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         ),
         centerTitle: true,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
+      body:_loading
+    ? Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      )
+
           : Stack(
               children: [
                 SingleChildScrollView(
@@ -134,13 +142,15 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                             const Icon(Icons.star,
                                 color: Colors.orange, size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              "${widget.averageRating} ★  |  ${widget.totalReviews} Reviews",
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                           Text(
+  "${widget.averageRating} ★  |  ${widget.totalReviews} Reviews",
+  style: GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: isDark ? colors.onSurface : Colors.black,
+  ),
+)
+
                           ],
                         ),
 
@@ -149,7 +159,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         // Search Bar
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(
@@ -158,8 +168,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.search,
-                                  color: Colors.grey, size: 22),
+                               Icon(Icons.search,
+                                  color: isDark ? colors.onSurfaceVariant : Colors.grey, size: 22),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextField(
@@ -167,7 +177,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                                   decoration: InputDecoration(
                                     hintText: "Find reviews",
                                     hintStyle: GoogleFonts.poppins(
-                                      color: Colors.grey,
+                                      color: isDark ? colors.onSurfaceVariant : Colors.grey,
                                       fontSize: 14,
                                     ),
                                     border: InputBorder.none,
@@ -213,11 +223,14 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     required String date,
     required String review,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        
+color: isDark ? colors.surface : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -240,16 +253,17 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 child: Text(
                   name,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+  color: isDark ? colors.onSurface : Colors.black,
+),
                 ),
               ),
               Text(
                 date,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: Colors.grey,
+                  color: isDark ? colors.onSurfaceVariant : Colors.grey,
                 ),
               ),
             ],
@@ -269,7 +283,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             review,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.grey.shade700,
+              color: isDark ? colors.onSurfaceVariant : Colors.grey.shade700,
+
               height: 1.6,
             ),
           ),

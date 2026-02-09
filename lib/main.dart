@@ -1,6 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+
+// 🔥 Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
+
+// 🔔 Notifications
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// 🎨 Theme
+import 'theme/theme_provider.dart';
+import 'theme/app_theme.dart';
+
+// 🧭 Screens
 import 'onboarding.dart';
 import 'login.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
@@ -8,56 +23,42 @@ import 'package:flutter_application_1/USERS-UI/Renter/car_list_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_list_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/profile_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/mycar_page.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
 import 'package:flutter_application_1/USERS-UI/Renter/favorites_screen.dart';
-import 'package:provider/provider.dart';
-import 'theme/theme_provider.dart';
-import 'theme/app_theme.dart';
 import 'package:flutter_application_1/services/user_presence_service.dart';
 import 'package:flutter_application_1/services/persistent_auth_service.dart';
 import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
 
+/// 🔔 Local Notifications Instance
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
+/// 📩 Firebase Background Handler
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // ✅ CRASH FIX: Setup error handlers before runApp
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    _logError('FlutterError', details.exception, details.stack);
-  };
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Setup platform error handler
-  PlatformDispatcher.instance.onError = (error, stack) {
-    _logError('PlatformError', error, stack);
-    return true;
-  };
+    // Setup error handlers
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      _logError('FlutterError', details.exception, details.stack);
+    };
 
-  // ✅ FIX: Initialize Firebase outside of runZonedGuarded to avoid zone mismatch
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _logError('PlatformError', error, stack);
+      return true;
+    };
 
-  // ✅ Run app with zone guarding for runtime errors
-  runZonedGuarded(
-    () {
-      runApp(
-        ChangeNotifierProvider(
-          create: (_) => ThemeProvider(),
-          child: const MyApp(),
-        ),
-      );
+    // 🔥 Initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
+<<<<<<< HEAD
       // ✅ Do notification setup in background (non-blocking)
       _setupNotificationsInBackground();
       
@@ -91,31 +92,36 @@ Future<void> _initializePresenceService() async {
   }
 }
 
-/// ✅ CRASH FIX: Centralized error logging
-void _logError(String source, Object error, StackTrace? stack) {
-  debugPrint('❌ [$source] Error: $error');
-  if (stack != null) {
-    debugPrint('Stack trace:\n$stack');
-  }
-  
-  // TODO: Send to crash reporting service (Firebase Crashlytics, Sentry, etc.)
-  // Example: FirebaseCrashlytics.instance.recordError(error, stack);
+    // ▶️ Start app
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => ThemeProvider(),
+        child: const MyApp(),
+      ),
+    );
+
+    // 🔔 Setup notifications in background
+    _setupNotificationsInBackground();
+  }, (error, stack) {
+    _logError('ZonedGuardedError', error, stack);
+  });
 }
 
-// ✅ NEW: Non-blocking notification setup
+
+/// 🔔 Notification Setup (Non-blocking)
 Future<void> _setupNotificationsInBackground() async {
   try {
-    // Permissions for Android/iOS
+    // 📲 Request Permissions
     await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // Background handler
+    // 📩 Background Messages
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
 
-    // Local Notification setup
+    // 🔊 Android Channel
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'carGo_channel',
       'CarGO Notifications',
@@ -123,20 +129,20 @@ Future<void> _setupNotificationsInBackground() async {
       importance: Importance.high,
     );
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
+    const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     await _localNotifications.initialize(
-      const InitializationSettings(android: initializationSettingsAndroid),
+      const InitializationSettings(android: androidSettings),
     );
 
-    // Create channel
+    // ✅ Create Channel
     await _localNotifications
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // Foreground listener
+    // 📬 Foreground Notifications
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
         _localNotifications.show(
@@ -155,12 +161,13 @@ Future<void> _setupNotificationsInBackground() async {
       }
     });
 
-    print("✅ Notifications setup completed in background");
-  } catch (e) {
-    print("❌ Error setting up notifications: $e");
+    debugPrint("✅ Notifications setup completed");
+  } catch (e, stack) {
+    _logError('NotificationSetup', e, stack);
   }
 }
 
+<<<<<<< HEAD
 /// ✅ NEW: AuthWrapper to handle persistent login
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -237,6 +244,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 }
 
+/// 🎯 ROOT APP
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -248,14 +256,16 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'CarGO',
 
-      // 🌙 LIGHT & DARK THEMES
+      // 🎨 THEMES
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeProvider.isDarkMode
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode:
+          themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
+      // 🏠 START SCREEN
       home: const AuthWrapper(),
+
+      // 🧭 ROUTES
       routes: {
         '/login': (context) => const LoginPage(),
         '/renters': (context) => const HomeScreen(),
@@ -263,15 +273,29 @@ class MyApp extends StatelessWidget {
         '/favorites': (context) => const FavoritesScreen(),
         '/chat_list': (context) => const ChatListScreen(),
         "/profile": (context) => const ProfileScreen(),
-
-        '/mycars': (context) {
-          final ownerId =
-              ModalRoute.of(context)!.settings.arguments as int;
-          return MyCarPage(ownerId: ownerId);
-        },
-
         '/my_bookings': (context) => const MyBookingsScreen(),
+      },
+
+      // 🧠 Dynamic Route (Owner Cars)
+      onGenerateRoute: (settings) {
+        if (settings.name == '/mycars') {
+          final ownerId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (_) => MyCarPage(ownerId: ownerId),
+          );
+        }
+        return null;
       },
     );
   }
+}
+/// 🧾 Centralized Error Logger
+void _logError(String source, Object error, StackTrace? stack) {
+  debugPrint('❌ [$source] Error: $error');
+  if (stack != null) {
+    debugPrint('📌 Stack trace:\n$stack');
+  }
+
+  // Optional: Send to Crashlytics later
+  // FirebaseCrashlytics.instance.recordError(error, stack);
 }

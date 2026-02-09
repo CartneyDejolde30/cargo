@@ -119,7 +119,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,        boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -268,7 +268,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -386,7 +386,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               color: Theme.of(context).colorScheme.surface,              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Colors.black.withOpacity(0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),

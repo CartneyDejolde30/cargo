@@ -75,56 +75,25 @@ void initState() {
     return GlobalApiConfig.getImageUrl(cleanPath);
   }
 
-
   Future<void> fetchCars() async {
     final String apiUrl = GlobalApiConfig.getCarsEndpoint;
 
     try {
-      // ✅ CRASH FIX: Add timeout to prevent hanging
-      final response = await http.get(Uri.parse(apiUrl)).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw Exception('Connection timeout');
-        },
-      );
+      final response = await http.get(Uri.parse(apiUrl));
 
       if (response.statusCode == 200) {
-        // ✅ CRASH FIX: Wrap jsonDecode in try-catch
-        try {
-          final decoded = jsonDecode(response.body);
+        final decoded = jsonDecode(response.body);
 
-          if (decoded['status'] == 'success') {
-            // ✅ CRASH FIX: Check mounted before setState
-            if (!mounted) return;
-            setState(() {
-              _cars = List<Map<String, dynamic>>.from(decoded['cars']);
-            });
-          }
-        } catch (jsonError) {
-          print("❌ JSON decode error: $jsonError");
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Error loading car data')),
-            );
-          }
+        if (decoded['status'] == 'success') {
+          setState(() {
+            _cars = List<Map<String, dynamic>>.from(decoded['cars']);
+          });
         }
-      } else {
-        print("❌ HTTP error: ${response.statusCode}");
       }
     } catch (e) {
       print("❌ Error fetching cars: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().contains('timeout') 
-              ? 'Connection timeout. Please check your internet.' 
-              : 'Failed to load cars. Please try again.'),
-          ),
-        );
-      }
     }
 
-    // ✅ CRASH FIX: Check mounted before setState
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -195,8 +164,7 @@ void initState() {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -204,7 +172,7 @@ void initState() {
                       children: [
                                             Icon(
                       Icons.search,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                       size: 22,
                     ),
 
@@ -228,8 +196,7 @@ void initState() {
                  Container(
   padding: const EdgeInsets.all(4),
   decoration: BoxDecoration(
-    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-
+    color: Theme.of(context).cardColor,
     borderRadius: BorderRadius.circular(25),
   ),
   child: Row(
@@ -266,7 +233,11 @@ void initState() {
                 const SizedBox(height: 8),
                 Text(
                   "Available",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                 style: GoogleFonts.poppins(
+  fontSize: 12,
+  color: Theme.of(context).hintColor,
+),
+
                 ),
                 const SizedBox(height: 12),
 
@@ -409,14 +380,20 @@ void initState() {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
+        color: selected
+    ? Theme.of(context).primaryColor
+    : Colors.transparent,
+
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
+            color: selected
+    ? Colors.white
+    : Theme.of(context).hintColor,
+
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -431,7 +408,12 @@ void initState() {
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+  color: Theme.of(context).textTheme.titleLarge?.color,
+),
+
         ),
         GestureDetector(
           onTap: () => Navigator.push(
@@ -478,11 +460,16 @@ void initState() {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.transparent
+                : Colors.grey.shade300,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -505,7 +492,7 @@ void initState() {
                       if (progress == null) return child;
                       return Container(
                         height: 120,
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context).dividerColor,
                         child: const Center(
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
@@ -513,7 +500,7 @@ void initState() {
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 120,
-                      color: Colors.grey.shade200,
+                      color: Theme.of(context).dividerColor,
                       child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
                     ),
                   ),
@@ -683,7 +670,7 @@ void initState() {
         width: 320,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -713,9 +700,23 @@ void initState() {
                       return Container(
                         height: 160,
                         width: 140,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            height: 160,
+                            width: 140,
+                            color: Theme.of(context).dividerColor,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 160,
+                          width: 140,
+                          color: Theme.of(context).dividerColor,
+                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                         ),
                       );
                     },
@@ -763,6 +764,7 @@ void initState() {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
+<<<<<<< HEAD
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -794,6 +796,7 @@ void initState() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+<<<<<<< HEAD
                     // Car name and year
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

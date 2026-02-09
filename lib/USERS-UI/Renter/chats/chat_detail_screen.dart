@@ -65,8 +65,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     final prefs = await SharedPreferences.getInstance();
     currentUserId = prefs.getString("user_id") ?? "";
     await _createChatIfNeeded();
-    // ✅ CRASH FIX: Check mounted before setState
-    if (!mounted) return;
     setState(() {});
     _markMessagesSeen();
   }
@@ -93,8 +91,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       if (doc.exists) {
         final data = doc.data();
         if (data != null && data.containsKey("${widget.peerId}_typing")) {
-          // ✅ CRASH FIX: Check mounted before setState
-          if (!mounted) return;
           setState(() {
             isPeerTyping = data["${widget.peerId}_typing"] ?? false;
           });
@@ -149,15 +145,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       selectedImage = null;
       replyingToMessage = null;
       replyingToText = null;
-      
-      // ✅ CRASH FIX: Check mounted before setState
-      if (!mounted) return;
       setState(() {});
       _setTyping(false);
 
       // Scroll to bottom after sending
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients && mounted) {
+        if (_scrollController.hasClients) {
           _scrollController.animateTo(
             0,
             duration: const Duration(milliseconds: 300),
@@ -187,8 +180,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
     if (img != null) {
       selectedImage = File(img.path);
-      // ✅ CRASH FIX: Check mounted before setState
-      if (!mounted) return;
       setState(() {});
     }
   }
@@ -199,8 +190,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
     if (img != null) {
       selectedImage = File(img.path);
-      // ✅ CRASH FIX: Check mounted before setState
-      if (!mounted) return;
       setState(() {});
     }
   }
@@ -216,6 +205,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   }
 
   Future<void> _uploadImage() async {
+    if (selectedImage == null) return;
+
+    try {
     if (selectedImage == null) {
       print('❌ No image selected!');
       return;
@@ -228,112 +220,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       if (!mounted) return;
       setState(() => isUploading = true);
 
-      print('📖 Reading image bytes...');
-      // ✅ FREE IMAGE UPLOAD using ImgBB (no payment required)
-      // Read image file as bytes
-      final bytes = await selectedImage!.readAsBytes();
-      print('✓ Image size: ${bytes.length} bytes');
-      
-      print('🔐 Encoding to base64...');
-      final base64Image = base64Encode(bytes);
-      print('✓ Base64 length: ${base64Image.length} characters');
+      final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final ref = FirebaseStorage.instance.ref("chat_images/$fileName");
 
-      // ImgBB API (Free tier: unlimited uploads, no expiration)
-      // Your personal API key from: https://api.imgbb.com/
-      const apiKey = '52d27fca0659d9b90733a6680f4261e7'; // Your personal API key
-      
-      print('🌐 Preparing upload to ImgBB...');
-      final uri = Uri.parse('https://api.imgbb.com/1/upload');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['key'] = apiKey
-        ..fields['image'] = base64Image
-        ..fields['name'] = 'chat_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}';
+      await ref.putFile(selectedImage!);
+      final url = await ref.getDownloadURL();
 
-      print('📤 Sending request to ImgBB...');
-      // Send upload request with timeout
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          print('❌ Upload timeout after 30 seconds!');
-          throw Exception('Upload timeout');
-        },
-      );
-      
-      print('✓ Response received, status: ${streamedResponse.statusCode}');
-      final response = await http.Response.fromStream(streamedResponse);
-      print('✓ Response parsed');
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
+      setState(() => isUploading = false);
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        
-        // Debug: Print the full response
-        print('═══════════════════════════════');
-        print('ImgBB Response Body:');
-        print(response.body);
-        print('═══════════════════════════════');
-        
-        // Get the image URL from ImgBB response
-        // Try different URL fields in order of preference
-        String? imageUrl;
-        
-        if (jsonResponse['data'] != null) {
-          final data = jsonResponse['data'];
-          
-          // Use display_url first (it's the medium size, more reliable)
-          imageUrl = data['display_url'] as String? ??
-                    data['url'] as String? ??
-                    data['image']['url'] as String?;
-          
-          print('Available URL fields in response:');
-          print('  - url: ${data['url']}');
-          print('  - display_url: ${data['display_url']}');
-          if (data['image'] != null) {
-            print('  - image.url: ${data['image']['url']}');
-          }
-        }
-
-        if (imageUrl == null || imageUrl.isEmpty) {
-          throw Exception('No valid image URL in response');
-        }
-
-        print('✓ Final Image URL: $imageUrl');
-        print('✓ URL Length: ${imageUrl.length}');
-        print('✓ Starts with https: ${imageUrl.startsWith('https://')}');
-
-        // Preload the image to cache before sending
-        await _preloadImage(imageUrl);
-
-        if (!mounted) return;
-        setState(() => isUploading = false);
-
-        // Send message with image URL
-        await _sendMessage(imageUrl: imageUrl);
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Text('Image uploaded successfully!', style: GoogleFonts.inter()),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        throw Exception('Upload failed: ${response.statusCode}');
-      }
-      
-    } catch (e, stackTrace) {
-      print('❌ Upload Error: $e');
-      print('📍 Stack trace: $stackTrace');
-      
+      await _sendMessage(imageUrl: url);
+    } catch (e) {
+      // ✅ CRASH FIX: Check mounted before setState
       if (!mounted) return;
       setState(() => isUploading = false);
       
@@ -655,7 +554,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 color: Theme.of(context).colorScheme.surface,                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -689,7 +588,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             color: Theme.of(context)
     .colorScheme
     .outline
-    .withValues(alpha: value),
+    .withOpacity(value),
             shape: BoxShape.circle,
           ),
         );
@@ -759,7 +658,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -784,7 +683,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: Colors.black.withOpacity(0.6),
                   shape: BoxShape.circle,
                 ),
                 child:  Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 20),
@@ -1105,8 +1004,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 8,
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -1120,7 +1019,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isMe
-                                  ? Colors.white.withValues(alpha: 0.2)
+                                  ? Colors.white.withOpacity(0.2)
                                   : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
@@ -1139,7 +1038,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                 color: isMe
-                                    ? Colors.white.withValues(alpha: 0.7)
+                                    ? Colors.white.withOpacity(0.7)
                                     : Colors.grey.shade600,
                                 fontSize: 12,
                               ),
@@ -1213,9 +1112,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -1302,9 +1201,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    color: Colors.blue.shade300.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),

@@ -117,6 +117,76 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
     });
   }
 
+  /// Mark notification as read when opened
+ Future<void> _markAsRead(NotificationModel notification) async {
+  if (!notification.isUnread) return;
+
+  await _service.markAsRead(notification.id.toString());
+
+  final counts = await _service.getUnreadCountsByCategory(widget.userId);
+
+  setState(() {
+    final index = _notifications.indexWhere((n) => n.id == notification.id);
+
+    if (index != -1) {
+      _notifications[index] =
+          notification.copyWith(readStatus: 'read');
+    }
+
+    _unreadCounts = counts;
+    _applyFilters();
+  });
+}
+
+
+
+
+  /// Navigate to notification detail
+  void _openNotificationDetail(NotificationModel notification) async {
+    // Mark as read
+    await _markAsRead(notification);
+
+    // Navigate to detail page
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NotificationDetailScreen(
+            notification: notification,
+            onDelete: () => _deleteNotification(notification.id),
+            onArchive: () => _archiveNotification(notification.id),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Delete single notification
+  Future<void> _deleteNotification(int id) async {
+    final result = await _service.deleteMultiple([id], widget.userId);
+
+    if (result['success']) {
+      _showSnackBar('Notification deleted', Colors.green);
+      setState(() {
+        _notifications.removeWhere((n) => n.id == id);
+        _applyFilters();
+      });
+    }
+  }
+
+  /// Archive single notification
+  Future<void> _archiveNotification(int id) async {
+    final result = await _service.archiveMultiple([id]);
+
+    if (result['success']) {
+      _showSnackBar('Notification archived', Colors.orange);
+      setState(() {
+        _notifications.removeWhere((n) => n.id == id);
+        _applyFilters();
+      });
+    }
+  }
+
   Future<void> _deleteSelected() async {
     if (_selectedIds.isEmpty) return;
 
@@ -168,21 +238,46 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   Future<bool> _showConfirmDialog(String title, String message) async {
     return await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, style: GoogleFonts.poppins()),
-        content: Text(message, style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.poppins()),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final colors = Theme.of(context).colorScheme;
+
+        return AlertDialog(
+          backgroundColor: isDark ? colors.surface : Colors.white,
+          title: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              color: isDark ? colors.onSurface : Colors.black,
+            ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Confirm', style: GoogleFonts.poppins()),
+          content: Text(
+            message,
+            style: GoogleFonts.poppins(
+              color: isDark ? colors.onSurfaceVariant : Colors.grey[700],
+            ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(
+                  color: isDark ? colors.onSurfaceVariant : Colors.grey[700],
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(
+                'Confirm',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
     ) ?? false;
   }
 
@@ -198,8 +293,11 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? colors.background : Colors.grey[50],
       appBar: _buildAppBar(),
       body: _isLoading ? _buildLoading() : _buildContent(),
       bottomNavigationBar: _isSelectionMode ? _buildSelectionBar() : null,
@@ -207,41 +305,49 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? colors.surface : Colors.white,
       elevation: 0,
       leading: _isSelectionMode
           ? IconButton(
-              icon: const Icon(Icons.close, color: Colors.black),
+              icon: Icon(Icons.close, color: isDark ? colors.onSurface : Colors.black),
               onPressed: () => setState(() {
                 _isSelectionMode = false;
                 _selectedIds.clear();
               }),
             )
           : IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              icon: Icon(Icons.arrow_back, color: isDark ? colors.onSurface : Colors.black),
               onPressed: () => Navigator.pop(context),
             ),
       title: _isSelectionMode
           ? Text(
               '${_selectedIds.length} selected',
-              style: GoogleFonts.poppins(color: Colors.black, fontSize: 16),
+              style: GoogleFonts.poppins(
+                color: isDark ? colors.onSurface : Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             )
           : Text(
               'Notifications',
               style: GoogleFonts.poppins(
-                color: Colors.black,
+                color: isDark ? colors.onSurface : Colors.black,
                 fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
       actions: [
         if (!_isSelectionMode) ...[
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
+            icon: Icon(Icons.search, color: isDark ? colors.onSurface : Colors.black),
             onPressed: _showSearchBar,
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
+            icon: Icon(Icons.more_vert, color: isDark ? colors.onSurface : Colors.black),
             onSelected: (value) {
               if (value == 'mark_all_read') {
                 _service.markAllAsRead(widget.userId);
@@ -276,7 +382,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
         ],
         if (_isSelectionMode) ...[
           IconButton(
-            icon: const Icon(Icons.select_all, color: Colors.black),
+            icon: Icon(Icons.select_all, color: isDark ? colors.onSurface : Colors.black),
             onPressed: () => setState(() {
               if (_selectedIds.length == _filteredNotifications.length) {
                 _selectedIds.clear();
@@ -295,14 +401,17 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   }
 
   Widget _buildFilterTabs() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
-      color: Colors.white,
+      color: isDark ? colors.surface : Colors.white,
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
-        labelColor: Colors.black,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.black,
+        labelColor: isDark ? colors.onSurface : Colors.black,
+        unselectedLabelColor: isDark ? colors.onSurfaceVariant : Colors.grey,
+        indicatorColor: isDark ? colors.onSurface : Colors.black,
         onTap: (index) {
           setState(() {
             _selectedFilter = _filters[index];
@@ -338,7 +447,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
                       '$count',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: Colors.white,
+                        color: isDark ? colors.surface : Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -353,10 +462,15 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   }
 
   Widget _buildLoading() {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
   }
 
   Widget _buildContent() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     if (_filteredNotifications.isEmpty) {
       return Center(
         child: Column(
@@ -366,7 +480,10 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
             const SizedBox(height: 16),
             Text(
               'No notifications',
-              style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -392,7 +509,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
+                    color: isDark ? colors.onSurfaceVariant : Colors.grey[700],
                   ),
                 ),
               ),
@@ -408,94 +525,115 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 
   Widget _buildNotificationCard(NotificationModel notification) {
     final isSelected = _selectedIds.contains(notification.id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.blue.shade50 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? Colors.blue : Colors.grey.shade200,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: _isSelectionMode
-            ? Checkbox(
-                value: isSelected,
-                onChanged: (_) => _toggleSelection(notification.id),
-              )
-            : Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: notification.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(notification.icon, color: notification.color),
-              ),
-        title: Text(
-          notification.title,
-          style: GoogleFonts.poppins(
-            fontWeight: notification.isUnread ? FontWeight.bold : FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              notification.message,
-              style: GoogleFonts.poppins(fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              notification.formattedTime,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                color: Colors.grey[500],
-              ),
+    return GestureDetector(
+      onTap: () {
+        if (_isSelectionMode) {
+          _toggleSelection(notification.id);
+        } else {
+          _openNotificationDetail(notification);
+        }
+      },
+      onLongPress: () {
+        setState(() {
+          _isSelectionMode = true;
+          _toggleSelection(notification.id);
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? (isSelected ? colors.primaryContainer : colors.surface)
+              : (isSelected ? Colors.blue.shade50 : Colors.white),
+          borderRadius: BorderRadius.circular(12),
+         
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        trailing: notification.isUnread
-            ? Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(12),
+          leading: _isSelectionMode
+              ? Checkbox(
+                  value: isSelected,
+                  activeColor: colors.primary,
+                  checkColor: colors.onPrimary,
+                  onChanged: (_) => _toggleSelection(notification.id),
+                )
+              : Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: notification.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(notification.icon, color: notification.color),
                 ),
-              )
-            : null,
-        onTap: () {
-          if (_isSelectionMode) {
-            _toggleSelection(notification.id);
-          } else {
-            // Navigate to detail
-          }
-        },
-        onLongPress: () {
-          setState(() {
-            _isSelectionMode = true;
-            _toggleSelection(notification.id);
-          });
-        },
+          title: Text(
+            notification.title,
+            style: GoogleFonts.poppins(
+              fontWeight: notification.isUnread ? FontWeight.bold : FontWeight.w600,
+              fontSize: 14,
+              color: isDark ? colors.onSurface : Colors.black,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                notification.message,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                notification.formattedTime,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: isDark ? colors.onSurfaceVariant : Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+          trailing: notification.isUnread
+              ? Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                )
+              : null,
+        ),
       ),
     );
   }
 
   Widget _buildSelectionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colors.surface : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.6)
+                : Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -510,6 +648,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
               label: const Text('Archive'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -522,6 +661,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
               label: const Text('Delete'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -534,39 +674,379 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   void _showSearchBar() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Search Notifications', style: GoogleFonts.poppins()),
-        content: TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Enter search term...',
-            prefixIcon: Icon(Icons.search),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final colors = Theme.of(context).colorScheme;
+
+        return AlertDialog(
+          backgroundColor: isDark ? colors.surface : Colors.white,
+          title: Text(
+            'Search Notifications',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              color: isDark ? colors.onSurface : Colors.black,
+            ),
           ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-              _applyFilters();
-            });
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
+          content: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Enter search term...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: isDark ? colors.surfaceContainerHighest : Colors.grey[100],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            style: GoogleFonts.poppins(
+              color: isDark ? colors.onSurface : Colors.black,
+            ),
+            onChanged: (value) {
               setState(() {
-                _searchQuery = '';
-                _searchController.clear();
+                _searchQuery = value;
                 _applyFilters();
               });
-              Navigator.pop(context);
             },
-            child: Text('Clear', style: GoogleFonts.poppins()),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Done', style: GoogleFonts.poppins()),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                  _searchController.clear();
+                  _applyFilters();
+                });
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Clear',
+                style: GoogleFonts.poppins(
+                  color: isDark ? colors.onSurfaceVariant : Colors.grey[700],
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+              ),
+              child: Text(
+                'Done',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// ✨ NEW: Notification Detail Screen
+class NotificationDetailScreen extends StatefulWidget {
+  final NotificationModel notification;
+  final VoidCallback onDelete;
+  final VoidCallback onArchive;
+
+  const NotificationDetailScreen({
+    super.key,
+    required this.notification,
+    required this.onDelete,
+    required this.onArchive,
+  });
+
+  @override
+  State<NotificationDetailScreen> createState() => _NotificationDetailScreenState();
+}
+
+class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
+  late NotificationModel notification;
+
+  @override
+  void initState() {
+    super.initState();
+    notification = widget.notification;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: isDark ? colors.background : Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: isDark ? colors.surface : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? colors.onSurface : Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Notification Details',
+          style: GoogleFonts.poppins(
+            color: isDark ? colors.onSurface : Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: isDark ? colors.onSurface : Colors.black),
+            onSelected: (value) {
+              if (value == 'archive') {
+                widget.onArchive();
+                Navigator.pop(context);
+              } else if (value == 'delete') {
+                widget.onDelete();
+                Navigator.pop(context);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'archive',
+                child: Row(
+                  children: [
+                    const Icon(Icons.archive, size: 20),
+                    const SizedBox(width: 12),
+                    Text('Archive', style: GoogleFonts.poppins()),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete, size: 20, color: Colors.red),
+                    const SizedBox(width: 12),
+                    Text('Delete', style: GoogleFonts.poppins(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with icon and title
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surface : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: notification.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          notification.icon,
+                          color: notification.color,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification.title,
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? colors.onSurface : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              notification.formattedTime,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Message content
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surface : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+               
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Message',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    notification.message,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: isDark ? colors.onSurface : Colors.black,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Notification details
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surface : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailRow(
+                    'Type',
+                    notification.type.toUpperCase(),
+                    isDark,
+                    colors,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(
+                    'Status',
+                    notification.isUnread ? 'Unread' : 'Read',
+                    isDark,
+                    colors,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(
+                    'Date & Time',
+                    notification.formattedTime,
+                    isDark,
+                    colors,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Action buttons
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  widget.onArchive();
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.archive),
+                label: const Text('Archive Notification'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  widget.onDelete();
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.delete),
+                label: const Text('Delete Notification'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value,
+    bool isDark,
+    ColorScheme colors,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: isDark ? colors.onSurfaceVariant : Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceContainerHighest : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: isDark ? colors.onSurface : Colors.black,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

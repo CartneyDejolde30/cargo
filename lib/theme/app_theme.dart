@@ -12,11 +12,12 @@ class AppTheme {
   static const Color lightSurface = Colors.white;
   static const Color lightCardColor = Colors.white;
   
-  // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF121212);
-  static const Color darkSurface = Color(0xFF1E1E1E);
-  static const Color darkCardColor = Color(0xFF2C2C2C);
   
+ // Softer dark (Facebook-style)
+static const Color darkBackground = Color(0xFF18191A);
+static const Color darkSurface = Color(0xFF242526);
+static const Color darkCardColor = Color(0xFF2F3033);
+
   // Text Colors
   static const Color lightTextPrimary = Color(0xFF212121);
   static const Color lightTextSecondary = Color(0xFF757575);

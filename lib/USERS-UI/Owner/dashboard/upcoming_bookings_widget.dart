@@ -34,24 +34,36 @@ class UpcomingBookingsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (upcomingBookings.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context, isDark, colors);
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? const Color(0xFF1E1E1E)
+            : colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : colors.outline.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,13 +71,12 @@ class UpcomingBookingsWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Upcoming Schedule",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                ),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.onSurface,
+                    ),
               ),
               if (onViewAll != null)
                 TextButton(
@@ -80,23 +91,36 @@ class UpcomingBookingsWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).iconTheme.color,
-
-
-
+                      color: isDark
+                          ? colors.primary
+                          : colors.primary,
                     ),
                   ),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-          ...upcomingBookings.take(3).map((booking) => _buildUpcomingItem(booking)),
+          ...upcomingBookings
+              .take(3)
+              .map(
+                (booking) => _buildUpcomingItem(
+                  context,
+                  booking,
+                  isDark,
+                  colors,
+                ),
+              ),
         ],
       ),
     );
   }
 
-  Widget _buildUpcomingItem(Booking booking) {
+  Widget _buildUpcomingItem(
+    BuildContext context,
+    Booking booking,
+    bool isDark,
+    ColorScheme colors,
+  ) {
     final daysUntil = _getDaysUntil(booking.startDate);
     final isToday = daysUntil == 0;
     final isTomorrow = daysUntil == 1;
@@ -123,13 +147,16 @@ class UpcomingBookingsWidget extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey.shade50, Colors.white],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark
+            ? colors.surface.withOpacity(0.05)
+            : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.grey.shade200,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -137,16 +164,20 @@ class UpcomingBookingsWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: timeColor.withValues(alpha: 0.1),
+              color: timeColor.withOpacity(
+                isDark ? 0.2 : 0.1,
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: timeColor.withValues(alpha: 0.3),
+                color: timeColor.withOpacity(
+                  isDark ? 0.5 : 0.3,
+                ),
                 width: 1,
               ),
             ),
             child: Column(
               children: [
-               Text(
+                Text(
                   month,
                   style: TextStyle(
                     fontSize: 12,
@@ -167,6 +198,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+
           // Car Image
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -178,12 +210,20 @@ class UpcomingBookingsWidget extends StatelessWidget {
               errorBuilder: (_, __, ___) => Container(
                 width: 50,
                 height: 50,
-                color: Colors.grey.shade300,
-                child: Icon(Icons.directions_car, color: Colors.grey.shade600),
+                color: isDark
+                    ? colors.surface
+                    : Colors.grey.shade300,
+                child: Icon(
+                  Icons.directions_car,
+                  color: isDark
+                      ? colors.onSurface.withOpacity(0.7)
+                      : Colors.grey.shade600,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 12),
+
           // Booking Details
           Expanded(
             child: Column(
@@ -191,26 +231,29 @@ class UpcomingBookingsWidget extends StatelessWidget {
               children: [
                 Text(
                   booking.carFullName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.onSurface,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   booking.renterName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: colors.onSurface.withOpacity(0.7),
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: timeColor.withValues(alpha: 0.1),
+                    color: timeColor.withOpacity(
+                      isDark ? 0.2 : 0.1,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -230,14 +273,25 @@ class UpcomingBookingsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    BuildContext context,
+    bool isDark,
+    ColorScheme colors,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? const Color(0xFF1E1E1E)
+            : colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : colors.outline.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Center(
         child: Column(
@@ -245,24 +299,24 @@ class UpcomingBookingsWidget extends StatelessWidget {
             Icon(
               Icons.event_available_outlined,
               size: 48,
-              color: Colors.grey.shade400,
+              color: isDark
+                  ? colors.onSurface.withOpacity(0.6)
+                  : Colors.grey.shade400,
             ),
             const SizedBox(height: 12),
             Text(
               "No upcoming bookings",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.onSurface,
+                  ),
             ),
             const SizedBox(height: 4),
             Text(
               "Schedule is clear",
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurface.withOpacity(0.7),
+                  ),
             ),
           ],
         ),

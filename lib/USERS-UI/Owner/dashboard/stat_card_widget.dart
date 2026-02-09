@@ -20,22 +20,38 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+  
+final isDark = Theme.of(context).brightness == Brightness.dark;
+
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+         color: isDark
+      ? const Color(0xFF1E1E1E) // Dark mode card BG
+      : colors.surface,        // Light mode card BG
+
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          border: Border.all(
+  color: isDark
+      ? Colors.white.withOpacity(0.1)
+      : colors.outline.withOpacity(0.2),
+  width: 1,
+),
+boxShadow: isDark
+    ? []
+    : [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
         ),
-        padding: const EdgeInsets.all(10), // Reduced to 10
+      ],
+
+        ),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -44,29 +60,32 @@ class StatCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6), // Reduced to 6
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: iconBackgroundColor ?? Colors.grey.shade100,
+                    color: iconBackgroundColor ??
+                        colors.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, size: 18, color: Colors.black), // Reduced to 18
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: colors.onPrimaryContainer,
+                  ),
                 ),
                 if (subtitle != null)
                   Flexible(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // Reduced vertical padding
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).iconTheme.color,
-
-
-
+                        color: colors.primary,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         subtitle!,
-                        style: const TextStyle(
-                          fontSize: 10, // Reduced from 11
-                          color: Colors.white,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: colors.onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -75,31 +94,36 @@ class StatCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4), // Reduced to 4
+            const SizedBox(height: 4),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 12, // Reduced from 13
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(
+                        color: colors.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 1), // Reduced to 1
+                const SizedBox(height: 1),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
                     value,
-                    style: const TextStyle(
-                      fontSize: 17, // Reduced to 17
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: colors.onSurface,
+                        ),
                     maxLines: 1,
                   ),
                 ),

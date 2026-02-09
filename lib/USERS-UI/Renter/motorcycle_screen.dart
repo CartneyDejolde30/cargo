@@ -120,7 +120,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     // Get best motorcycles (first 4) and newly listed (last 3)
     final bestMotorcycles = _motorcycles.take(4).toList();
     final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
-
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -147,42 +148,51 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                 const SizedBox(height: 20),
 
                 // Search Bar - Navigate to list screen
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MotorcycleListScreen(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search,
-                          color: Theme.of(context).iconTheme.color,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "Search motorcycle near you...",
-                            style: GoogleFonts.poppins(
-                              color: Theme.of(context).hintColor,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+               // Search Bar - Navigate to list screen
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MotorcycleListScreen(),
+      ),
+    );
+  },
+  child: Container(
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    child: Row(
+      children: [
+        Icon(
+          Icons.search,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 22,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            "Search motorcycle near you...",
+            style: GoogleFonts.poppins(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
                 const SizedBox(height: 20),
 
                 // Vehicle Type Toggle
@@ -193,9 +203,12 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                 _buildSectionHeader("Best Motorcycles", "View All"),
                 const SizedBox(height: 8),
                 Text(
-                  "Available",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
-                ),
+  "Available",
+  style: GoogleFonts.poppins(
+    fontSize: 12,
+    color: Theme.of(context).colorScheme.onSurfaceVariant,
+  ),
+),
                 const SizedBox(height: 12),
 
                 _isLoading
@@ -278,12 +291,18 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Widget _buildSectionHeader(String title, String action, {Color color = Colors.grey}) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+  color: colors.onSurface,
+),
+
         ),
         GestureDetector(
           onTap: () {
@@ -308,34 +327,37 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   Widget _buildVehicleTypeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildToggleButton(
-              "Car",
-              false,
-              () => Navigator.pop(context),
-            ),
+  final colors = Theme.of(context).colorScheme;
+
+  return Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: colors.surfaceContainerHighest, // ✅ correct soft background
+      borderRadius: BorderRadius.circular(25),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildToggleButton(
+            "Car",
+            false,
+            () => Navigator.pop(context),
           ),
-          Expanded(
-            child: _buildToggleButton(
-              "Motorcycle",
-              true,
-              () {},
-            ),
+        ),
+        Expanded(
+          child: _buildToggleButton(
+            "Motorcycle",
+            true,
+            () {},
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildMotorcycleCard({
+    
     required int motorcycleId,
     required String image,
     required String name,
@@ -344,6 +366,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     required String type,
     required String price,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -364,7 +388,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
+        
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,6 +404,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       return Image.network(
                         imageUrl,
                         height: 110,
+<<<<<<< HEAD
                         width: double.infinity,
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, progress) {
@@ -436,11 +461,11 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
+                      Icon(Icons.category, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         type,
-                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).hintColor),
+                        style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -525,14 +550,14 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                           return Container(
                             height: 160,
                             width: 140,
-                            color: Theme.of(context).dividerColor,
+                            color: Theme.of(context).colorScheme.onSurface,
                             child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           );
                         },
                         errorBuilder: (_, __, ___) => Container(
                           height: 160,
                           width: 140,
-                          color: Theme.of(context).dividerColor,
+                          color: Theme.of(context).colorScheme.onSurface,
                           child: const Icon(Icons.two_wheeler, size: 40, color: Colors.grey),
                         ),
                       );
@@ -592,7 +617,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).dividerColor,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -600,14 +625,14 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.location_on, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -618,24 +643,24 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.category, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.category, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           type,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Theme.of(context).hintColor,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.speed, size: 14, color: Theme.of(context).hintColor),
+                        Icon(Icons.speed, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             transmission,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: Theme.of(context).hintColor,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -653,27 +678,40 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     );
   }
 
-  Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: selected ? Theme.of(context).colorScheme.surface : Theme.of(context).dividerColor,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
+ Widget _buildToggleButton(String label, bool selected, VoidCallback onTap) {
+  final colors = Theme.of(context).colorScheme;
+
+  return GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? colors.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [],
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: selected ? colors.onSurface : colors.onSurfaceVariant,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
 
 /*
@@ -715,6 +753,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     required String price,
     required String engineSize,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -736,8 +776,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
         width: 300,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -805,7 +844,8 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
+
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

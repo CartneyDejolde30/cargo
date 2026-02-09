@@ -658,6 +658,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
         itemBuilder: (context, index) {
           final motorcycle = _filteredMotorcycles[index];
           return _buildMotorcycleCard(
+            
             motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
             name: "${motorcycle['brand']} ${motorcycle['model']}",
             year: motorcycle['motorcycle_year'] ?? "",
@@ -676,6 +677,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
 
   Widget _buildMotorcycleCard({
     required int motorcycleId,
+    
     required String name,
     required String year,
     required double rating,
@@ -686,7 +688,12 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
     required String image,
     bool hasUnlimitedMileage = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
+
     return GestureDetector(
+      
       onTap: () {
         Navigator.push(
           context,
@@ -703,17 +710,31 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
         );
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      decoration: BoxDecoration(
+  // 🎨 Card color
+  color: isDark
+      ? colors.surfaceContainerHighest   // soft elevated dark gray
+      : Colors.white,
+
+  borderRadius: BorderRadius.circular(16),
+
+  // 🌙 Soft elevation system
+  boxShadow: isDark
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35), // deeper but soft
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ]
+      : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -750,7 +771,8 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? colors.surface : Colors.white,
+
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -788,7 +810,8 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: isDark ? colors.onSurface : Colors.black87,
+
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

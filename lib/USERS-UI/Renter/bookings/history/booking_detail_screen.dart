@@ -245,9 +245,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Color _getStatusColor() {
     switch (widget.booking.status) {
       case 'approved':
-        return Colors.green;
+        return Theme.of(context).colorScheme.primary;
       case 'pending':
-        return Colors.orange;
+        return Theme.of(context).colorScheme.tertiary;
       case 'completed':
         return Colors.grey;
       case 'cancelled':
@@ -261,10 +261,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+   
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+        body: Center(child: CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+),
       );
     }
 
@@ -425,7 +429,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Center(
-              child: CircularProgressIndicator(color: Colors.black),
+              child: CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+,
             ),
           ),
           const SizedBox(height: 20),
@@ -566,16 +573,25 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   // NEW: GPS Tracking Section
   Widget _buildGpsTrackingSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: _isGpsTracking
-                ? [Colors.green.shade50, Colors.green.shade100]
-                : [Colors.orange.shade50, Colors.orange.shade100],
-          ),
+         gradient: LinearGradient(
+  colors: isDark
+      ? [
+          colors.surfaceContainerHighest,
+          colors.surface,
+        ]
+      : _isGpsTracking
+          ? [Colors.green.shade50, Colors.green.shade100]
+          : [Colors.orange.shade50, Colors.orange.shade100],
+),
+
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isGpsTracking 
@@ -596,8 +612,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                   child: Icon(
                     _isGpsTracking ? Icons.gps_fixed : Icons.gps_off,
-                    color: Colors.white,
-                    size: 24,
+                    color: isDark ? colors.surface : Theme.of(context).cardColor,                    size: 24,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -619,7 +634,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             : 'Start GPS tracking to share your location',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.grey.shade700,
+                          color: isDark ? colors.onSurfaceVariant : Colors.grey.shade700,
+
                         ),
                       ),
                     ],
@@ -633,8 +649,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? colors.surface : Theme.of(context).cardColor,                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
@@ -655,13 +670,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             'Updates Sent',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Container(width: 1, height: 40, color: Colors.grey.shade300),
+                   Container(
+  width: 1,
+  height: 40,
+  color: Theme.of(context).dividerColor,
+),
+
                     Expanded(
                       child: Column(
                         children: [
@@ -679,7 +699,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             'Failed',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).hintColor,
                             ),
                           ),
                         ],
@@ -711,8 +731,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   backgroundColor: _isGpsTracking 
                       ? Colors.red.shade600 
                       : Colors.green.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: isDark ? colors.surface : Theme.of(context).cardColor, padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -739,11 +758,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.receipt_long, size: 16, color: Colors.grey.shade600),
+              Icon(Icons.receipt_long, size: 16, color: Theme.of(context).hintColor),
               const SizedBox(width: 6),
               Text(
                 'Booking ID: ${widget.booking.bookingId}',
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+                style: GoogleFonts.poppins(fontSize: 13, color: Theme.of(context).hintColor),
               ),
             ],
           ),
@@ -753,14 +772,17 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _rentalPeriod() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: isDark ? colors.surface : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.shade100),
+          
         ),
         child: Column(
           children: [
@@ -812,13 +834,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
     switch (widget.status) {
       case 'active':
+       final isDark = Theme.of(context).brightness == Brightness.dark;
+  final colors = Theme.of(context).colorScheme;
         return _twoButtons(
           context,
           'Cancel Booking',
           Colors.red,
           _showCancelDialog,
           'View Trip',
-          Colors.black,
+          isDark ? colors.primary : Colors.black,
           rightAction: () {
             Navigator.push(
               context,
@@ -831,33 +855,37 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           },
         );
 
-      case 'pending':
-        return ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Awaiting owner approval...'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-          ),
-          child: Text(
-            'Awaiting Approval',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        );
+     case 'pending': {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final colors = Theme.of(context).colorScheme;
+
+  return ElevatedButton(
+    onPressed: () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Awaiting owner approval...'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.orange,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0,
+    ),
+    child: Text(
+      'Awaiting Approval',
+      style: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: isDark ? colors.surface : Theme.of(context).cardColor,
+      ),
+    ),
+  );
+}
 
       case 'upcoming':
         return _twoButtons(
@@ -904,13 +932,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _locationCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+         
         ),
         child: Row(
           children: [
@@ -932,7 +963,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+            Icon(Icons.arrow_forward_ios, size: 16, color: isDark ? colors.onSurfaceVariant : Colors.grey.shade400
+),
           ],
         ),
       ),
@@ -940,6 +972,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _paymentDetails() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -953,9 +988,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: isDark ? colors.surface : Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+             
             ),
             child: Column(
               children: [
@@ -1014,13 +1049,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        color: isDark ? colors.surface : Theme.of(context).cardColor,        boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.08 * 255).round()),
+           color: isDark
+    ? Colors.black.withAlpha((0.6 * 255).round())
+    : Colors.black.withAlpha((0.08 * 255).round()),
+
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -1031,6 +1071,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _buildRefundButton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+    
     // Check if refund has been requested
     final refundStatus = _paymentData?['refund_status'] ?? 'not_requested';
     final hasRefundRequested = refundStatus != 'not_requested' && refundStatus.isNotEmpty;
@@ -1047,7 +1090,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: hasRefundRequested ? Colors.orange.shade50 : Colors.red.shade50,
+            color: hasRefundRequested 
+                ? (isDark ? Colors.orange.shade900.withOpacity(0.3) : Colors.orange.shade50)
+                : (isDark ? colors.errorContainer : Colors.red.shade50),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasRefundRequested ? Colors.orange.shade200 : Colors.red.shade200,
@@ -1069,7 +1114,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           : 'This booking was cancelled'),
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: hasRefundRequested ? Colors.orange.shade900 : Colors.red.shade900,
+                    color: hasRefundRequested 
+                        ? (isDark ? Colors.orange.shade200 : Colors.orange.shade900)
+                        : (isDark ? colors.onErrorContainer : Colors.red.shade900),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1221,6 +1268,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   void _showCancelDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1255,13 +1305,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      color: isDark ? colors.surface : Theme.of(context).cardColor,borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(color: Colors.black),
+                       CircularProgressIndicator(
+  color: Theme.of(context).colorScheme.primary,
+)
+,
                         const SizedBox(height: 16),
                         Text(
                           'Cancelling booking...',
@@ -1311,14 +1363,20 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  Widget _circleIcon(IconData icon) => Container(
-        padding: const EdgeInsets.all(8),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon),
-      );
+  Widget _circleIcon(IconData icon) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final colors = Theme.of(context).colorScheme;
+
+  return Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: isDark ? colors.surface : Theme.of(context).cardColor,
+      shape: BoxShape.circle,
+    ),
+    child: Icon(icon),
+  );
+}
+
 
   Widget _imageGradient() => Container(
         decoration: BoxDecoration(
@@ -1369,7 +1427,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1442,6 +1500,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _singleButton(String label, Color color, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
@@ -1454,8 +1515,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Text(
         label,
         style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontSize: 16,
+          color: isDark ? colors.surface : Theme.of(context).cardColor,          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1471,6 +1531,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     Color rightColor, {
     VoidCallback? rightAction,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
@@ -1506,8 +1569,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             child: Text(
               rightLabel,
               style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+                color: isDark ? colors.surface : Theme.of(context).cardColor,                fontWeight: FontWeight.w600,
               ),
             ),
           ),

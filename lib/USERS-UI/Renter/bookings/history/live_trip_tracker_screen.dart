@@ -56,6 +56,9 @@ Future<String> _getCurrentUserId() async {
 
   // App Bar with car image
   SliverAppBar _buildAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
@@ -63,11 +66,12 @@ Future<String> _getCurrentUserId() async {
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration:  BoxDecoration(
+            color: isDark ? colors.surface : Colors.white,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.black),
+          child: Icon(Icons.arrow_back, color: colors.onSurface),
+
         ),
         onPressed: () => Navigator.pop(context),
       ),
@@ -75,11 +79,12 @@ Future<String> _getCurrentUserId() async {
         IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration:  BoxDecoration(
+              color: isDark ? colors.surface : Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.more_vert, color: Colors.black),
+            child: const Icon(Icons.more_vert, color: Colors.white),
+
           ),
           onPressed: () => _showMoreOptions(),
         ),
@@ -120,7 +125,7 @@ Future<String> _getCurrentUserId() async {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                     color: Colors.white,
                     ),
                   ),
                   Text(
@@ -152,148 +157,153 @@ Future<String> _getCurrentUserId() async {
     final double progress = totalDays > 0 ? (totalDays - daysRemaining) / totalDays : 0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade600, Colors.blue.shade800],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  child: Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.blue.shade600, Colors.blue.shade800],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.blue.withValues(alpha: 0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trip in Progress',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  daysRemaining > 0
+                      ? '$daysRemaining days $hoursRemaining hrs left'
+                      : '$hoursRemaining hours left',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // ✅ always light
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.directions_car,
+                color: Colors.white, // ✅ always light
+                size: 32,
+              ),
             ),
           ],
         ),
-        child: Column(
+        const SizedBox(height: 20),
+
+        // Progress Bar
+        Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Trip in Progress',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      daysRemaining > 0
-                          ? '$daysRemaining days $hoursRemaining hrs left'
-                          : '$hoursRemaining hours left',
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
+                Text(
+                  'Pickup',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white70,
                   ),
-                  child: const Icon(
-                    Icons.directions_car,
-                    color: Colors.white,
-                    size: 32,
+                ),
+                Text(
+                  'Return',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white70,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            
-            // Progress Bar
-            Column(
+            const SizedBox(height: 8),
+            Stack(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Pickup',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    Text(
-                      'Return',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3), // light track
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Stack(
-                  children: [
-                    Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white, // ✅ bright progress line
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    FractionallySizedBox(
-                      widthFactor: progress.clamp(0.0, 1.0),
-                      child: Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      widget.booking.pickupDate,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    Text(
-                      widget.booking.returnDate,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  widget.booking.pickupDate,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.white70,
+                  ),
+                ),
+                Text(
+                  widget.booking.returnDate,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.white70,
+                  ),
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
+
   }
 
   // Tab Selector
   Widget _buildTabSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+         color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade100,
+
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -309,13 +319,18 @@ Future<String> _getCurrentUserId() async {
 
   Widget _buildTab(String label, int index, IconData icon) {
     final isSelected = _selectedTabIndex == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedTabIndex = index),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.transparent,
+            color: isSelected
+    ? (isDark ? colors.primary : Colors.black)
+    : Colors.transparent,
+
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -358,6 +373,8 @@ Future<String> _getCurrentUserId() async {
 
   // Overview Tab
   Widget _buildOverviewTab() {
+   
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -430,6 +447,8 @@ Future<String> _getCurrentUserId() async {
 
   // Location Tab
   Widget _buildLocationTab() {
+   
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -492,6 +511,7 @@ Future<String> _getCurrentUserId() async {
 
   // Support Tab
   Widget _buildSupportTab() {
+  
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -547,12 +567,15 @@ Future<String> _getCurrentUserId() async {
     IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? colors.surface : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+       
       ),
       child: Row(
         children: [
@@ -606,6 +629,8 @@ Future<String> _getCurrentUserId() async {
     Color color,
     VoidCallback onTap,
   ) {
+    
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -640,6 +665,7 @@ Future<String> _getCurrentUserId() async {
     Color color,
     VoidCallback onTap,
   ) {
+   
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -678,14 +704,18 @@ Future<String> _getCurrentUserId() async {
     Color color,
     VoidCallback onTap,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? colors.surface : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          
+
         ),
         child: Row(
           children: [
@@ -735,10 +765,13 @@ Future<String> _getCurrentUserId() async {
 
   // Bottom Actions
   Widget _buildBottomActions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colors.surface : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -763,7 +796,8 @@ Future<String> _getCurrentUserId() async {
                   foregroundColor: Theme.of(context).iconTheme.color,
 
 
-                  side: const BorderSide(color: Colors.black),
+                  side: BorderSide(color: isDark ? colors.outline : Colors.black),
+
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -781,12 +815,8 @@ Future<String> _getCurrentUserId() async {
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
-                  foregroundColor: Colors.white,
+                   backgroundColor: isDark ? colors.primary : Colors.black,
+                  foregroundColor: isDark ? colors.onPrimary : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -811,6 +841,8 @@ Future<String> _getCurrentUserId() async {
   }
 
   void _showMoreOptions() {
+    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
