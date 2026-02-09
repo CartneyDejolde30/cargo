@@ -58,17 +58,22 @@ void main() {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-<<<<<<< HEAD
-      // ✅ Do notification setup in background (non-blocking)
-      _setupNotificationsInBackground();
-      
-      // ✅ Initialize presence service in background
-      _initializePresenceService();
-    },
-    (error, stack) {
-      _logError('ZonedGuardedError', error, stack);
-    },
-  );
+    // ▶️ Start app
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => ThemeProvider(),
+        child: const MyApp(),
+      ),
+    );
+
+    // 🔔 Setup notifications in background
+    _setupNotificationsInBackground();
+    
+    // ✅ Initialize presence service in background
+    _initializePresenceService();
+  }, (error, stack) {
+    _logError('ZonedGuardedError', error, stack);
+  });
 }
 
 /// ✅ NEW: Initialize presence service for logged-in users
@@ -90,21 +95,6 @@ Future<void> _initializePresenceService() async {
   } catch (e) {
     debugPrint('❌ Error initializing presence service: $e');
   }
-}
-
-    // ▶️ Start app
-    runApp(
-      ChangeNotifierProvider(
-        create: (_) => ThemeProvider(),
-        child: const MyApp(),
-      ),
-    );
-
-    // 🔔 Setup notifications in background
-    _setupNotificationsInBackground();
-  }, (error, stack) {
-    _logError('ZonedGuardedError', error, stack);
-  });
 }
 
 
@@ -167,7 +157,6 @@ Future<void> _setupNotificationsInBackground() async {
   }
 }
 
-<<<<<<< HEAD
 /// ✅ NEW: AuthWrapper to handle persistent login
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
