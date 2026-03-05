@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'register_page.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
+import 'package:cargo/USERS-UI/Renter/renters.dart';
+import 'package:cargo/USERS-UI/Owner/owner_home_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/Google/google_sign_in_service.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
-import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:cargo/Google/google_sign_in_service.dart';
+import 'package:cargo/services/user_presence_service.dart';
+import 'package:cargo/services/persistent_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_1/widgets/google_role_selection_dialog.dart';
+import 'package:cargo/widgets/google_role_selection_dialog.dart';
 // ❌ REMOVED: Facebook import
 
 class CarGoApp extends StatelessWidget {
@@ -129,13 +130,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    LoadingDialog.showSimple(context);
 
     _saveCredentials();
 
@@ -158,9 +153,10 @@ class _LoginPageState extends State<LoginPage> {
       print("Response status: ${response.statusCode}");
       print("Response body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+      // ✅ Parse response for both success (200) and error responses (400, 404, etc.)
+      final responseData = jsonDecode(response.body);
 
+      if (response.statusCode == 200) {
         // ✅ FIX: Check for "success" field instead of "status"
         if (responseData["success"] == true) {
           // Extract the actual user data from the "data" field
@@ -178,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
 
           // ✅ OPTIMIZATION: Navigate immediately, do Firebase operations in background
           // Close loading dialog
-          if (mounted) Navigator.pop(context);
+          if (mounted) LoadingDialog.hide(context);
 
           // Navigate to home screen immediately
           if (mounted) {
@@ -208,24 +204,78 @@ class _LoginPageState extends State<LoginPage> {
             );
           }
         } else {
-          if (mounted) Navigator.pop(context);
+          // ✅ Handle login failure with user-friendly messages
+          if (mounted) LoadingDialog.hide(context);
           if (mounted) {
+            String errorMessage = responseData["message"] ?? "Login failed.";
+            
+            // ✅ User-friendly error messages
+            if (errorMessage.contains("Invalid email or password")) {
+              errorMessage = "Wrong email or password";
+            } else if (errorMessage.contains("Account suspended")) {
+              errorMessage = "Account suspended";
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(responseData["message"] ?? "Login failed.")),
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red.shade600,
+                duration: const Duration(seconds: 4),
+              ),
             );
           }
         }
-      } else {
-        if (mounted) Navigator.pop(context);
+      } else if (response.statusCode == 400 || response.statusCode == 401 || response.statusCode == 403) {
+        // ✅ Handle 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden)
+        // These are returned for suspended accounts, wrong credentials, etc.
+        if (mounted) LoadingDialog.hide(context);
+        if (mounted) {
+          String errorMessage = responseData["message"] ?? "Login failed.";
+          
+          // ✅ User-friendly error messages
+          if (errorMessage.contains("Invalid email or password")) {
+            errorMessage = "Wrong email or password";
+          } else if (errorMessage.contains("Account suspended")) {
+            errorMessage = "Account suspended";
+          } else if (errorMessage.contains("suspended")) {
+            errorMessage = "Account suspended";
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else if (response.statusCode == 404) {
+        // ✅ Handle 404 specifically
+        if (mounted) LoadingDialog.hide(context);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Server error: ${response.statusCode}")),
+            const SnackBar(
+              content: Text("Account not found"),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        // ✅ Handle other server errors (500, 502, etc.)
+        if (mounted) LoadingDialog.hide(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Server error: ${response.statusCode}"),
+              backgroundColor: Colors.red.shade600,
+            ),
           );
         }
       }
     } catch (e) {
       print("Error: $e");
-      if (mounted) Navigator.pop(context);
+      if (mounted) LoadingDialog.hide(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error connecting to server.')),
@@ -443,37 +493,306 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<Map<String, dynamic>> _requestPasswordReset(String email) async {
+    final url = Uri.parse(GlobalApiConfig.requestPasswordResetEndpoint);
+
+    final response = await http
+        .post(
+          url,
+          headers: {"Content-Type": "application/json; charset=UTF-8"},
+          body: jsonEncode({"email": email}),
+        )
+        .timeout(GlobalApiConfig.apiTimeout);
+
+    final decoded = jsonDecode(response.body);
+    if (response.statusCode != 200 || decoded is! Map<String, dynamic>) {
+      throw Exception('Server error: ${response.statusCode}');
+    }
+
+    if (decoded["success"] != true) {
+      throw Exception(decoded["message"] ?? 'Request failed');
+    }
+
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> _resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse(GlobalApiConfig.resetPasswordEndpoint);
+
+    final response = await http
+        .post(
+          url,
+          headers: {"Content-Type": "application/json; charset=UTF-8"},
+          body: jsonEncode({
+            "email": email,
+            "code": code,
+            "new_password": newPassword,
+          }),
+        )
+        .timeout(GlobalApiConfig.apiTimeout);
+
+    final decoded = jsonDecode(response.body);
+    if (response.statusCode != 200 || decoded is! Map<String, dynamic>) {
+      throw Exception('Server error: ${response.statusCode}');
+    }
+
+    if (decoded["success"] != true) {
+      throw Exception(decoded["message"] ?? 'Reset failed');
+    }
+
+    return decoded;
+  }
+
   void _showForgotPasswordDialog() {
-    TextEditingController emailController = TextEditingController();
+    final emailController = TextEditingController(text: _emailController.text.trim());
+    final codeController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    int step = 0; // 0=email, 1=code+new password
+    bool isLoading = false;
+
+    bool _isValidEmail(String v) {
+      final email = v.trim();
+      return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    }
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Forgot Password"),
-        content: TextField(
-          controller: emailController,
-          decoration: const InputDecoration(
-            labelText: "Enter your email",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(
-                        'Password reset link sent to ${emailController.text}')),
-              );
-            },
-            child: const Text("Send"),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Future<void> runRequest() async {
+              final email = emailController.text.trim().toLowerCase();
+              if (email.isEmpty || !_isValidEmail(email)) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid email address.')),
+                );
+                return;
+              }
+
+              setState(() => isLoading = true);
+              try {
+                final res = await _requestPasswordReset(email);
+                setState(() => step = 1);
+
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text(res['message'] ?? 'Reset code sent to your email.')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                );
+              } finally {
+                if (mounted) setState(() => isLoading = false);
+              }
+            }
+
+            Future<void> runResend() async {
+              // Resend uses same request endpoint
+              await runRequest();
+            }
+
+            Future<void> runReset() async {
+              final email = emailController.text.trim().toLowerCase();
+              final code = codeController.text.trim();
+              final newPass = newPasswordController.text;
+              final confirmPass = confirmPasswordController.text;
+
+              if (email.isEmpty || !_isValidEmail(email)) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Please go back and enter a valid email.')),
+                );
+                return;
+              }
+
+              if (code.length < 6) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Please enter the 6-digit code from your email.')),
+                );
+                return;
+              }
+
+              if (newPass.isEmpty || confirmPass.isEmpty) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Please enter and confirm your new password.')),
+                );
+                return;
+              }
+
+              if (newPass.length < 6) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Password must be at least 6 characters.')),
+                );
+                return;
+              }
+
+              if (newPass != confirmPass) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Passwords do not match.')),
+                );
+                return;
+              }
+
+              setState(() => isLoading = true);
+              try {
+                final res = await _resetPassword(email: email, code: code, newPassword: newPass);
+                if (Navigator.canPop(dialogContext)) Navigator.pop(dialogContext);
+
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text(res['message'] ?? 'Password reset successful.')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                );
+              } finally {
+                if (mounted) setState(() => isLoading = false);
+              }
+            }
+
+            final theme = Theme.of(context);
+            final title = step == 0 ? 'Forgot Password' : 'Reset Password';
+
+            final content = step == 0
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'We will send a 6-digit verification code to your email.',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.send,
+                        decoration: const InputDecoration(
+                          labelText: 'Email address',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        onSubmitted: (_) {
+                          if (!isLoading) runRequest();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tip: Check Spam/Junk if you don\'t see the email within a minute.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enter the 6-digit code we sent to:',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        emailController.text.trim(),
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: codeController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'Verification code',
+                          prefixIcon: Icon(Icons.verified_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: newPasswordController,
+                        obscureText: true,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'New password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: confirmPasswordController,
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          labelText: 'Confirm new password',
+                          prefixIcon: Icon(Icons.lock_reset_outlined),
+                        ),
+                        onSubmitted: (_) {
+                          if (!isLoading) runReset();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: isLoading ? null : runResend,
+                          child: const Text('Resend code'),
+                        ),
+                      ),
+                    ],
+                  );
+
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(step == 0 ? Icons.lock_outline : Icons.password, color: theme.colorScheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(title)),
+                ],
+              ),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420, maxHeight: 500),
+                child: SingleChildScrollView(
+                  child: content,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                if (step == 1)
+                  TextButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            setState(() {
+                              step = 0;
+                              codeController.clear();
+                              newPasswordController.clear();
+                              confirmPasswordController.clear();
+                            });
+                          },
+                    child: const Text('Back'),
+                  ),
+                ElevatedButton(
+                  onPressed: isLoading ? null : () => (step == 0 ? runRequest() : runReset()),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(step == 0 ? 'Send code' : 'Reset password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

@@ -15,7 +15,7 @@ class EnhancedCalendarService {
     required DateTime endDate,
   }) async {
     try {
-      final url = '$_baseUrl/api/availability/get_blocked_dates.php?'
+      final url = '${_baseUrl}api/availability/get_blocked_dates.php?'
           'vehicle_id=$vehicleId&'
           'vehicle_type=$vehicleType&'
           'start_date=${_formatDate(startDate)}&'
@@ -70,17 +70,41 @@ class EnhancedCalendarService {
     required String reason,
   }) async {
     try {
+      // Validate parameters before sending
+      if (ownerId == 0) {
+        debugPrint('❌ Block dates error: ownerId is 0');
+        return {
+          'success': false,
+          'message': 'Invalid owner ID. Please try logging out and back in.',
+        };
+      }
+      
+      if (vehicleId == 0) {
+        debugPrint('❌ Block dates error: vehicleId is 0');
+        return {
+          'success': false,
+          'message': 'Invalid vehicle ID. Please refresh the page.',
+        };
+      }
+
+      final requestBody = {
+        'owner_id': ownerId,
+        'vehicle_id': vehicleId,
+        'vehicle_type': vehicleType,
+        'dates': dates.map((d) => _formatDate(d)).toList(),
+        'reason': reason,
+      };
+      
+      debugPrint('🔵 Block dates request: $requestBody');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/availability/block_dates.php'),
+        Uri.parse('${_baseUrl}api/availability/block_dates.php'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'owner_id': ownerId,
-          'vehicle_id': vehicleId,
-          'vehicle_type': vehicleType,
-          'dates': dates.map((d) => _formatDate(d)).toList(),
-          'reason': reason,
-        }),
+        body: json.encode(requestBody),
       ).timeout(ApiConstants.apiTimeout);
+
+      debugPrint('🔵 Block dates response status: ${response.statusCode}');
+      debugPrint('🔵 Block dates response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -114,7 +138,7 @@ class EnhancedCalendarService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/availability/unblock_dates.php'),
+        Uri.parse('${_baseUrl}api/availability/unblock_dates.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'owner_id': ownerId,

@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Rovo Dev temporary files (should never be committed)
+**/tmp_rovodev_*

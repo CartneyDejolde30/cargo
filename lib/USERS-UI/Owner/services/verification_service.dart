@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 import '../models/user_verification.dart';
 
@@ -83,8 +83,9 @@ class VerificationService {
       }
 
       // ---- SEND ----
-      var response = await request.send();
-      var result = await http.Response.fromStream(response);
+      // Uploading 3 images can be slow on mobile networks; add explicit timeout.
+      var response = await request.send().timeout(const Duration(seconds: 90));
+      var result = await http.Response.fromStream(response).timeout(const Duration(seconds: 30));
 
       print("📩 SERVER RESPONSE: ${result.body}");
 

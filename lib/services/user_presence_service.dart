@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,7 +15,12 @@ class UserPresenceService with WidgetsBindingObserver {
   final FirebaseDatabase _realtimeDb = FirebaseDatabase.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
+  /// App-level user id (from your PHP backend; stored in SharedPreferences)
   String? _currentUserId;
+
+  /// Firebase Auth uid used for RTDB security rules (stable for the current install)
+  String? _authUid;
+
   DatabaseReference? _presenceRef;
   DatabaseReference? _statusRef;
   StreamSubscription? _connectionSubscription;
@@ -31,12 +37,37 @@ class UserPresenceService with WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       _currentUserId = prefs.getString('user_id');
 
-      if (_currentUserId == null) {
+      if (_currentUserId == null || _currentUserId!.isEmpty) {
         debugPrint('❌ No user_id found in SharedPreferences');
         return;
       }
 
-      debugPrint('🟢 Initializing presence service for user: $_currentUserId');
+      // Ensure we have a Firebase Auth session so RTDB rules (auth.uid == $uid) can pass.
+      final auth = FirebaseAuth.instance;
+      if (auth.currentUser == null) {
+        debugPrint('🔐 No FirebaseAuth user - signing in anonymously for presence tracking');
+        try {
+          await auth.signInAnonymously();
+        } catch (e) {
+          // ✅ FIX: Handle admin-restricted-operation error gracefully
+          if (e.toString().contains('admin-restricted-operation')) {
+            debugPrint('⚠️ Anonymous sign-in disabled in Firebase console');
+            debugPrint('💡 To fix: Enable Anonymous Authentication in Firebase Console > Authentication > Sign-in method');
+            debugPrint('📝 Continuing without Firebase presence tracking...');
+            return; // Skip presence tracking if anonymous auth is disabled
+          } else {
+            debugPrint('❌ Error signing in anonymously: $e');
+            return;
+          }
+        }
+      }
+      _authUid = auth.currentUser?.uid;
+      if (_authUid == null || _authUid!.isEmpty) {
+        debugPrint('❌ FirebaseAuth uid missing - cannot initialize RTDB presence');
+        return;
+      }
+
+      debugPrint('🟢 Initializing presence service for app user: $_currentUserId (auth uid: $_authUid)');
 
       // Set up lifecycle observer
       WidgetsBinding.instance.addObserver(this);
@@ -112,11 +143,11 @@ class UserPresenceService with WidgetsBindingObserver {
 
   /// Set up disconnect handler to update status when user goes offline
   void _setupDisconnectHandler() {
-    if (_currentUserId == null) return;
+    if (_authUid == null) return;
 
-    // Realtime Database disconnect handler
-    _presenceRef = _realtimeDb.ref('presence/$_currentUserId');
-    _statusRef = _realtimeDb.ref('status/$_currentUserId');
+    // Realtime Database disconnect handler (keyed by Firebase Auth uid to satisfy rules)
+    _presenceRef = _realtimeDb.ref('presence/$_authUid');
+    _statusRef = _realtimeDb.ref('status/$_authUid');
 
     // Set what should happen when user disconnects
     _presenceRef!.onDisconnect().set({
@@ -150,22 +181,26 @@ class UserPresenceService with WidgetsBindingObserver {
     try {
       final timestamp = FieldValue.serverTimestamp();
       
-      // Update Firestore
+      // Update Firestore (keyed by your app user id)
       await _firestore.collection('users').doc(_currentUserId).set({
         'online': online,
         'lastSeen': timestamp,
       }, SetOptions(merge: true));
 
-      // Update Realtime Database
-      await _realtimeDb.ref('presence/$_currentUserId').set({
-        'online': online,
-        'lastSeen': ServerValue.timestamp,
-      });
+      // Update Realtime Database (keyed by Firebase Auth uid to satisfy RTDB rules)
+      if (_authUid != null) {
+        await _realtimeDb.ref('presence/$_authUid').set({
+          'online': online,
+          'lastSeen': ServerValue.timestamp,
+          'appUserId': _currentUserId,
+        });
 
-      await _realtimeDb.ref('status/$_currentUserId').set({
-        'isOnline': online,
-        'lastSeen': ServerValue.timestamp,
-      });
+        await _realtimeDb.ref('status/$_authUid').set({
+          'isOnline': online,
+          'lastSeen': ServerValue.timestamp,
+          'appUserId': _currentUserId,
+        });
+      }
 
       debugPrint('✅ User status set to: ${online ? "ONLINE" : "OFFLINE"}');
     } catch (e) {
@@ -291,6 +326,7 @@ class UserPresenceService with WidgetsBindingObserver {
     _presenceRef = null;
     _statusRef = null;
     _currentUserId = null;
+    _authUid = null;
     _isInitialized = false;
     
     debugPrint('✅ UserPresenceService disposed (user logged out)');

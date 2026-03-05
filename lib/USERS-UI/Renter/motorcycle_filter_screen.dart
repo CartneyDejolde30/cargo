@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class MotorcycleFilterScreen extends StatefulWidget {
   final Map<String, dynamic>? currentFilters;

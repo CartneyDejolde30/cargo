@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class ReceiptViewerScreen extends StatefulWidget {
   final int bookingId;
@@ -115,7 +116,7 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
 final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark ? colors.background : Colors.grey.shade50,
+      backgroundColor: isDark ? colors.surface : Colors.grey.shade50,
 
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -147,8 +148,7 @@ final colors = Theme.of(context).colorScheme;
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: colors.primary)
-)
+          ? const LoadingScreen(message: 'Loading receipt...')
           : _error != null
               ? _buildErrorState()
               : SingleChildScrollView(
@@ -206,6 +206,8 @@ final colors = Theme.of(context).colorScheme;
     final bookingId = _receiptData!['booking_id'] ?? 'N/A';
     final dateIssued = _receiptData!['created_at'] ?? '';
     final status = _receiptData!['status'] ?? 'PAID';
+    final paymentStatus = _receiptData!['payment_status'] ?? 'N/A';
+    final verifiedAt = _receiptData!['payment_verified_at'] ?? _receiptData!['verified_at'];
 
     // Renter info
     final renterName = _receiptData!['renter_name'] ?? 'N/A';
@@ -214,12 +216,18 @@ final colors = Theme.of(context).colorScheme;
 
     // Rental details
     final carName = _receiptData!['car_name'] ?? 'N/A';
+    final plateNumber = _receiptData!['plate_number'] ?? 'N/A';
     final pickupDate = _receiptData!['pickup_date'] ?? '';
     final returnDate = _receiptData!['return_date'] ?? '';
     final duration = _receiptData!['duration'] ?? 'N/A';
+    final pickupTime = _receiptData!['pickup_time'] ?? '';
+    final returnTime = _receiptData!['return_time'] ?? '';
 
     // Payment details
-    final amount = double.tryParse(_receiptData!['amount'].toString()) ?? 0;
+    final baseAmount = double.tryParse(_receiptData!['amount'].toString()) ?? 0;
+    final securityDeposit = double.tryParse(_receiptData!['security_deposit']?.toString() ?? '') ?? 0;
+    final grandTotal = double.tryParse(_receiptData!['grand_total']?.toString() ?? '') ?? (baseAmount + securityDeposit);
+    final dailyRate = double.tryParse(_receiptData!['daily_rate']?.toString() ?? '') ?? 0;
     final paymentMethod = _receiptData!['payment_method'] ?? 'N/A';
     final paymentReference = _receiptData!['payment_reference'] ?? 'N/A';
 final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -284,6 +292,9 @@ final colors = Theme.of(context).colorScheme;
             _buildInfoRow('Receipt No', receiptNo),
             _buildInfoRow('Booking ID', '#BK-$bookingId'),
             _buildInfoRow('Date Issued', _formatDateTime(dateIssued)),
+            _buildInfoRow('Payment Status', paymentStatus.toString().toUpperCase()),
+            if (verifiedAt != null && verifiedAt.toString().isNotEmpty)
+              _buildInfoRow('Verified At', _formatDateTime(verifiedAt.toString())),
           ],
         ),
 
@@ -306,9 +317,16 @@ final colors = Theme.of(context).colorScheme;
           title: 'Rental Details',
           children: [
             _buildInfoRow('Vehicle', carName),
+            _buildInfoRow('Plate Number', plateNumber),
             _buildInfoRow('Pickup Date', _formatDate(pickupDate)),
             _buildInfoRow('Return Date', _formatDate(returnDate)),
+            if (pickupTime.toString().isNotEmpty)
+              _buildInfoRow('Pickup Time', pickupTime),
+            if (returnTime.toString().isNotEmpty)
+              _buildInfoRow('Return Time', returnTime),
             _buildInfoRow('Duration', duration),
+            if (dailyRate > 0)
+              _buildInfoRow('Daily Rate', '₱${dailyRate.toStringAsFixed(2)}'),
           ],
         ),
 
@@ -318,7 +336,10 @@ final colors = Theme.of(context).colorScheme;
         _buildSection(
           title: 'Payment Summary',
           children: [
-            _buildInfoRow('Total Amount', '₱${amount.toStringAsFixed(2)}', isHighlighted: true),
+            _buildInfoRow('Base Rental Fee', '₱${baseAmount.toStringAsFixed(2)}'),
+            if (securityDeposit > 0)
+              _buildInfoRow('Security Deposit (Held)', '₱${securityDeposit.toStringAsFixed(2)}'),
+            _buildInfoRow('Grand Total', '₱${grandTotal.toStringAsFixed(2)}', isHighlighted: true),
             _buildInfoRow('Payment Method', paymentMethod.toUpperCase()),
             _buildInfoRow('Reference', paymentReference),
           ],

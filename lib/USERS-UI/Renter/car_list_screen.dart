@@ -2,17 +2,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import '../Renter/search_filter_screen.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_detail_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'widgets/sort_bottom_sheet.dart';
 import 'widgets/favorite_button.dart';
-import 'widgets/notification_icon.dart';
 import 'services/saved_search_service.dart';
 import 'saved_searches_screen.dart';
 import 'cars_map_view_screen.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
+import '../../utils/image_helper.dart';
 
 // ✨ THEME CONSTANTS - Facebook-style Dark Mode (Softer, Not Pure Black)
 class AppColors {
@@ -80,10 +81,7 @@ class _CarListScreenState extends State<CarListScreen> {
   }
 
   String getImageUrl(String path) {
-    if (path.isEmpty) {
-      return "https://via.placeholder.com/300";
-    }
-    return GlobalApiConfig.getImageUrl(path.replaceFirst("uploads/", ""));
+    return ImageHelper.formatImageUrl(path);
   }
 
   Future<void> fetchCars() async {
@@ -333,7 +331,7 @@ class _CarListScreenState extends State<CarListScreen> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: 'e.g., Budget SUVs in Bayugan',
-                hintStyle: GoogleFonts.poppins(color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6)),
+                hintStyle: GoogleFonts.poppins(color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.6)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide(color: Theme.of(context).dividerColor),
@@ -484,9 +482,9 @@ class _CarListScreenState extends State<CarListScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildIconButton(Icons.map, _showMapView),
-              const SizedBox(width: 10),
               _buildIconButton(Icons.tune, _showSortOptions),
+              const SizedBox(width: 10),
+              _buildIconButton(Icons.map, _showMapView),
             ],
           ),
       ],
@@ -648,12 +646,6 @@ class _CarListScreenState extends State<CarListScreen> {
         ),
       ),
       centerTitle: true,
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: NotificationIcon(),
-        ),
-      ],
     );
   }
 
@@ -711,7 +703,7 @@ class _CarListScreenState extends State<CarListScreen> {
               Icons.filter_list,
               color: _activeFilterCount > 0
                   ? Theme.of(context).primaryColor
-                  : Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.5),
+                  : Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.5),
               size: 22,
             ),
             const SizedBox(width: 12),
@@ -723,7 +715,7 @@ class _CarListScreenState extends State<CarListScreen> {
                 style: GoogleFonts.poppins(
                   color: _activeFilterCount > 0
                       ? Theme.of(context).textTheme.titleLarge?.color
-                      : Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6),
+                      : Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.6),
                   fontSize: 14,
                   fontWeight: _activeFilterCount > 0 ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -790,7 +782,7 @@ class _CarListScreenState extends State<CarListScreen> {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                          color: Theme.of(context).primaryColor.withValues(alpha :0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -822,7 +814,7 @@ class _CarListScreenState extends State<CarListScreen> {
               Icon(
                 Icons.search_off,
                 size: 80,
-                color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.3),
+                color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.3),
               ),
               const SizedBox(height: 16),
               Text(
@@ -838,7 +830,7 @@ class _CarListScreenState extends State<CarListScreen> {
                 'Try adjusting your filters',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                  color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.7),
                 ),
               ),
               if (_activeFilterCount > 0) ...[
@@ -883,7 +875,7 @@ class _CarListScreenState extends State<CarListScreen> {
               carId: int.tryParse(car['id'].toString()) ?? 0,
               name: "${car['brand']} ${car['model']}",
               year: car['car_year'] ?? "",
-              rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+              rating: double.tryParse(car['rating'].toString()) ?? 0.0,
               location: (car['location'] ?? '').isEmpty ? "Unknown" : car['location'],
               price: car['price'].toString(),
               seats: int.tryParse(car['seat'].toString()) ?? 4,
@@ -931,7 +923,7 @@ class _CarListScreenState extends State<CarListScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkBorder.withOpacity(0.5)
+                ? AppColors.darkBorder.withValues(alpha :0.5)
                 : Colors.grey.shade200,
             width: 1,
           ),
@@ -949,25 +941,13 @@ class _CarListScreenState extends State<CarListScreen> {
             // Image Section
             Stack(
               children: [
-                ClipRRect(
+                OptimizedNetworkImage(
+                  imageUrl: image,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    image,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 140,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.darkCardSecondary
-                          : Colors.grey.shade200,
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 60,
-                        color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
+                  errorIcon: Icons.directions_car,
                 ),
                 // Favorite button
                 Positioned(
@@ -1045,7 +1025,7 @@ class _CarListScreenState extends State<CarListScreen> {
                         Icon(
                           Icons.location_on,
                           size: 11,
-                          color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6),
+                          color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.6),
                         ),
                         const SizedBox(width: 3),
                         Expanded(
@@ -1053,7 +1033,7 @@ class _CarListScreenState extends State<CarListScreen> {
                             location,
                             style: GoogleFonts.poppins(
                               fontSize: 10,
-                              color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                              color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.7),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1068,14 +1048,14 @@ class _CarListScreenState extends State<CarListScreen> {
                         Icon(
                           Icons.event_seat,
                           size: 11,
-                          color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6),
+                          color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.6),
                         ),
                         const SizedBox(width: 3),
                         Text(
                           "$seats",
                           style: GoogleFonts.poppins(
                             fontSize: 10,
-                            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                            color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.7),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1091,7 +1071,7 @@ class _CarListScreenState extends State<CarListScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                            color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha :0.7),
                           ),
                         ),
                       ],

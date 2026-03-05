@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 import 'car_pricing_screen.dart';
 
 class CarRulesScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class CarRulesScreen extends StatefulWidget {
 }
 
 class _CarRulesScreenState extends State<CarRulesScreen> {
-  final List<String> availableRules = [
+  static const List<String> _carDefaultRules = [
     'Clean As You Go (CLAYGO)',
     'No Littering',
     'No eating or drinking inside',
@@ -24,23 +24,53 @@ class _CarRulesScreenState extends State<CarRulesScreen> {
     'No vaping/smoking',
   ];
 
+  static const List<String> _motorcycleDefaultRules = [
+    'Wear a helmet at all times',
+    'Valid driver\'s license required',
+    'No racing or stunts',
+    'No off-roading or driving through flooded areas',
+    'No inter-island travel',
+    'Return with the same fuel level',
+    'No vaping/smoking',
+  ];
+
+  late List<String> availableRules;
   late List<String> selectedRules;
   bool? hasUnlimitedMileage;
   final TextEditingController _dailyLimitController = TextEditingController();
   final TextEditingController _excessRateController = TextEditingController();
 
+  bool get _isMotorcycle => widget.vehicleType == 'motorcycle';
+
+  int get _defaultDailyLimitKm => _isMotorcycle ? 150 : 200;
+
+  String get _vehicleLabel => _isMotorcycle ? 'motorcycle' : 'car';
+
   @override
   void initState() {
     super.initState();
+
+    availableRules = List<String>.from(
+      _isMotorcycle ? _motorcycleDefaultRules : _carDefaultRules,
+    );
+
+    // Preserve any rules already saved on the listing (including custom ones).
     selectedRules = List<String>.from(widget.listing.rules);
+    for (final rule in selectedRules) {
+      if (!availableRules.contains(rule)) {
+        availableRules.add(rule);
+      }
+    }
+
     hasUnlimitedMileage = widget.listing.hasUnlimitedMileage;
-    
+
     // Initialize with existing values or defaults
     if (widget.listing.mileageLimit != null) {
       _dailyLimitController.text = widget.listing.mileageLimit.toString();
     } else {
-      _dailyLimitController.text = widget.vehicleType == 'motorcycle' ? '150' : '200';
+      _dailyLimitController.text = _defaultDailyLimitKm.toString();
     }
+
     _excessRateController.text = '10'; // Default ₱10/km
   }
 
@@ -191,11 +221,11 @@ void _saveAndContinue() {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.vehicleType == 'motorcycle' ? 'Your Motorcycle, Your Rules' : 'Your Cars, Your Rules',
+                      _isMotorcycle ? 'Your Motorcycle, Your Rules' : 'Your Car, Your Rules',
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black, // Also update color to black
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -210,7 +240,7 @@ void _saveAndContinue() {
 
                     // Rules
                     Text(
-                      'What are your car rules?',
+                      'What are your $_vehicleLabel rules?',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
@@ -240,7 +270,7 @@ void _saveAndContinue() {
                     OutlinedButton.icon(
                       onPressed: _showAddRuleDialog,
                       icon: const Icon(Icons.add, color: Colors.black),
-                      label: Text('Add car rule', style: GoogleFonts.poppins(color: Colors.black)),
+                      label: Text('Add $_vehicleLabel rule', style: GoogleFonts.poppins(color: Colors.black)),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.grey[300]!),
                         shape: RoundedRectangleBorder(
@@ -253,7 +283,7 @@ void _saveAndContinue() {
 
                     // Mileage Options
                     Text(
-                      'How far can we drive your car?',
+                      'How far can we drive your $_vehicleLabel?',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
@@ -321,7 +351,7 @@ void _saveAndContinue() {
                               keyboardType: TextInputType.number,
                               style: GoogleFonts.poppins(fontSize: 14),
                               decoration: InputDecoration(
-                                hintText: widget.vehicleType == 'motorcycle' ? '150' : '200',
+                                hintText: _defaultDailyLimitKm.toString(),
                                 hintStyle: GoogleFonts.poppins(color: Colors.grey),
                                 prefixIcon: const Icon(Icons.speed, size: 20),
                                 suffixText: 'km/day',
@@ -404,15 +434,15 @@ void _saveAndContinue() {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    '• Allowed: ${(int.tryParse(_dailyLimitController.text) ?? 200) * 3} km total',
+                                    '• Allowed: ${(int.tryParse(_dailyLimitController.text) ?? _defaultDailyLimitKm) * 3} km total',
                                     style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                                   ),
                                   Text(
-                                    '• If driven 700 km: ${700 - ((int.tryParse(_dailyLimitController.text) ?? 200) * 3)} km excess',
+                                    '• If driven 700 km: ${700 - ((int.tryParse(_dailyLimitController.text) ?? _defaultDailyLimitKm) * 3)} km excess',
                                     style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                                   ),
                                   Text(
-                                    '• Excess fee: ₱${(700 - ((int.tryParse(_dailyLimitController.text) ?? 200) * 3)) * (int.tryParse(_excessRateController.text) ?? 10)}',
+                                    '• Excess fee: ₱${(700 - ((int.tryParse(_dailyLimitController.text) ?? _defaultDailyLimitKm) * 3)) * (int.tryParse(_excessRateController.text) ?? 10)}',
                                     style: GoogleFonts.poppins(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,

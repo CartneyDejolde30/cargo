@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -24,15 +25,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        },
-      );
+      LoadingDialog.showSimple(context);
 
       try {
         var url = Uri.parse(GlobalApiConfig.registerEndpoint);

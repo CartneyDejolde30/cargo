@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'booking_screen.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/booking_screen.dart';
 
 class MotorcycleBookingScreen extends StatelessWidget {
   final int motorcycleId;

@@ -41,6 +41,8 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // ✅ Clear verification cache on app start to ensure fresh check
+    VerifyPopup.clearCache();
     _loadUserData();
     
     // ✅ Start periodic badge updates

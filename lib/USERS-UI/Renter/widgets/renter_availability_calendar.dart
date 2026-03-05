@@ -4,7 +4,8 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 /// Read-only availability calendar for renters
 /// Shows which dates are available, blocked, or booked
@@ -215,7 +216,7 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
   }
 
   Widget _buildLoading() {
-    return const Center(child: CircularProgressIndicator());
+    return const LoadingIndicator();
   }
 
   Widget _buildContent() {

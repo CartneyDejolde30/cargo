@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../mycar/api_constants.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class VehicleAvailabilityCalendar extends StatefulWidget {
   final int ownerId;
@@ -230,7 +231,7 @@ class _VehicleAvailabilityCalendarState extends State<VehicleAvailabilityCalenda
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingScreen(message: 'Loading calendar...')
           : Column(
               children: [
                 // Legend

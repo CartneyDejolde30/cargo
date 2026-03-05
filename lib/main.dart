@@ -6,28 +6,31 @@ import 'package:provider/provider.dart';
 // 🔥 Firebase
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'firebase_options.dart';
+import 'package:cargo/firebase_options.dart';
 
 // 🔔 Notifications
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:cargo/config/api_config.dart';
 
 // 🎨 Theme
-import 'theme/theme_provider.dart';
-import 'theme/app_theme.dart';
+import 'package:cargo/theme/theme_provider.dart';
+import 'package:cargo/theme/app_theme.dart';
 
 // 🧭 Screens
-import 'onboarding.dart';
-import 'login.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/car_list_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_list_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/profile_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/mycar_page.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/favorites_screen.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
-import 'package:flutter_application_1/services/persistent_auth_service.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
+import 'package:cargo/onboarding.dart';
+import 'package:cargo/login.dart';
+import 'package:cargo/USERS-UI/Renter/renters.dart';
+import 'package:cargo/USERS-UI/Renter/car_list_screen.dart';
+import 'package:cargo/USERS-UI/Renter/chats/chat_list_screen.dart';
+import 'package:cargo/USERS-UI/Renter/profile_screen.dart';
+import 'package:cargo/USERS-UI/Owner/mycar_page.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/history/my_booking_screen.dart';
+import 'package:cargo/USERS-UI/Renter/favorites_screen.dart';
+import 'package:cargo/services/user_presence_service.dart';
+import 'package:cargo/services/persistent_auth_service.dart';
+import 'package:cargo/USERS-UI/Owner/owner_home_screen.dart';
 
 /// 🔔 Local Notifications Instance
 final FlutterLocalNotificationsPlugin _localNotifications =
@@ -76,6 +79,42 @@ void main() {
   });
 }
 
+/// ✅ CRASH FIX: Centralized error logging
+void _logError(String source, Object error, StackTrace? stack) {
+  debugPrint('❌ [$source] Error: $error');
+  if (stack != null) {
+    debugPrint('Stack trace:\n$stack');
+  }
+  
+  // TODO: Send to crash reporting service (Firebase Crashlytics, Sentry, etc.)
+  // Example: FirebaseCrashlytics.instance.recordError(error, stack);
+}
+
+/// 🔑 Save current FCM token to backend for the logged-in user (if any)
+Future<void> _syncFcmTokenToBackend() async {
+  try {
+    final authService = PersistentAuthService();
+    final userId = await authService.getUserId();
+    if (userId == null || userId.isEmpty) return;
+
+    final token = await FirebaseMessaging.instance.getToken();
+    if (token == null || token.isEmpty) return;
+
+    final url = Uri.parse(GlobalApiConfig.saveFcmTokenEndpoint);
+
+    final response = await http.post(url, body: {
+      'user_id': userId,
+      // Send both keys for backwards/forwards compatibility
+      'token': token,
+      'fcm_token': token,
+    });
+
+    debugPrint('🔔 FCM token sync: ${response.statusCode}');
+  } catch (e, stack) {
+    _logError('FcmTokenSync', e, stack);
+  }
+}
+
 /// ✅ NEW: Initialize presence service for logged-in users
 Future<void> _initializePresenceService() async {
   try {
@@ -101,7 +140,8 @@ Future<void> _initializePresenceService() async {
 /// 🔔 Notification Setup (Non-blocking)
 Future<void> _setupNotificationsInBackground() async {
   try {
-    // 📲 Request Permissions
+    // 📲 Request Permissions (iOS/macOS)
+    // Note: On Android 13+ we must also request POST_NOTIFICATIONS at runtime
     await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
@@ -126,11 +166,25 @@ Future<void> _setupNotificationsInBackground() async {
       const InitializationSettings(android: androidSettings),
     );
 
+    // ✅ Android 13+ runtime notification permission
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
     // ✅ Create Channel
     await _localNotifications
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+
+    // 🔑 Sync token once on startup (only if logged in)
+    unawaited(_syncFcmTokenToBackend());
+
+    // 🔁 Keep backend token updated
+    FirebaseMessaging.instance.onTokenRefresh.listen((_) {
+      unawaited(_syncFcmTokenToBackend());
+    });
 
     // 📬 Foreground Notifications
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -266,7 +320,7 @@ class MyApp extends StatelessWidget {
       },
 
       // 🧠 Dynamic Route (Owner Cars)
-      onGenerateRoute: (settings) {
+      onGenerateRoute: (RouteSettings settings) {
         if (settings.name == '/mycars') {
           final ownerId = settings.arguments as int;
           return MaterialPageRoute(
@@ -278,13 +332,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-/// 🧾 Centralized Error Logger
-void _logError(String source, Object error, StackTrace? stack) {
-  debugPrint('❌ [$source] Error: $error');
-  if (stack != null) {
-    debugPrint('📌 Stack trace:\n$stack');
-  }
 
-  // Optional: Send to Crashlytics later
-  // FirebaseCrashlytics.instance.recordError(error, stack);
-}

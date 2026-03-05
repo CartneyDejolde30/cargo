@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
+import 'package:cargo/USERS-UI/Renter/models/booking.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:cargo/USERS-UI/Renter/chats/chat_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/map_route_screen.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/map_route_screen.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
 
 class LiveTripTrackerScreen extends StatefulWidget {
   final Booking booking;
@@ -93,13 +94,13 @@ final colors = Theme.of(context).colorScheme;
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              widget.booking.carImage,
+            OptimizedNetworkImage(
+              imageUrl: widget.booking.carImage,
+              width: double.infinity,
+              height: 200,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.directions_car, size: 80),
-              ),
+              errorIcon: Icons.directions_car,
+              errorIconSize: 80,
             ),
             Container(
               decoration: BoxDecoration(
@@ -150,11 +151,13 @@ final colors = Theme.of(context).colorScheme;
     final DateTime returnDate = _parseDate(widget.booking.returnDate) ?? DateTime.now();
     final DateTime now = DateTime.now();
     
-    final int totalDays = returnDate.difference(pickupDate).inDays;
+    final int totalDuration = returnDate.difference(pickupDate).inHours;
+    final int elapsedDuration = now.difference(pickupDate).inHours;
+    
+    final double progress = totalDuration > 0 ? elapsedDuration / totalDuration : 0;
+    
     final int daysRemaining = returnDate.difference(now).inDays;
     final int hoursRemaining = returnDate.difference(now).inHours % 24;
-    
-    final double progress = totalDays > 0 ? (totalDays - daysRemaining) / totalDays : 0;
 
     return Padding(
   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -423,15 +426,6 @@ final colors = Theme.of(context).colorScheme;
             children: [
               Expanded(
                 child: _buildQuickActionButton(
-                  'Extend Trip',
-                  Icons.calendar_month,
-                  Colors.blue,
-                  () => _showExtendDialog(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionButton(
                   'Report Issue',
                   Icons.report_problem,
                   Colors.red,
@@ -498,12 +492,6 @@ final colors = Theme.of(context).colorScheme;
             () => _openMaps(widget.booking.location),
           ),
           const SizedBox(height: 12),
-          _buildNavigationButton(
-            'Share Location',
-            Icons.share_location,
-            Colors.green,
-            () => _shareLocation(),
-          ),
         ],
       ),
     );
@@ -854,14 +842,6 @@ final colors = Theme.of(context).colorScheme;
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.calendar_month),
-              title: const Text('Extend Booking'),
-              onTap: () {
-                Navigator.pop(context);
-                _showExtendDialog();
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.cancel),
               title: const Text('Cancel Trip'),
               onTap: () {
@@ -871,15 +851,6 @@ final colors = Theme.of(context).colorScheme;
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showExtendDialog() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Extend trip feature coming soon!'),
-        backgroundColor: Colors.blue,
       ),
     );
   }
@@ -918,18 +889,9 @@ final colors = Theme.of(context).colorScheme;
   }
 
   void _openMaps(String location) async {
-    // Use MapTiler integration instead of Google Maps
-    // Parse coordinates from location string or use default
-    double? lat;
-    double? lng;
-    
-    // Try to extract coordinates if location contains them
-    // Format: "latitude,longitude" or similar
-    final coordMatch = RegExp(r'(-?\d+\.?\d*),\s*(-?\d+\.?\d*)').firstMatch(location);
-    if (coordMatch != null) {
-      lat = double.tryParse(coordMatch.group(1) ?? '');
-      lng = double.tryParse(coordMatch.group(2) ?? '');
-    }
+    // Use coordinates from booking if available
+    final lat = widget.booking.latitude;
+    final lng = widget.booking.longitude;
     
     if (lat != null && lng != null) {
       // Navigate to MapRouteScreen with MapTiler
@@ -937,18 +899,18 @@ final colors = Theme.of(context).colorScheme;
         context,
         MaterialPageRoute(
           builder: (_) => MapRouteScreen(
-            destinationLat: lat!,
-            destinationLng: lng!,
+            destinationLat: lat,
+            destinationLng: lng,
             locationName: location,
             carName: widget.booking.carName,
           ),
         ),
       );
     } else {
-      // Fallback: Show error or use geocoding service
+      // Fallback: Show error or use external maps
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to parse location. Please ensure coordinates are available.'),
+          content: Text('Location coordinates not available for this vehicle.'),
           backgroundColor: Colors.orange,
           action: SnackBarAction(
             label: 'Use External Map',
@@ -968,14 +930,6 @@ final colors = Theme.of(context).colorScheme;
     }
   }
 
-  void _shareLocation() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share location feature coming soon!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
   void _showError(String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

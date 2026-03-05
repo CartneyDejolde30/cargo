@@ -69,6 +69,7 @@ class PersistentAuthService {
         'address': prefs.getString('address'),
         'municipality': prefs.getString('municipality'),
         'profile_image': prefs.getString('profile_image'),
+        'is_verified': prefs.getString('is_verified'),
       };
     } catch (e) {
       debugPrint('❌ Error getting user data: $e');
@@ -89,6 +90,7 @@ class PersistentAuthService {
       await prefs.setString('address', userData['address'] ?? '');
       await prefs.setString('municipality', userData['municipality'] ?? '');
       await prefs.setString('profile_image', userData['profile_image'] ?? '');
+      await prefs.setString('is_verified', (userData['is_verified'] ?? 0).toString());
       
       if (userData['token'] != null) {
         await prefs.setString('auth_token', userData['token']);
@@ -117,6 +119,7 @@ class PersistentAuthService {
       await prefs.remove('address');
       await prefs.remove('municipality');
       await prefs.remove('profile_image');
+      await prefs.remove('is_verified');
       await prefs.remove('auth_token');
       await prefs.remove('stay_logged_in');
       

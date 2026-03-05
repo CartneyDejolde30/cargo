@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class PayoutSettingsScreen extends StatefulWidget {
   const PayoutSettingsScreen({super.key});
@@ -176,7 +177,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen> {
         centerTitle: true,
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.black))
+          ? const LoadingScreen(message: 'Loading payout settings...')
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(

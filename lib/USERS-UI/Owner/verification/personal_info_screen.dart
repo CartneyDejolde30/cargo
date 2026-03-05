@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/verification/id_upload_screen.dart';
+import 'package:cargo/USERS-UI/Owner/models/user_verification.dart';
+import 'package:cargo/USERS-UI/Owner/verification/id_upload_screen.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
   final UserVerification? existingData;
@@ -34,23 +34,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   final List<String> genders = ['Male', 'Female'];
 
-  // Agusan del Sur municipalities
-  final List<String> municipalities = [
-    'Bayugan',
-    'Bunawan',
-    'Esperanza',
-    'La Paz',
-    'Loreto',
-    'Prosperidad',
-    'Rosario',
-    'San Francisco',
-    'San Luis',
-    'Santa Josefa',
-    'Sibagat',
-    'Talacogon',
-    'Trento',
-    'Veruela',
-  ];
+  /// Municipality list is derived from the JSON keys (single source of truth).
+  ///
+  /// This avoids mismatches like "Bayugan" vs "Bayugan City" which would
+  /// prevent barangays from loading and block the user from continuing.
+  List<String> municipalities = [];
 
   Map<String, dynamic> barangaysData = {};
   List<String> barangays = [];
@@ -92,6 +80,18 @@ Future<void> _loadUserId() async {
     _mobileController.addListener(() => setState(() {}));
   }
 
+  String? _normalizeMunicipality(String? value) {
+    if (value == null) return null;
+
+    // Backward-compatibility for older saved values / previous hard-coded list.
+    const legacyToJsonKey = <String, String>{
+      'Bayugan': 'Bayugan City',
+      // Add more mappings here if older builds stored different labels.
+    };
+
+    return legacyToJsonKey[value] ?? value;
+  }
+
   Future<void> _loadBarangaysData() async {
     final response = await rootBundle.loadString('assets/data/caraga.json');
     final data = json.decode(response);
@@ -99,13 +99,22 @@ Future<void> _loadUserId() async {
     setState(() {
       // Extract Agusan del Sur data
       if (data.containsKey('Agusan del Sur')) {
-        barangaysData = data['Agusan del Sur'];
+        barangaysData = Map<String, dynamic>.from(data['Agusan del Sur']);
+        municipalities = barangaysData.keys.toList()..sort();
+      } else {
+        barangaysData = {};
+        municipalities = [];
       }
 
+      // Normalize any prefilled municipality to match the JSON keys.
+      verification.permCity = _normalizeMunicipality(verification.permCity);
+
       // Load barangays if municipality is already selected
-      if (verification.permCity != null && 
-          barangaysData.containsKey(verification.permCity)) {
+      if (verification.permCity != null && barangaysData.containsKey(verification.permCity)) {
         barangays = List<String>.from(barangaysData[verification.permCity]);
+      } else {
+        barangays = [];
+        verification.permBarangay = null;
       }
     });
   }

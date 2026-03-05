@@ -1,5 +1,5 @@
-name: flutter_application_1
-description: "A new Flutter project."
+name: cargo
+description: "CarGO - Peer-to-Peer Vehicle Rental Platform. A comprehensive mobile application for renting and listing cars and motorcycles with real-time GPS tracking, secure payments, and insurance coverage."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -42,6 +42,7 @@ dependencies:
   flutter_image_compress: ^2.1.0
   vibration: ^3.1.4
   url_launcher: ^6.3.2
+  package_info_plus: ^8.0.3
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.4.4
@@ -73,6 +74,9 @@ dependencies:
   get: ^4.7.2
   get_storage: ^2.1.1
   share_plus: ^12.0.1
+  pdf: ^3.11.1
+  printing: ^5.13.2
+  path_provider: ^2.1.4
 
   # MAP DEPENDENCIES
   flutter_map: ^8.2.2
@@ -93,6 +97,9 @@ dependencies:
   
   # CHARTS FOR ANALYTICS
   fl_chart: ^0.69.0
+  
+  # NETWORK CONNECTIVITY
+  connectivity_plus: ^6.1.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -167,7 +174,7 @@ flutter:
     - assets/2.jpg
     - assets/data/caraga.json
     - assets/search.png
-    - assets/gcash.jpg
+    - assets/qr.jpg
 
   
     

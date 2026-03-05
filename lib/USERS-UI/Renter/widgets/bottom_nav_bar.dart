@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/notification_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -12,21 +10,6 @@ class BottomNavBar extends StatelessWidget {
     required this.onTap,
   });
 
-  // ✅ FIX: Add this function INSIDE BottomNavBar
-  void _openNotifications(BuildContext context) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    int userId = int.tryParse(prefs.getString("user_id") ?? "0") ?? 0;
-
-    print("📌 Loaded User ID for Notifications: $userId");
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => NotificationScreen(userId: userId),
-      ),
-    );
-  }
 
   void _handleNavigation(BuildContext context, int index) {
     // Call the onTap callback first

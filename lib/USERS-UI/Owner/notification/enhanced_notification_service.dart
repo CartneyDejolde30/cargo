@@ -25,7 +25,7 @@ class EnhancedNotificationService {
         if (offset != null) 'offset': offset.toString(),
       };
 
-      final uri = Uri.parse('$_baseUrl/get_notification.php')
+      final uri = Uri.parse('${_baseUrl}get_notification.php')
           .replace(queryParameters: params);
 
       final response = await http.get(uri).timeout(ApiConstants.apiTimeout);
@@ -85,7 +85,7 @@ class EnhancedNotificationService {
   Future<bool> deleteNotification(int notificationId, int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/notifications/delete_notification.php'),
+        Uri.parse('${_baseUrl}api/notifications/delete_user_notification.php'),
         body: {
           'notification_id': notificationId.toString(),
           'user_id': userId.toString(),
@@ -106,7 +106,7 @@ class EnhancedNotificationService {
   Future<bool> archiveNotification(int notificationId) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/notifications/archive_notification.php'),
+        Uri.parse('${_baseUrl}api/notifications/archive_notification.php'),
         body: {'id': notificationId.toString()},
       ).timeout(ApiConstants.apiTimeout);
 
@@ -121,11 +121,14 @@ class EnhancedNotificationService {
   }
 
   /// Mark as read
-  Future<bool> markAsRead(String notificationId) async {
+  Future<bool> markAsRead(String notificationId, int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/mark_notification_read.php'),
-        body: {'notification_id': notificationId},
+        Uri.parse('${_baseUrl}api/notifications/mark_as_read.php'),
+        body: {
+          'notification_id': notificationId,
+          'user_id': userId.toString(),
+        },
       ).timeout(ApiConstants.apiTimeout);
 
       if (response.statusCode == 200) {
@@ -142,7 +145,7 @@ class EnhancedNotificationService {
   Future<bool> markAllAsRead(int userId) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/notifications/update_all.php'),
+        Uri.parse('${_baseUrl}api/notifications/update_all.php'),
         body: {'user_id': userId.toString()},
       ).timeout(ApiConstants.apiTimeout);
 

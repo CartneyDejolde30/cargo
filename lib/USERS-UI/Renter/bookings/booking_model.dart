@@ -17,7 +17,6 @@ class BookingSummary {
   final String gender;
 
   // Booking Details
-  final bool bookWithDriver;
   final String rentalPeriod; // 'Day', 'Weekly', 'Monthly'
   final DateTime pickupDate;
   final DateTime returnDate;
@@ -26,7 +25,6 @@ class BookingSummary {
 
   // Pricing
   final double pricePerDay;
-  final double driverFee;
   final int numberOfDays;
   final double totalAmount;
 
@@ -51,14 +49,12 @@ class BookingSummary {
     required this.email,
     required this.contactNumber,
     required this.gender,
-    required this.bookWithDriver,
     required this.rentalPeriod,
     required this.pickupDate,
     required this.returnDate,
     required this.pickupTime,
     required this.returnTime,
     required this.pricePerDay,
-    required this.driverFee,
     required this.numberOfDays,
     required this.totalAmount,
     this.status = 'pending',
@@ -86,14 +82,12 @@ class BookingSummary {
       'owner_name': ownerName,
       'owner_avatar': ownerAvatar,
       'gender': gender,
-      'book_with_driver': bookWithDriver,
       'rental_period': rentalPeriod,
       'pickup_date': pickupDate.toIso8601String(),
       'return_date': returnDate.toIso8601String(),
       'pickup_time': pickupTime,
       'return_time': returnTime,
       'price_per_day': pricePerDay,
-      'driver_fee': driverFee,
       'number_of_days': numberOfDays,
       'total_amount': totalAmount,
       'status': status,
@@ -122,16 +116,12 @@ class BookingSummary {
       email: json['email'] ?? '',
       contactNumber: json['contact'] ?? '',
       gender: json['gender'] ?? 'Male',
-      bookWithDriver: json['book_with_driver'] == true ||
-          json['book_with_driver'] == 1 ||
-          json['book_with_driver'] == "1",
       rentalPeriod: json['rental_period'] ?? 'Day',
       pickupDate: DateTime.parse(json['pickup_date']),
       returnDate: DateTime.parse(json['return_date']),
       pickupTime: json['pickup_time'] ?? '09:00',
       returnTime: json['return_time'] ?? '17:00',
       pricePerDay: (json['price_per_day'] as num?)?.toDouble() ?? 0.0,
-      driverFee: (json['driver_fee'] as num?)?.toDouble() ?? 0.0,
       numberOfDays: int.tryParse(json['number_of_days'].toString()) ?? 1,
       totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0.0,
       status: json['status']?.toString().toLowerCase() ?? 'pending',
@@ -161,14 +151,12 @@ class BookingSummary {
     String? email,
     String? contactNumber,
     String? gender,
-    bool? bookWithDriver,
     String? rentalPeriod,
     DateTime? pickupDate,
     DateTime? returnDate,
     String? pickupTime,
     String? returnTime,
     double? pricePerDay,
-    double? driverFee,
     int? numberOfDays,
     double? totalAmount,
     String? status,
@@ -191,14 +179,12 @@ class BookingSummary {
       email: email ?? this.email,
       contactNumber: contactNumber ?? this.contactNumber,
       gender: gender ?? this.gender,
-      bookWithDriver: bookWithDriver ?? this.bookWithDriver,
       rentalPeriod: rentalPeriod ?? this.rentalPeriod,
       pickupDate: pickupDate ?? this.pickupDate,
       returnDate: returnDate ?? this.returnDate,
       pickupTime: pickupTime ?? this.pickupTime,
       returnTime: returnTime ?? this.returnTime,
       pricePerDay: pricePerDay ?? this.pricePerDay,
-      driverFee: driverFee ?? this.driverFee,
       numberOfDays: numberOfDays ?? this.numberOfDays,
       totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,

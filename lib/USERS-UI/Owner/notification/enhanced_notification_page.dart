@@ -121,7 +121,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
  Future<void> _markAsRead(NotificationModel notification) async {
   if (!notification.isUnread) return;
 
-  await _service.markAsRead(notification.id.toString());
+  await _service.markAsRead(notification.id.toString(), widget.userId);
 
   final counts = await _service.getUnreadCountsByCategory(widget.userId);
 
@@ -297,7 +297,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark ? colors.background : Colors.grey[50],
+      backgroundColor: isDark ? colors.surface : Colors.grey[50],
       appBar: _buildAppBar(),
       body: _isLoading ? _buildLoading() : _buildContent(),
       bottomNavigationBar: _isSelectionMode ? _buildSelectionBar() : null,
@@ -311,6 +311,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
     return AppBar(
       backgroundColor: isDark ? colors.surface : Colors.white,
       elevation: 0,
+      automaticallyImplyLeading: false,
       leading: _isSelectionMode
           ? IconButton(
               icon: Icon(Icons.close, color: isDark ? colors.onSurface : Colors.black),
@@ -319,10 +320,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
                 _selectedIds.clear();
               }),
             )
-          : IconButton(
-              icon: Icon(Icons.arrow_back, color: isDark ? colors.onSurface : Colors.black),
-              onPressed: () => Navigator.pop(context),
-            ),
+          : null,
       title: _isSelectionMode
           ? Text(
               '${_selectedIds.length} selected',
@@ -775,7 +773,7 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark ? colors.background : Colors.grey[50],
+      backgroundColor: isDark ? colors.surface : Colors.grey[50],
       appBar: AppBar(
         backgroundColor: isDark ? colors.surface : Colors.white,
         elevation: 0,

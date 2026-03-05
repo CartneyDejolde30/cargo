@@ -3,11 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/config/api_config.dart';
-import 'package:flutter_application_1/widgets/map_controls.dart';
-import 'package:flutter_application_1/widgets/map_style_switcher.dart';
-import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/map_controls.dart';
+import 'package:cargo/widgets/map_style_switcher.dart';
+import 'package:cargo/USERS-UI/widgets/location_permission_helper.dart';
 import 'motorcycle_detail_screen.dart';
 
 class MotorcyclesMapViewScreen extends StatefulWidget {
@@ -379,7 +379,7 @@ class _MotorcyclesMapViewScreenState extends State<MotorcyclesMapViewScreen> {
                           const Icon(Icons.star, color: Colors.amber, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${motorcycle['rating'] ?? 5.0}',
+                            '${motorcycle['rating'] ?? 0.0}',
                             style: GoogleFonts.poppins(fontSize: 13),
                           ),
                         ],
@@ -401,7 +401,7 @@ class _MotorcyclesMapViewScreenState extends State<MotorcyclesMapViewScreen> {
                       motorcycleName: '${motorcycle['brand']} ${motorcycle['model']}',
                       motorcycleImage: _getImageUrl(motorcycle['image']),
                       price: motorcycle['price'].toString(),
-                      rating: double.tryParse(motorcycle['rating'].toString()) ?? 5.0,
+                      rating: double.tryParse(motorcycle['rating'].toString()) ?? 0.0,
                       location: motorcycle['location'] ?? 'Unknown',
                     ),
                   ),
@@ -522,7 +522,7 @@ class _MotorcyclesMapViewScreenState extends State<MotorcyclesMapViewScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: _currentMapStyle,
+                urlTemplate: MapTilerConfig.getTileUrl(_currentMapStyle),
                 userAgentPackageName: 'com.example.flutter_application_1',
               ),
               MarkerLayer(markers: _markers),

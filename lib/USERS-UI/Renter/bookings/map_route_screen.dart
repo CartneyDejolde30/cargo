@@ -5,9 +5,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/widgets/map_controls.dart';
-import 'package:flutter_application_1/widgets/map_style_switcher.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/widgets/map_controls.dart';
+import 'package:cargo/widgets/map_style_switcher.dart';
 
 class MapRouteScreen extends StatefulWidget {
   final double destinationLat;

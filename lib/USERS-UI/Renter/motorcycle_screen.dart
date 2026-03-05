@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
@@ -10,6 +10,9 @@ import '../Renter/chats/chat_list_screen.dart';
 import 'motorcycle_detail_screen.dart';
 import 'motorcycle_list_screen.dart';
 import 'widgets/favorite_button.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
+import '../../utils/image_helper.dart';
 
 class MotorcycleScreen extends StatefulWidget {
   const MotorcycleScreen({super.key});
@@ -31,11 +34,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
   }
 
   String formatImage(String? rawPath) {
-    final path = rawPath?.toString().trim() ?? '';
-    if (path.isEmpty) return "https://via.placeholder.com/300";
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    final cleanPath = path.replaceFirst("uploads/", "");
-    return GlobalApiConfig.getImageUrl(cleanPath);
+    return ImageHelper.formatImageUrl(rawPath);
   }
 
   Future<String> resolveImageUrlCached(String? rawPath) async {
@@ -48,7 +47,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
       candidate = path;
     } else {
       final clean = path.replaceFirst("uploads/", "");
-      candidate = GlobalApiConfig.getImageUrl(clean);
+      candidate = ImageHelper.formatImageUrl(clean);
     }
 
     if (_resolvedImageCache.containsKey(candidate)) return _resolvedImageCache[candidate]!;
@@ -120,8 +119,7 @@ class _MotorcycleScreenState extends State<MotorcycleScreen> {
     // Get best motorcycles (first 4) and newly listed (last 3)
     final bestMotorcycles = _motorcycles.take(4).toList();
     final newlyListed = _motorcycles.length > 3 ? _motorcycles.skip(_motorcycles.length - 3).toList() : _motorcycles;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -212,7 +210,10 @@ GestureDetector(
                 const SizedBox(height: 12),
 
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: LoadingIndicator(),
+                      )
                     : _motorcycles.isEmpty
                         ? const Center(child: Text("No motorcycles available"))
                         : GridView.builder(
@@ -235,7 +236,7 @@ GestureDetector(
                                 motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
                                 image: formatImage(motorcycle['image'] ?? ''),
                                 name: "${motorcycle['brand']} ${motorcycle['model']}",
-                                rating: double.tryParse(motorcycle['rating'].toString()) ?? 5.0,
+                                rating: double.tryParse(motorcycle['rating'].toString()) ?? 0.0,
                                 location: locationText,
                                 type: motorcycle['body_style'] ?? motorcycle['type'] ?? "Standard",
                                 price: motorcycle['price'].toString(),
@@ -250,7 +251,10 @@ GestureDetector(
                 const SizedBox(height: 12),
 
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: LoadingIndicator(),
+                      )
                     : newlyListed.isEmpty
                         ? const Center(child: Text("No new listings"))
                         : SizedBox(
@@ -366,8 +370,6 @@ GestureDetector(
     required String type,
     required String price,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -395,34 +397,14 @@ GestureDetector(
           children: [
             Stack(
               children: [
-                ClipRRect(
+                OptimizedNetworkImage(
+                  imageUrl: image,
+                  height: 110,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: FutureBuilder<String>(
-                    future: resolveImageUrlCached(image),
-                    builder: (context, snap) {
-                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                      return Image.network(
-                        imageUrl,
-                        height: 110,
-<<<<<<< HEAD
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            height: 110,
-                            color: Theme.of(context).dividerColor,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 110,
-                          color: Theme.of(context).dividerColor,
-                          child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
-                        ),
-                      );
-                    },
-                  ),
+                  errorIcon: Icons.two_wheeler,
+                  errorIconSize: 60,
                 ),
                 // Favorite button
                 Positioned(
@@ -507,7 +489,7 @@ GestureDetector(
               motorcycleName: name,
               motorcycleImage: image,
               price: price,
-              rating: 5.0,
+              rating: 0.0,
               location: location,
             ),
           ),
@@ -531,38 +513,17 @@ GestureDetector(
           children: [
             Stack(
               children: [
-                ClipRRect(
+                OptimizedNetworkImage(
+                  imageUrl: image,
+                  height: 160,
+                  width: 140,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
                   ),
-                  child: FutureBuilder<String>(
-                    future: resolveImageUrlCached(image),
-                    builder: (context, snap) {
-                      final imageUrl = snap.data ?? "https://via.placeholder.com/400x250?text=No+Image";
-                      return Image.network(
-                        imageUrl,
-                        height: 160,
-                        width: 140,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            height: 160,
-                            width: 140,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 160,
-                          width: 140,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          child: const Icon(Icons.two_wheeler, size: 40, color: Colors.grey),
-                        ),
-                      );
-                    },
-                  ),
+                  errorIcon: Icons.two_wheeler,
+                  errorIconSize: 40,
                 ),
                 if (hasUnlimitedMileage)
                   Positioned(
@@ -765,7 +726,7 @@ GestureDetector(
               motorcycleName: name,
               motorcycleImage: image,
               price: price,
-              rating: 5.0,
+              rating: 0.0,
               location: location,
             ),
 
@@ -807,7 +768,7 @@ GestureDetector(
                         height: 160,
                         width: 140,
                         color: Colors.grey.shade200,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: const Center(child: LoadingIndicator(size: 30, strokeWidth: 2)),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(

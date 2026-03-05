@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb; // ADD THIS
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 
 class CarPhotoCaptureScreen extends StatefulWidget {
   final String photoLabel;
@@ -22,6 +23,7 @@ class CarPhotoCaptureScreen extends StatefulWidget {
 }
 
 class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
+  final ImagePicker _picker = ImagePicker();
   String? capturedImagePath;
 
   @override
@@ -31,6 +33,61 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
     /// Restore the saved photo if user goes back
     if (widget.listing.carPhotos.containsKey(widget.spotNumber)) {
       capturedImagePath = widget.listing.carPhotos[widget.spotNumber];
+    }
+
+    // ✅ Android: recover image if the OS killed/recreated the Activity while the camera was open.
+    // This prevents the flow from looking like it "crashed and restarted".
+    _recoverLostImage();
+    
+    // ✅ Save current route to prevent navigation loss
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveCurrentRoute();
+    });
+  }
+  
+  Future<void> _saveCurrentRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_car_listing_route', 'photo_capture_screen');
+      await prefs.setInt('pending_photo_spot_number', widget.spotNumber);
+      debugPrint('✅ Saved current route: photo_capture_screen (spot ${widget.spotNumber})');
+    } catch (e) {
+      debugPrint('⚠️ Could not save route: $e');
+    }
+  }
+  
+  @override
+  void dispose() {
+    // Clear saved route when leaving normally
+    _clearSavedRoute();
+    super.dispose();
+  }
+  
+  Future<void> _clearSavedRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_car_listing_route');
+      await prefs.remove('pending_photo_spot_number');
+    } catch (e) {
+      debugPrint('⚠️ Could not clear route: $e');
+    }
+  }
+
+  Future<void> _recoverLostImage() async {
+    // ✅ Skip on web
+    if (kIsWeb) return;
+    
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      final XFile? file = response.file;
+      if (!mounted || file == null) return;
+
+      setState(() {
+        capturedImagePath = file.path;
+      });
+    } catch (e) {
+      print("⚠️ Could not recover lost image: $e");
+      // Ignore: recovery is best-effort.
     }
   }
 
@@ -185,6 +242,14 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
             : Image.file(
                 File(capturedImagePath!),
                 fit: BoxFit.cover,
+                // ✅ CRITICAL FIX: Reduced from 1080 to 800 to save memory
+                cacheWidth: 800,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  );
+                },
               ),
       ),
     );
@@ -232,16 +297,73 @@ class _CarPhotoCaptureScreenState extends State<CarPhotoCaptureScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: source,
-      imageQuality: 85,
-    );
+    try {
+      // ✅ CRITICAL FIX: Use lower quality and resolution to prevent Android from killing the app
+      final XFile? image = source == ImageSource.camera 
+          ? await _picker.pickImage(
+              source: source,
+              imageQuality: 60, // ✅ Reduced from 70 to 60
+              maxWidth: 1600,   // ✅ Reduced from 1920 to 1600
+              maxHeight: 1200,  // ✅ Reduced from 1080 to 1200
+              preferredCameraDevice: CameraDevice.rear,
+            )
+          : await _picker.pickImage(
+              source: source,
+              imageQuality: 60,
+              maxWidth: 1600,
+              maxHeight: 1200,
+            );
 
-    if (image != null) {
+      // ✅ CRITICAL: Check if widget is still mounted after camera/gallery closes
+      if (!mounted) {
+        print("⚠️ Widget disposed while picking image - app was likely killed by OS");
+        return;
+      }
+
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled photo selection");
+        return;
+      }
+
+      // ✅ Check file size for safety
+      final fileSize = await image.length();
+      print("📸 Image size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB");
+
+      // ✅ CRITICAL: Double-check mounted before setState
+      if (!mounted) {
+        print("⚠️ Widget disposed after image selection");
+        return;
+      }
+
       setState(() {
         capturedImagePath = image.path;
       });
+      
+      print("✅ Photo captured successfully: ${image.path}");
+      
+      // ✅ Show success feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Photo captured successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      print("❌ Error picking image: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to capture photo: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

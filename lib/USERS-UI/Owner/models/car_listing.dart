@@ -14,6 +14,7 @@ class CarListing {
   String? plateNumber;
   String? color;
   String? description;
+  String? transmissionType; // ✅ Added for motorcycle transmission
 
   // ------------------ RENTAL SETTINGS ------------------
   String? advanceNotice;
@@ -56,6 +57,7 @@ class CarListing {
     this.plateNumber,
     this.color,
     this.description,
+    this.transmissionType, // ✅ Added
     this.advanceNotice,
     this.minTripDuration,
     this.maxTripDuration,
@@ -104,6 +106,7 @@ class CarListing {
       plateNumber: json["plate_number"],
       color: json["color"],
       description: json["description"],
+      transmissionType: json["transmission_type"], // ✅ Added
 
       advanceNotice: json["advance_notice"],
       minTripDuration: json["min_trip_duration"],
@@ -144,6 +147,7 @@ class CarListing {
       if (plateNumber != null) "plate_number": plateNumber!,
       if (color != null) "color": color!,
       if (description != null) "description": description!,
+      if (transmissionType != null) "transmission_type": transmissionType!, // ✅ Added
 
       if (advanceNotice != null) "advance_notice": advanceNotice!,
       if (minTripDuration != null) "min_trip_duration": minTripDuration!,

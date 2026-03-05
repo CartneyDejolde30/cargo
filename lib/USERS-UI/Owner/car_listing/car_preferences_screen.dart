@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 import 'car_features_screen.dart';
 
 class CarPreferencesScreen extends StatefulWidget {
@@ -22,14 +22,17 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
   final List<String> minDurationOptions = ['1 day', '2 days', '3 days', 'Others'];
   final List<String> maxDurationOptions = ['5 days', '1 week', '2 weeks', '1 month', '3 months', 'Others'];
 
-  final List<Map<String, String>> deliveryOptions = [
+  bool get _isMotorcycle => widget.vehicleType == 'motorcycle';
+  String get _vehicleLabel => _isMotorcycle ? 'motorcycle' : 'car';
+
+  late final List<Map<String, String>> deliveryOptions = [
     {
       'title': 'Guest Pickup & Guest Return',
       'subtitle': 'Simply select this option for hassle-free pickup and return. The host\'s address will be provided for this choice.',
     },
     {
       'title': 'Guest Pickup & Host Collection',
-      'subtitle': 'Pickup defaults to host address. Guest can set where host should collect car.',
+      'subtitle': 'Pickup defaults to host address. Guest can set where host should collect the $_vehicleLabel.',
     },
     {
       'title': 'Host Delivery & Guest Return',
@@ -102,14 +105,11 @@ class _CarPreferencesScreenState extends State<CarPreferencesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tell us more about your car',
+                      'Tell us more about your $_vehicleLabel',
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).iconTheme.color,
-
-
-
                       ),
                     ),
                     const SizedBox(height: 32),

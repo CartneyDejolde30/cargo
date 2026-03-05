@@ -5,10 +5,11 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
-import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/services/verification_service.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/renters.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/owner_home_screen.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:cargo/USERS-UI/Owner/models/user_verification.dart';
+import 'package:cargo/USERS-UI/Owner/services/verification_service.dart';
+import 'package:cargo/USERS-UI/Renter/renters.dart';
+import 'package:cargo/USERS-UI/Owner/owner_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SelfieScreen extends StatefulWidget {
@@ -34,10 +35,82 @@ class _SelfieScreenState extends State<SelfieScreen> {
     if (!kIsWeb && widget.verification.selfiePhoto != null) {
       _selfieImage = File(widget.verification.selfiePhoto!);
     }
+    
+    // ✅ Recover lost image if Android killed the app
+    _recoverLostImage();
+    
+    // ✅ Save current route to prevent navigation loss
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveCurrentRoute();
+    });
+  }
+  
+  Future<void> _saveCurrentRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_verification_route', 'selfie_screen');
+      debugPrint('✅ Saved current route: selfie_screen');
+    } catch (e) {
+      debugPrint('⚠️ Could not save route: $e');
+    }
+  }
+  
+  @override
+  void dispose() {
+    // Clear saved route when leaving normally
+    _clearSavedRoute();
+    super.dispose();
+  }
+  
+  Future<void> _clearSavedRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_verification_route');
+    } catch (e) {
+      debugPrint('⚠️ Could not clear route: $e');
+    }
+  }
+  
+  Future<void> _recoverLostImage() async {
+    if (kIsWeb) return;
+    
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      final XFile? file = response.file;
+      if (!mounted || file == null) return;
+
+      setState(() {
+        _selfieImage = File(file.path);
+        widget.verification.selfieFile = File(file.path);
+        widget.verification.selfiePhoto = file.path;
+      });
+      
+      print("✅ Recovered lost selfie image");
+    } catch (e) {
+      print("⚠️ Could not recover lost selfie: $e");
+    }
   }
 
   // ❌ REMOVE THE ENTIRE _loadWebImages() METHOD
   // Delete lines 39-60 from your original code
+
+  Future<File> _compressImageFile(File input) async {
+    // Keep uploads comfortably under server limits.
+    final outPath = '${input.path}_cmp.jpg';
+    final outFile = File(outPath);
+
+    final result = await FlutterImageCompress.compressWithFile(
+      input.absolute.path,
+      quality: 70,
+      minWidth: 1280,
+      minHeight: 1280,
+      format: CompressFormat.jpeg,
+    );
+
+    if (result == null) return input;
+    await outFile.writeAsBytes(result, flush: true);
+    return outFile;
+  }
 
   Future<void> _takeSelfie() async {
     try {
@@ -47,20 +120,49 @@ class _SelfieScreenState extends State<SelfieScreen> {
         imageQuality: 85,
       );
 
-      if (image != null) {
-  final bytes = await image.readAsBytes();
-  setState(() {
-    if (kIsWeb) {
-      _webImageBytes = bytes;
-    } else {
-      _selfieImage = File(image.path);
-    }
-    widget.verification.selfiePhoto = base64Encode(bytes);
-  });
-}
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled selfie capture");
+        return;
+      }
 
-    } catch (_) {
-      _showError("Camera error. Please try again");
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      final bytes = await image.readAsBytes();
+
+      // ✅ CRITICAL: Check mounted after async read
+      if (!mounted) return;
+
+      if (kIsWeb) {
+        setState(() {
+          _webImageBytes = bytes;
+          // Web: PHP expects selfie_base64
+          widget.verification.selfiePhoto = base64Encode(bytes);
+          widget.verification.selfieFile = null;
+        });
+        return;
+      }
+
+      // Mobile: prefer multipart file upload (more reliable than huge base64 fields)
+      var file = File(image.path);
+      file = await _compressImageFile(file);
+
+      // ✅ CRITICAL: Check mounted after compression
+      if (!mounted) return;
+
+      setState(() {
+        _selfieImage = file;
+        widget.verification.selfieFile = file;
+        widget.verification.selfiePhoto = file.path; // keep path for preview/back navigation
+      });
+
+    } catch (e, stackTrace) {
+      print("❌ Camera error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        _showError("Camera error. Please try again");
+      }
     }
   }
 
@@ -73,21 +175,47 @@ class _SelfieScreenState extends State<SelfieScreen> {
         imageQuality: 85,
       );
 
-      if (image != null) {
-  final bytes = await image.readAsBytes();
-  setState(() {
-    if (kIsWeb) {
-      _webImageBytes = bytes;
-      widget.verification.selfiePhoto = base64Encode(bytes);
-    } else {
-      _selfieImage = File(image.path);
-      widget.verification.selfieFile = File(image.path);
-    }
-  });
-}
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled gallery selection");
+        return;
+      }
 
-    } catch (_) {
-      _showError("Failed to access gallery");
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      final bytes = await image.readAsBytes();
+
+      // ✅ CRITICAL: Check mounted after async read
+      if (!mounted) return;
+
+      if (kIsWeb) {
+        setState(() {
+          _webImageBytes = bytes;
+          widget.verification.selfiePhoto = base64Encode(bytes);
+          widget.verification.selfieFile = null;
+        });
+        return;
+      }
+
+      var file = File(image.path);
+      file = await _compressImageFile(file);
+
+      // ✅ CRITICAL: Check mounted after compression
+      if (!mounted) return;
+
+      setState(() {
+        _selfieImage = file;
+        widget.verification.selfieFile = file;
+        widget.verification.selfiePhoto = file.path;
+      });
+
+    } catch (e, stackTrace) {
+      print("❌ Gallery error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        _showError("Failed to access gallery");
+      }
     }
   }
 

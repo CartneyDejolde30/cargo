@@ -174,11 +174,13 @@ class _PeakHoursWidgetState extends State<PeakHoursWidget> {
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: percentage,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                    minHeight: 24,
+                  child: SizedBox(
+                    height: 24,
+                    child: LinearProgressIndicator(
+                      value: percentage,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                    ),
                   ),
                 ),
               ),

@@ -9,7 +9,7 @@ class DashboardService {
   Future<DashboardStats> fetchDashboardStats(String ownerId) async {
     try {
       final url = Uri.parse(
-        "${ApiConstants.baseUrl}/api/dashboard/dashboard_stats.php?owner_id=$ownerId",
+        "${ApiConstants.baseUrl}api/dashboard/dashboard_stats.php?owner_id=$ownerId",
       );
 
       debugPrint("📡 Dashboard API: $url");
@@ -58,7 +58,7 @@ class DashboardService {
   }) async {
     try {
       final url = Uri.parse(
-        "${ApiConstants.baseUrl}/api/revenue_trend.php"
+        "${ApiConstants.baseUrl}api/revenue_trend.php"
         "?owner_id=$ownerId&period=$period",
       );
 

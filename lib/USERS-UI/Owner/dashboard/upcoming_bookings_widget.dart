@@ -51,15 +51,15 @@ class UpcomingBookingsWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : colors.outline.withOpacity(0.2),
+              ? Colors.white.withValues(alpha :0.1)
+              : colors.outline.withValues(alpha :0.2),
           width: 1,
         ),
         boxShadow: isDark
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha :0.04),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -148,12 +148,12 @@ class UpcomingBookingsWidget extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
-            ? colors.surface.withOpacity(0.05)
+            ? colors.surface.withValues(alpha :0.05)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.1)
+              ? Colors.white.withValues(alpha :0.1)
               : Colors.grey.shade200,
           width: 1,
         ),
@@ -164,12 +164,12 @@ class UpcomingBookingsWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: timeColor.withOpacity(
+              color: timeColor.withValues(alpha :
                 isDark ? 0.2 : 0.1,
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: timeColor.withOpacity(
+                color: timeColor.withValues(alpha :
                   isDark ? 0.5 : 0.3,
                 ),
                 width: 1,
@@ -216,7 +216,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
                 child: Icon(
                   Icons.directions_car,
                   color: isDark
-                      ? colors.onSurface.withOpacity(0.7)
+                      ? colors.onSurface.withValues(alpha :0.7)
                       : Colors.grey.shade600,
                 ),
               ),
@@ -243,7 +243,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
                   booking.renterName,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: colors.onSurface.withOpacity(0.7),
+                        color: colors.onSurface.withValues(alpha :0.7),
                       ),
                 ),
                 const SizedBox(height: 4),
@@ -251,7 +251,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: timeColor.withOpacity(
+                    color: timeColor.withValues(alpha :
                       isDark ? 0.2 : 0.1,
                     ),
                     borderRadius: BorderRadius.circular(6),
@@ -288,8 +288,8 @@ class UpcomingBookingsWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : colors.outline.withOpacity(0.2),
+              ? Colors.white.withValues(alpha :0.1)
+              : colors.outline.withValues(alpha :0.2),
           width: 1,
         ),
       ),
@@ -300,7 +300,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
               Icons.event_available_outlined,
               size: 48,
               color: isDark
-                  ? colors.onSurface.withOpacity(0.6)
+                  ? colors.onSurface.withValues(alpha :0.6)
                   : Colors.grey.shade400,
             ),
             const SizedBox(height: 12),
@@ -315,7 +315,7 @@ class UpcomingBookingsWidget extends StatelessWidget {
             Text(
               "Schedule is clear",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurface.withOpacity(0.7),
+                    color: colors.onSurface.withValues(alpha :0.7),
                   ),
             ),
           ],

@@ -10,7 +10,7 @@ class GlobalApiConfig {
   // ========================================
   
   // Set to true for development (local), false for production (Hostinger)
-  static const bool isDevelopment = false; // Changed to production - using Hostinger
+  static const bool isDevelopment = false; // Production (cargoph.online)
   
   // Development Configuration (Local)
   static const String _devBaseIP = '10.218.197.49';
@@ -38,6 +38,8 @@ class GlobalApiConfig {
   static String get registerEndpoint => '$baseUrl/register.php';
   static String get logoutEndpoint => '$baseUrl/logout.php';
   static String get changePasswordEndpoint => '$baseUrl/backend_setting/update_password.php';
+  static String get requestPasswordResetEndpoint => '$apiUrl/security/request_password_reset.php';
+  static String get resetPasswordEndpoint => '$apiUrl/security/reset_password.php';
   
   // User Profile
   static String get updateProfileEndpoint => '$baseUrl/update.php';
@@ -75,6 +77,7 @@ class GlobalApiConfig {
   static String get rejectedBookingsEndpoint => '$apiUrl/bookings/rejected_bookings.php';
   static String get startTripEndpoint => '$apiUrl/bookings/start_trip.php';
   static String get endTripEndpoint => '$apiUrl/bookings/end_trip.php';
+  static String get checkBookingOverdueEndpoint => '$apiUrl/overdue/check_booking_overdue.php';
   static String get transactionsEndpoint => '$apiUrl/get_owner_transactions.php';
   
   // GPS Tracking
@@ -120,6 +123,9 @@ class GlobalApiConfig {
   static String get saveFcmTokenEndpoint => '$apiUrl/save_fcm_token.php';
   static String get getNotificationsEndpoint => '$baseUrl/get_notification.php';
   
+  // Favorites
+  static String get favoritesEndpoint => '$apiUrl/favorites';
+  
   // Availability Calendar
   static String get getBlockedDatesEndpoint => '$apiUrl/availability/get_blocked_dates.php';
   static String get blockDatesEndpoint => '$apiUrl/availability/block_dates.php';
@@ -141,6 +147,7 @@ class GlobalApiConfig {
   // ========================================
   
   /// Get full image URL from relative path
+  /// Handles: relative paths, full URLs, double slashes, HTTP->HTTPS conversion
   static String getImageUrl(String? imagePath) {
     // Trim whitespace and check for empty/null
     final trimmedPath = imagePath?.trim();
@@ -148,9 +155,18 @@ class GlobalApiConfig {
       return 'https://via.placeholder.com/300';
     }
     
-    // Already a full URL
+    // Already a full URL - normalize it
     if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
-      return trimmedPath;
+      // Fix double slashes in path (e.g., //uploads -> /uploads)
+      // The regex (?<!:)//+ means: match 2+ slashes NOT preceded by a colon
+      String normalized = trimmedPath.replaceAll(RegExp(r'(?<!:)//+'), '/');
+      
+      // Convert HTTP to HTTPS for security (production is HTTPS)
+      if (normalized.startsWith('http://') && !isDevelopment) {
+        normalized = normalized.replaceFirst('http://', 'https://');
+      }
+      
+      return normalized;
     }
     
     // Remove leading slash or "uploads/" prefix

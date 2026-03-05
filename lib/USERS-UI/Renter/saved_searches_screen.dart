@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'models/saved_search.dart';
 import 'services/saved_search_service.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class SavedSearchesScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSearchSelected;
@@ -98,7 +99,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingScreen(message: 'Loading saved searches...')
           : _savedSearches.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
@@ -165,7 +166,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha :0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

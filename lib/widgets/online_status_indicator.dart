@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
+import 'package:cargo/services/user_presence_service.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Widget to display user's online status with "Active Now" indicator

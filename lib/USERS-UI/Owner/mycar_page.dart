@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'car_listing/car_details.dart';
-import 'models/car_listing.dart';
 import 'car_listing/vehicle_type_selection_screen.dart';
 import 'verification/personal_info_screen.dart';
 
@@ -104,54 +102,165 @@ class _MyCarPageState extends State<MyCarPage> {
     setState(() {});
   }
 
-  /* ---------------- DELETE CAR ---------------- */
-  Future<void> deleteCar(int id) async {
-    final success = await _carService.deleteCar(id);
-
-    if (success) {
-      cars.removeWhere((car) => car["id"].toString() == id.toString());
-      applyFilters();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Text(
-                  'Car deleted successfully',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
+  /* ---------------- DELETE VEHICLE ---------------- */
+  Future<void> deleteVehicle(Map<String, dynamic> vehicle) async {
+    final vehicleId = int.tryParse(vehicle["id"].toString()) ?? 0;
+    final vehicleType = vehicle["vehicle_type"]?.toString() ?? 'car';
+    final vehicleName = "${vehicle['brand']} ${vehicle['model']}";
+    
+    if (vehicleId == 0) {
+      _showSnackBar('Invalid vehicle ID', Colors.red);
+      return;
     }
-  }
-
-  /* ---------------- NAVIGATE TO EDIT SCREEN ---------------- */
-  Future<void> navigateToEditScreen(Map<String, dynamic> car) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CarDetailsScreen(
-          ownerId: widget.ownerId,
-          existingListing: CarListing.fromJson(car),
+    
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            const SizedBox(width: 12),
+            Text('Delete Vehicle', style: GoogleFonts.poppins(fontSize: 18)),
+          ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this vehicle?',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    vehicleType == 'motorcycle' ? Icons.two_wheeler : Icons.directions_car,
+                    color: Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      vehicleName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action cannot be undone.',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete', style: GoogleFonts.poppins()),
+          ),
+        ],
       ),
     );
 
-    if (result == true) {
-      fetchCars();
+    if (confirmed != true) return;
+
+    // Show loading
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('Deleting vehicle...', style: GoogleFonts.poppins(fontSize: 14)),
+            ],
+          ),
+          duration: const Duration(seconds: 30),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    final result = await _carService.deleteVehicle(vehicleId, vehicleType, widget.ownerId);
+
+    // Remove loading snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+
+    if (result['success']) {
+      // Remove from local list
+      cars.removeWhere((car) => car["id"].toString() == vehicleId.toString());
+      applyFilters();
+
+      if (mounted) {
+        _showSnackBar(result['message'] ?? 'Vehicle deleted successfully', Colors.green);
+      }
+    } else {
+      if (mounted) {
+        _showSnackBar(result['message'] ?? 'Failed to delete vehicle', Colors.red);
+      }
     }
   }
+  
+  /* ---------------- SHOW SNACKBAR ---------------- */
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              backgroundColor == Colors.green 
+                  ? Icons.check_circle_outline 
+                  : Icons.error_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message, style: GoogleFonts.poppins(fontSize: 14)),
+            ),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
 
   /* ---------------- HANDLE ADD CAR ---------------- */
   Future<void> handleAddCar() async {
@@ -190,14 +299,6 @@ class _MyCarPageState extends State<MyCarPage> {
     }
   }
 
-  /* ---------------- HANDLE CAR MENU ACTIONS ---------------- */
-  void handleCarMenuAction(String action, Map<String, dynamic> car) {
-    if (action == "delete") {
-      deleteCar(int.parse(car["id"].toString()));
-    } else if (action == "edit") {
-      navigateToEditScreen(car);
-    }
-  }
 
   /* ---------------- BUILD UI ---------------- */
   @override
@@ -310,19 +411,19 @@ class _MyCarPageState extends State<MyCarPage> {
           hintText: "Search car...",
           hintStyle: GoogleFonts.poppins(
             color: isDark
-                ? colors.onSurface.withOpacity(0.5)
+                ? colors.onSurface.withValues(alpha :0.5)
                 : Colors.grey.shade500,
             fontSize: 14,
           ),
           prefixIcon: Icon(Icons.search,
               color: isDark
-                  ? colors.onSurface.withOpacity(0.7)
+                  ? colors.onSurface.withValues(alpha :0.7)
                   : Colors.grey.shade600),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(Icons.clear,
                       color: isDark
-                          ? colors.onSurface.withOpacity(0.7)
+                          ? colors.onSurface.withValues(alpha :0.7)
                           : Colors.grey.shade600),
                   onPressed: () {
                     setState(() {
@@ -341,14 +442,14 @@ class _MyCarPageState extends State<MyCarPage> {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
                 color: isDark
-                    ? Colors.white.withOpacity(0.1)
+                    ? Colors.white.withValues(alpha :0.1)
                     : Colors.grey.shade200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
                 color: isDark
-                    ? Colors.white.withOpacity(0.1)
+                    ? Colors.white.withValues(alpha :0.1)
                     : Colors.grey.shade200),
           ),
           focusedBorder: OutlineInputBorder(
@@ -387,15 +488,12 @@ class _MyCarPageState extends State<MyCarPage> {
                 MaterialPageRoute(
                   builder: (_) => CarDetailPage(
                     car: car,
-                    onEdit: () => navigateToEditScreen(car),
-                    onDelete: () =>
-                        deleteCar(int.parse(car["id"].toString())),
+                    ownerId: widget.ownerId, // Pass ownerId as fallback
+                    onDelete: () => deleteVehicle(car),
                   ),
                 ),
               );
             },
-            onMenuSelected: (action) =>
-                handleCarMenuAction(action, car),
           ),
         );
       },

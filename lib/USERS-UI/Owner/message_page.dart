@@ -51,19 +51,18 @@ class _MessagePageState extends State<MessagePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = Theme.of(context).colorScheme;
-
+    
     return Scaffold(
-<<<<<<< HEAD
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF121212)
           : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: isDark
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF1A1A1A)
             : const Color(0xFF2C3E50),
-        elevation: 0,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           "Messages",
@@ -97,15 +96,6 @@ class _MessagePageState extends State<MessagePage> {
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            color: isDark
-                ? colors.onSurface.withOpacity(0.1)
-                : Colors.grey.shade200,
-          ),
-        ),
       ),
       body: loading
           ? Center(
@@ -121,21 +111,27 @@ class _MessagePageState extends State<MessagePage> {
               children: [
                 // Search Bar
                 Container(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white,
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: FadeInDown(
                     duration: const Duration(milliseconds: 400),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF1F3F5),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2A2A2A)
+                            : const Color(0xFFF1F3F5),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -144,13 +140,15 @@ class _MessagePageState extends State<MessagePage> {
                       child: TextField(
                         onChanged: (v) => setState(() => searchQuery = v),
                         style: GoogleFonts.inter(
-                          color: colors.onSurface,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.black87,
                           fontSize: 15,
                         ),
                         decoration: InputDecoration(
                           hintText: "Search conversations...",
                           hintStyle: GoogleFonts.inter(
-                            color: colors.onSurface.withOpacity(0.5),
+                            color: colors.onSurface.withValues(alpha :0.5),
                             fontSize: 15,
                           ),
                           prefixIcon: Icon(
@@ -192,7 +190,9 @@ class _MessagePageState extends State<MessagePage> {
                     final isDark = Theme.of(context).brightness == Brightness.dark;
                     
                     return Container(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      color: isDark
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.white,
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +204,7 @@ class _MessagePageState extends State<MessagePage> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade500.withOpacity(0.2),
+                                    color: Colors.green.shade500.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -219,7 +219,9 @@ class _MessagePageState extends State<MessagePage> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: colors.onSurface,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -285,7 +287,7 @@ class _MessagePageState extends State<MessagePage> {
                                                       boxShadow: [
                                                         BoxShadow(
                                                           color: Colors.black
-                                                              .withOpacity(0.1),
+                                                              .withValues(alpha :0.1),
                                                           blurRadius: 8,
                                                           offset: const Offset(0, 2),
                                                         ),
@@ -389,7 +391,7 @@ class _MessagePageState extends State<MessagePage> {
                               Text(
                                 "No messages yet",
                                 style: GoogleFonts.poppins(
-                                  color: colors.onSurface.withOpacity(0.6),
+                                  color: colors.onSurface.withValues(alpha :0.6),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -398,7 +400,7 @@ class _MessagePageState extends State<MessagePage> {
                               Text(
                                 "Start a conversation to see it here",
                                 style: GoogleFonts.inter(
-                                  color: colors.onSurface.withOpacity(0.5),
+                                  color: colors.onSurface.withValues(alpha :0.5),
                                   fontSize: 14,
                                 ),
                               ),
@@ -444,7 +446,6 @@ class _MessagePageState extends State<MessagePage> {
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-<<<<<<< HEAD
                                     color: isDark
                                         ? const Color(0xFF1E1E1E)
                                         : Colors.white,
@@ -630,102 +631,6 @@ class _MessagePageState extends State<MessagePage> {
                                         ),
                                       ),
                                     ),
-                                    leading: Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 28,
-                                          backgroundColor: isDark
-    ? colors.onSurface.withOpacity(0.1)
-    : Colors.grey.shade200,
-                                          backgroundImage: isValidUrl(avatar)
-                                              ? CachedNetworkImageProvider(avatar)
-                                              : null,
-                                          child: !isValidUrl(avatar)
-                                              ? Icon(Icons.person,
-                                                  color: Colors.grey.shade600)
-                                              : null,
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            width: 12,
-                                            height: 12,
-                                            decoration: BoxDecoration(
-                                              color: Colors.green.shade500,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,                                                width: 2,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    title: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            name,
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15,
-                                              color: colors.onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        if (timestamp != null)
-                                          Text(
-                                            timeago.format(
-                                              (timestamp as Timestamp).toDate(),
-                                              locale: 'en_short',
-                                            ),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11,
-                                              color: colors.onSurface.withOpacity(0.5),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        lastMessage == "typing..."
-                                            ? "Typing..."
-                                            : lastMessage,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          color: lastMessage == "typing..."
-                                            ? Colors.blue.shade600
-                                            : colors.onSurface.withOpacity(0.6),
-
-                                          fontSize: 14,
-                                          fontStyle: lastMessage == "typing..."
-                                              ? FontStyle.italic
-                                              : FontStyle.normal,
-                                        ),
-                                      ),
-                                    ),
-                                    trailing: Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: colors.onSurface.withOpacity(0.4),
-                                      size: 24,
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ChatDetailScreen(
-                                            chatId: chatDoc.id,
-                                            peerId: userId,
-                                            peerName: name,
-                                            peerAvatar: avatar,
-                                          ),
-                                        ),
-                                      );
-                                    },
->>>>>>> 4a7b353e926d61e62da0c06782f0bbb889f21364
                                   ),
                                 ),
                               );

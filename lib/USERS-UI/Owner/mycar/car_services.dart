@@ -68,22 +68,48 @@ Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
 }
 
 
-  /* ---------------- DELETE CAR ---------------- */
-  Future<bool> deleteCar(int carId) async {
+  /* ---------------- DELETE VEHICLE (CAR OR MOTORCYCLE) ---------------- */
+  Future<Map<String, dynamic>> deleteVehicle(int vehicleId, String vehicleType, int ownerId) async {
     try {
+      debugPrint("🗑️ Deleting vehicle - ID: $vehicleId, Type: $vehicleType, Owner: $ownerId");
+      
       final response = await http.post(
         Uri.parse(ApiConstants.carsApi),
         body: {
           "action": "delete",
-          "id": carId.toString(),
+          "id": vehicleId.toString(),
+          "vehicle_type": vehicleType,
+          "owner_id": ownerId.toString(),
         },
       ).timeout(ApiConstants.apiTimeout);
 
-      final result = jsonDecode(response.body);
-      return result["success"] == true;
+      debugPrint("🗑️ Delete response status: ${response.statusCode}");
+      debugPrint("🗑️ Delete response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return {
+          'success': result["success"] == true,
+          'message': result["message"] ?? 'Unknown error',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
     } catch (e) {
       debugPrint("❌ Delete error: $e");
-      return false;
+      return {
+        'success': false,
+        'message': 'Failed to delete: $e',
+      };
     }
+  }
+  
+  /* ---------------- DELETE CAR (Legacy - for backward compatibility) ---------------- */
+  Future<bool> deleteCar(int carId) async {
+    final result = await deleteVehicle(carId, 'car', 0);
+    return result['success'] == true;
   }
 }

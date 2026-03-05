@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class PolicyDocumentScreen extends StatelessWidget {
+class PolicyDocumentScreen extends StatefulWidget {
   final String title;
   final PolicyDocument document;
 
@@ -10,6 +15,277 @@ class PolicyDocumentScreen extends StatelessWidget {
     required this.title,
     required this.document,
   });
+
+  @override
+  State<PolicyDocumentScreen> createState() => _PolicyDocumentScreenState();
+}
+
+class _PolicyDocumentScreenState extends State<PolicyDocumentScreen> {
+  bool isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookmarkStatus();
+  }
+
+  Future<void> _loadBookmarkStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isBookmarked = prefs.getBool('bookmark_${widget.title}') ?? false;
+    });
+  }
+
+  Future<void> _toggleBookmark() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isBookmarked = !isBookmarked;
+    });
+    await prefs.setBool('bookmark_${widget.title}', isBookmarked);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBookmarked ? 'Document bookmarked' : 'Bookmark removed',
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: isBookmarked ? Colors.green : Colors.grey.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportToPdf() async {
+    try {
+      final pdf = pw.Document();
+
+      // Create PDF content
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) {
+            return [
+              pw.Header(
+                level: 0,
+                child: pw.Text(
+                  widget.title,
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              ...widget.document.sections.map((section) {
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (section.title.isNotEmpty) ...[
+                      pw.Text(
+                        section.title,
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 10),
+                    ],
+                    ...section.content.map((content) {
+                      return pw.Padding(
+                        padding: const pw.EdgeInsets.only(bottom: 8),
+                        child: pw.Text(
+                          content.text,
+                          style: pw.TextStyle(
+                            fontSize: content.isBold ? 14 : 12,
+                            fontWeight: content.isBold 
+                                ? pw.FontWeight.bold 
+                                : pw.FontWeight.normal,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    pw.SizedBox(height: 20),
+                  ],
+                );
+              }).toList(),
+            ];
+          },
+        ),
+      );
+
+      // Show PDF preview with print/share options
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: '${widget.title}.pdf',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'PDF generated successfully',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error generating PDF: ${e.toString()}',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareDocument() async {
+    try {
+      // Create text content to share
+      StringBuffer content = StringBuffer();
+      content.writeln(widget.title);
+      content.writeln('=' * widget.title.length);
+      content.writeln();
+
+      for (var section in widget.document.sections) {
+        if (section.title.isNotEmpty) {
+          content.writeln(section.title);
+          content.writeln('-' * section.title.length);
+        }
+        for (var item in section.content) {
+          content.writeln(item.text);
+        }
+        content.writeln();
+      }
+
+      content.writeln();
+      content.writeln('---');
+      content.writeln('Shared from Cargo Car Rental App');
+
+      await SharePlus.instance.share(ShareParams(
+        text: content.toString(),
+        subject: widget.title,
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error sharing document: ${e.toString()}',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showActionMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.picture_as_pdf, color: Colors.red.shade700),
+                title: Text(
+                  'Export as PDF',
+                  style: GoogleFonts.poppins(fontSize: 16),
+                ),
+                subtitle: Text(
+                  'Save or print document',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportToPdf();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.share, color: Colors.blue.shade700),
+                title: Text(
+                  'Share Document',
+                  style: GoogleFonts.poppins(fontSize: 16),
+                ),
+                subtitle: Text(
+                  'Share via messaging apps',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareDocument();
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: isBookmarked ? Colors.orange.shade700 : Colors.grey.shade700,
+                ),
+                title: Text(
+                  isBookmarked ? 'Remove Bookmark' : 'Bookmark Document',
+                  style: GoogleFonts.poppins(fontSize: 16),
+                ),
+                subtitle: Text(
+                  'Quick access from bookmarks',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleBookmark();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,17 +299,29 @@ class PolicyDocumentScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          title,
+          widget.title,
           style: GoogleFonts.poppins(
             color: Theme.of(context).iconTheme.color,
-
-
-
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              color: isBookmarked ? Colors.orange.shade700 : Colors.grey.shade700,
+            ),
+            onPressed: _toggleBookmark,
+            tooltip: isBookmarked ? 'Remove Bookmark' : 'Bookmark',
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.black),
+            onPressed: _showActionMenu,
+            tooltip: 'More options',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -46,7 +334,7 @@ class PolicyDocumentScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: document.sections.map((section) {
+          children: widget.document.sections.map((section) {
             return _buildSection(section);
           }).toList(),
         ),
@@ -142,7 +430,7 @@ class CargoDocuments {
         title: '',
         content: [
           PolicyContent(
-            text: 'DOON Transport Technologies. ("DOON", "we", or "us") is committed to protecting and respecting your privacy.',
+            text: 'Cargo Car Rental Platform ("Cargo", "we", or "us") is committed to protecting and respecting your privacy.',
             isBold: true,
           ),
           PolicyContent(
@@ -208,10 +496,10 @@ class CargoDocuments {
             text: '7. The data we collect from you may be transferred to and stored at a destination outside of the Philippines. It may also be processed by staff operating outside of the Philippines who work for us or for any of our third-party service providers. Such staff may be engaged in, among other things, fulfilling your ordered services, processing your payment details, and providing support services. By submitting your data, you agree to this transfer, storage, or processing. We will take all necessary steps to ensure that your data is treated securely and in accordance with this privacy policy.',
           ),
           PolicyContent(
-            text: '8. All information you provide to us is stored on our secure servers. If DOON has given you (or you have chosen) a password that enables you to access certain parts of our platform, you are responsible for keeping this password confidential. Please do not share your password with anyone.',
+            text: '8. All information you provide to us is stored on our secure servers. If Cargo has given you (or you have chosen) a password that enables you to access certain parts of our platform, you are responsible for keeping this password confidential. Please do not share your password with anyone.',
           ),
           PolicyContent(
-            text: '9. Unfortunately, the transmission of information via the internet is not completely secure. Although we will do our best to protect your data, DOON cannot guarantee the security of your data transmitted to our platform. Any transmission is at your own risk. Once we have received your information, DOON will use strict procedures and security features to try to prevent unauthorized access.',
+            text: '9. Unfortunately, the transmission of information via the internet is not completely secure. Although we will do our best to protect your data, Cargo cannot guarantee the security of your data transmitted to our platform. Any transmission is at your own risk. Once we have received your information, Cargo will use strict procedures and security features to try to prevent unauthorized access.',
           ),
           PolicyContent(
             text: '10. We may collect, use, and process your data for any of the following purposes:',
@@ -276,7 +564,7 @@ class CargoDocuments {
             text: 'c. we or substantially all of our shares or assets are acquired by a third party, in which case personal data held by us about our customers will be one of the transferred assets;',
           ),
           PolicyContent(
-            text: 'd. if DOON is under a duty to disclose or share your personal data, in order to comply with any legal obligation (including any direction from a governmental or regulatory body or law enforcement) or in order to enforce or apply our Terms of Use; or',
+            text: 'd. if Cargo is under a duty to disclose or share your personal data, in order to comply with any legal obligation (including any direction from a governmental or regulatory body or law enforcement) or in order to enforce or apply our Terms of Use; or',
           ),
           PolicyContent(
             text: 'e. in an emergency concerning your health and/or safety for the purposes of dealing with that emergency.',
@@ -301,7 +589,7 @@ class CargoDocuments {
             text: '16. Please ensure that you obtain consent and speak to others before providing their data to us. Kindly inform them that we will only collect, use, and disclose their data for the stated purposes. By providing such information, you represent and warrant that the person whose data you have provided consents to its collection, use, and disclosure for these purposes.',
           ),
           PolicyContent(
-            text: '17. You have the right to withdraw your consent and request that we stop using and/or disclosing your data for any or all of the purposes stated above. To do so, submit a written request to DOON. However, please be aware that withdrawing your consent may impact our ability to proceed with your transactions, agreements, or interactions with us. Before you make the decision to withdraw your consent, we will inform you of the consequences that may arise. Please note that withdrawing your consent will not prevent DOON from exercising our legal rights (including any remedies or taking any steps we may be entitled to under the law).',
+            text: '17. You have the right to withdraw your consent and request that we stop using and/or disclosing your data for any or all of the purposes stated above. To do so, submit a written request to Cargo. However, please be aware that withdrawing your consent may impact our ability to proceed with your transactions, agreements, or interactions with us. Before you make the decision to withdraw your consent, we will inform you of the consequences that may arise. Please note that withdrawing your consent will not prevent Cargo from exercising our legal rights (including any remedies or taking any steps we may be entitled to under the law).',
           ),
         ],
       ),
@@ -312,13 +600,13 @@ class CargoDocuments {
             text: '18. Republic Act No. 10173 gives you the right to access your Data. Your right of access can be exercised in accordance with the Republic Act No. 10173. Any access request may be subject to an administrative fee at our rates then in force to meet our costs in providing you with details of the information we hold about you.',
           ),
           PolicyContent(
-            text: '19. In the event that you wish to correct and/or update your data in our records, you may inform DOON through email (compliance@doon.ph). In certain cases, data may also be corrected or updated via the Platform.',
+            text: '19. In the event that you wish to correct and/or update your data in our records, you may inform Cargo through email (compliance@Cargo.ph). In certain cases, data may also be corrected or updated via the Platform.',
           ),
           PolicyContent(
-            text: '20. For data deletion requests, you may inform DOON through email (compliance@doon.ph). To serve the best interest of our users, DOON requires user account information to remain on our platform. Any data deletion may lead to account termination.',
+            text: '20. For data deletion requests, you may inform Cargo through email (compliance@Cargo.ph). To serve the best interest of our users, Cargo requires user account information to remain on our platform. Any data deletion may lead to account termination.',
           ),
           PolicyContent(
-            text: '21. DOON will respond to requests for access, correction or deletion as soon as reasonably possible. If we are unable to respond to your request within thirty (30) days of receiving it, we will inform you in writing of the time by which we will be able to respond. If we are unable to provide you with any personal data or make a correction as requested by you, we will generally inform you of the reasons why (except where not required to do so under the Republic Act No. 10173).',
+            text: '21. Cargo will respond to requests for access, correction or deletion as soon as reasonably possible. If we are unable to respond to your request within thirty (30) days of receiving it, we will inform you in writing of the time by which we will be able to respond. If we are unable to provide you with any personal data or make a correction as requested by you, we will generally inform you of the reasons why (except where not required to do so under the Republic Act No. 10173).',
           ),
         ],
       ),
@@ -326,10 +614,10 @@ class CargoDocuments {
         title: 'Retention of Privacy Policy',
         content: [
           PolicyContent(
-            text: '22. DOON may retain your data for as long as necessary to fulfill the purpose for which it was collected, or as required or permitted by applicable laws. DOON will stop retaining your data, or remove the means by which the data can be associated with you, as soon as it is reasonable to assume that such retention no longer serves the purpose for which the data was collected and is no longer necessary for legal or business purposes.',
+            text: '22. Cargo may retain your data for as long as necessary to fulfill the purpose for which it was collected, or as required or permitted by applicable laws. Cargo will stop retaining your data, or remove the means by which the data can be associated with you, as soon as it is reasonable to assume that such retention no longer serves the purpose for which the data was collected and is no longer necessary for legal or business purposes.',
           ),
           PolicyContent(
-            text: '23. Please note that there is still a possibility that your data may be retained by third parties (e.g. other users of the platform) through various means (e.g. photos, screen captures). DOON does not authorize the retention of your data for purposes unrelated to the use of the platform, or when such data no longer serves the purpose for which it was collected or is no longer necessary for legal or business purposes ("Unauthorized Uses"). To the fullest extent permitted by applicable law, DOON shall not be liable for the retention of your data by third parties for Unauthorized Uses.',
+            text: '23. Please note that there is still a possibility that your data may be retained by third parties (e.g. other users of the platform) through various means (e.g. photos, screen captures). Cargo does not authorize the retention of your data for purposes unrelated to the use of the platform, or when such data no longer serves the purpose for which it was collected or is no longer necessary for legal or business purposes ("Unauthorized Uses"). To the fullest extent permitted by applicable law, Cargo shall not be liable for the retention of your data by third parties for Unauthorized Uses.',
           ),
         ],
       ),
@@ -345,7 +633,7 @@ class CargoDocuments {
         title: 'Contact',
         content: [
           PolicyContent(
-            text: '25. Questions, comments and requests regarding this privacy policy are welcomed and should be addressed to compliance@doon.ph',
+            text: '25. Questions, comments and requests regarding this privacy policy are welcomed and should be addressed to compliance@Cargo.ph',
           ),
         ],
       ),
@@ -407,7 +695,7 @@ class CargoDocuments {
             text: '• Return vehicles in the same condition as received',
           ),
           PolicyContent(
-            text: '• Pay all fees, deposits, and charges on time',
+            text: '• Pay all fees and charges on time through GCash',
           ),
           PolicyContent(
             text: '• Report any accidents or damage immediately',
@@ -444,7 +732,14 @@ class CargoDocuments {
         title: '5. Payments and Fees',
         content: [
           PolicyContent(
-            text: 'All payments are processed through GCash. Cargo charges a platform fee of 15-20% on each successful booking. Security deposits are held during the rental period and refunded within 3-5 days after successful return.',
+            text: 'All payments are processed through GCash. Cargo charges a platform fee of 15-20% on each successful booking.',
+          ),
+          PolicyContent(
+            text: 'ESCROW PAYMENT PROTECTION: Your full rental payment is held securely in our escrow system during the rental period. The payment is only released to the vehicle owner after successful trip completion and vehicle inspection. This protects both renters and owners from disputes and ensures fair transactions.',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Escrow funds are released within 24-48 hours after trip completion. Refunds (if applicable) are processed through the escrow system within 5-7 business days.',
           ),
         ],
       ),
@@ -600,7 +895,7 @@ class CargoDocuments {
             text: '• Host should provide spare key if available',
           ),
           PolicyContent(
-            text: '• Security deposit may be used to cover replacement costs',
+            text: '• Escrow funds may be used to cover replacement costs if key is lost',
           ),
         ],
       ),
@@ -640,7 +935,7 @@ class CargoDocuments {
             text: '• Document key return in the app',
           ),
           PolicyContent(
-            text: '• Security deposit release depends on complete key return',
+            text: '• Escrow fund release depends on complete key return',
           ),
         ],
       ),
@@ -744,7 +1039,7 @@ class CargoDocuments {
             text: '• Base rental fee as specified in the booking',
           ),
           PolicyContent(
-            text: '• Security deposit (refundable)',
+            text: '• Full rental payment (held in escrow)',
           ),
           PolicyContent(
             text: '• Any additional fees (delivery, driver, etc.)',
@@ -842,7 +1137,127 @@ class CargoDocuments {
             text: '• Depreciation due to accident damage',
           ),
           PolicyContent(
-            text: 'Security deposit may be used to cover damage costs.',
+            text: 'Escrow funds may be held and used to cover verified damage costs. Admin will review evidence from both parties before releasing funds.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '7.5 Traffic Violations, Fines, and Towing',
+        content: [
+          PolicyContent(
+            text: 'GUEST LIABILITY FOR VIOLATIONS',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'The Guest acknowledges and agrees that they are solely responsible for all traffic violations, parking tickets, toll violations, towing fees, impoundment charges, and any administrative penalties incurred from the time of vehicle pickup until the time of vehicle return, including but not limited to:',
+          ),
+          PolicyContent(
+            text: '• All traffic violations (speeding, red light, illegal turns, etc.)',
+          ),
+          PolicyContent(
+            text: '• No-contact apprehension (NCAP) violations',
+          ),
+          PolicyContent(
+            text: '• Parking violations and fines',
+          ),
+          PolicyContent(
+            text: '• Towing and impoundment fees',
+          ),
+          PolicyContent(
+            text: '• Storage fees at impound facilities',
+          ),
+          PolicyContent(
+            text: '• RFID/toll violations and penalties',
+          ),
+          PolicyContent(
+            text: '• LTO violations resulting from Guest\'s actions',
+          ),
+          PolicyContent(
+            text: '• Helmet violations (motorcycles)',
+          ),
+          PolicyContent(
+            text: '• Any other fines or penalties arising from Guest\'s use of the vehicle',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'NOTIFICATION AND PAYMENT',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Upon receipt of any violation notice, the Host must forward the complete violation notice to the Guest within 72 hours and provide booking documentation to verify the violation occurred during the rental period.',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'The Guest must pay all violations within 15 days of notification and provide payment confirmation to both Host and Cargo admin. If the Host pays on Guest\'s behalf, the Guest must reimburse the Host within 7 days plus a ₱500 processing fee.',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'IMPOUNDMENT SITUATIONS',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'If the vehicle is towed or impounded during the rental period:',
+          ),
+          PolicyContent(
+            text: '• Guest must notify Host and Cargo immediately',
+          ),
+          PolicyContent(
+            text: '• Guest is responsible for all towing, impoundment, and storage fees',
+          ),
+          PolicyContent(
+            text: '• Guest must coordinate vehicle release with Host',
+          ),
+          PolicyContent(
+            text: '• Rental fees continue to accrue until vehicle is returned to Host',
+          ),
+          PolicyContent(
+            text: '• Host may claim additional compensation for loss of income',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'GPS EVIDENCE AND VERIFICATION',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Cargo may use GPS tracking data, timestamps, and location history to verify whether a violation occurred during the rental period, the vehicle\'s location at the time of the alleged violation, and driving patterns if available. This evidence will be used to resolve disputes between Host and Guest.',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'DISPUTE RESOLUTION',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'If there is a dispute about violation liability, either party may request Cargo admin review within 7 days. Cargo will review GPS data, timestamps, photos, and violation notices. Admin decision is final and binding on both parties. A ₱200 mediation fee applies to the party found liable.',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'HOST LIABILITY EXCEPTIONS',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'The Host remains liable for violations resulting from expired vehicle registration, invalid or expired insurance, vehicle defects (broken lights, missing plates, etc.), pre-existing unpaid violations, or smoke belching/emissions violations (vehicle condition).',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'CONSEQUENCES OF NON-PAYMENT',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Failure to pay violations within the specified timeframe may result in account suspension until payment is made, deduction from future escrow funds, negative impact on user rating, collection actions as permitted by law, or permanent account termination for repeated violations.',
           ),
         ],
       ),
@@ -879,7 +1294,7 @@ class CargoDocuments {
             text: '• A refueling service fee may apply',
           ),
           PolicyContent(
-            text: '• Charges will be deducted from security deposit',
+            text: '• Charges will be processed through the escrow system',
           ),
         ],
       ),
@@ -918,7 +1333,7 @@ class CargoDocuments {
         title: '12. Cleaning',
         content: [
           PolicyContent(
-            text: 'The Guest must return the vehicle in reasonably clean condition. Excessive dirt or mess may result in cleaning fees of ₱500-₱1,500 deducted from the security deposit.',
+            text: 'The Guest must return the vehicle in reasonably clean condition. Excessive dirt or mess may result in cleaning fees of ₱500-₱1,500. Host must report within 24 hours with photo evidence for admin review.',
           ),
         ],
       ),
@@ -997,22 +1412,54 @@ class CargoDocuments {
         ],
       ),
       PolicySection(
-        title: '17. Security Deposit',
+        title: '17. Escrow Payment Protection',
         content: [
           PolicyContent(
-            text: 'The security deposit will be:',
+            text: 'How the Escrow System Works:',
+            isBold: true,
           ),
           PolicyContent(
-            text: '• Held by Cargo during the rental period',
+            text: '• Renter pays the full rental amount via GCash',
           ),
           PolicyContent(
-            text: '• Used to cover damages, fees, or violations',
+            text: '• Payment is held securely in Cargo\'s escrow system',
           ),
           PolicyContent(
-            text: '• Refunded within 3-5 days after successful return',
+            text: '• Funds remain in escrow throughout the rental period',
           ),
           PolicyContent(
-            text: '• Subject to deductions for valid claims',
+            text: '• Released to Host within 24-48 hours after successful trip completion',
+          ),
+          PolicyContent(
+            text: '• Refunded to Renter within 5-7 days if booking is cancelled or disputes arise',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'Benefits of Escrow Protection:',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: '✓ No separate security deposit required',
+          ),
+          PolicyContent(
+            text: '✓ Automatic payment protection for both parties',
+          ),
+          PolicyContent(
+            text: '✓ Funds held safely until trip completion',
+          ),
+          PolicyContent(
+            text: '✓ Fair dispute resolution with admin oversight',
+          ),
+          PolicyContent(
+            text: '✓ Transparent transaction history',
+          ),
+          PolicyContent(
+            text: '',
+          ),
+          PolicyContent(
+            text: 'In case of disputes, damages, or cleaning fees, the escrow system holds funds until admin reviews evidence from both parties and determines fair resolution.',
           ),
         ],
       ),
@@ -1035,4 +1482,112 @@ class CargoDocuments {
       ),
     ],
   );
+
+  static PolicyDocument get termsOfService => PolicyDocument(
+    sections: [
+      PolicySection(
+        title: 'Terms of Service',
+        content: [
+          PolicyContent(
+            text: 'Last Updated: February 16, 2026',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Welcome to Cargo Car Rental Platform. By accessing or using our services, you agree to be bound by these Terms of Service.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '1. Acceptance of Terms',
+        content: [
+          PolicyContent(
+            text: 'By creating an account or using Cargo services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and our Privacy Policy.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '2. Eligibility',
+        content: [
+          PolicyContent(
+            text: 'To use Cargo, you must be at least 18 years old, have a valid government-issued ID, complete identity verification, have a valid GCash account for payments, and comply with all applicable laws and regulations.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '3. Prohibited Uses',
+        content: [
+          PolicyContent(
+            text: 'You may NOT: engage in fraudulent or illegal activities, provide false information, harass other users, use vehicles for unauthorized commercial purposes, or attempt to circumvent security features.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: 'Contact',
+        content: [
+          PolicyContent(
+            text: 'For questions about these Terms of Service, contact us at support@cargo.ph',
+          ),
+        ],
+      ),
+    ],
+  );
+
+  static PolicyDocument get communityGuidelines => PolicyDocument(
+    sections: [
+      PolicySection(
+        title: 'Community Guidelines',
+        content: [
+          PolicyContent(
+            text: 'Building a Safe and Respectful Community',
+            isBold: true,
+          ),
+          PolicyContent(
+            text: 'Cargo is built on trust, respect, and mutual benefit. These guidelines help create a positive experience for everyone.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '1. Be Respectful',
+        content: [
+          PolicyContent(
+            text: 'Treat all users with courtesy and respect. Communicate professionally, respect others\' time and property, be punctual, and respond to messages promptly.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '2. Be Honest',
+        content: [
+          PolicyContent(
+            text: 'Provide accurate information, report damages immediately, use your real identity, and be transparent about vehicle condition and history.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: '3. Safety First',
+        content: [
+          PolicyContent(
+            text: 'Complete identity verification, meet in safe locations, inspect vehicles together, take photos before and after trips, and report safety concerns immediately.',
+          ),
+        ],
+      ),
+      PolicySection(
+        title: 'Report Issues',
+        content: [
+          PolicyContent(
+            text: 'If you see violations of these guidelines, please report them through the app or contact support@cargo.ph. We review all reports promptly and confidentially.',
+          ),
+        ],
+      ),
+    ],
+  );
+
+  // Helper method to get all available documents
+  static Map<String, PolicyDocument> get allDocuments => {
+    'Platform User Agreement': platformUserAgreement,
+    'Privacy Policy': privacyPolicy,
+    'Key Policy': keyPolicy,
+    'Vehicle Lease Agreement': vehicleLeaseAgreement,
+    'Terms of Service': termsOfService,
+    'Community Guidelines': communityGuidelines,
+  };
 }

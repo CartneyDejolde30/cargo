@@ -8,6 +8,7 @@ import 'req_model/request_dialog.dart';
 import 'req_model/booking_request.dart';
 import 'req_model/request_details_page.dart';
 import 'mycar/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class PendingRequestsPage extends StatefulWidget {
   final String ownerId;
@@ -430,30 +431,11 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
 
     if (confirm != true || !mounted) return;
 
-    // Show loading
-    showDialog(
-      context: context,
+    // Show loading dialog
+    LoadingDialog.show(
+      context,
+      message: 'Approving booking...\nPlease wait',
       barrierDismissible: false,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Colors.black),
-                const SizedBox(height: 16),
-                Text('Approving booking...', style: GoogleFonts.inter()),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
 
     try {

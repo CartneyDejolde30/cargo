@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import '../models/overdue_booking.dart';
 
 class OverdueService {
@@ -10,7 +10,7 @@ class OverdueService {
   Future<List<OverdueBooking>> getOwnerOverdueBookings(int ownerId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/overdue/get_overdue_bookings.php?owner_id=$ownerId&severity=all'),
+        Uri.parse('${baseUrl}api/overdue/get_overdue_bookings.php?owner_id=$ownerId&severity=all'),
       );
 
       if (response.statusCode == 200) {
@@ -31,26 +31,51 @@ class OverdueService {
   }
 
   /// Check if a specific booking is overdue (for renter)
+  /// Uses dedicated endpoint for real-time overdue detection
   Future<OverdueBooking?> checkBookingOverdue(int bookingId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/overdue/get_overdue_bookings.php?severity=all'),
+        Uri.parse('${baseUrl}api/overdue/check_booking_overdue.php?booking_id=$bookingId'),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success'] == true) {
-          for (var item in data['data']) {
-            if (int.tryParse(item['booking_id']?.toString() ?? '0') == bookingId) {
-              return OverdueBooking.fromJson(item);
-            }
-          }
+        if (data['success'] == true && data['is_overdue'] == true) {
+          return OverdueBooking.fromJson(data['data']);
         }
       }
       return null;
     } catch (e) {
       print('Error checking booking overdue: $e');
       return null;
+    }
+  }
+
+  /// Check if booking is overdue based on return date/time (client-side calculation)
+  /// This is a fallback when API is unavailable
+  bool isBookingOverdueLocal(String returnDate, String returnTime) {
+    try {
+      final returnDateTime = DateTime.parse('$returnDate $returnTime');
+      final now = DateTime.now();
+      return now.isAfter(returnDateTime);
+    } catch (e) {
+      print('Error parsing return date/time: $e');
+      return false;
+    }
+  }
+
+  /// Calculate hours overdue (client-side)
+  int calculateHoursOverdue(String returnDate, String returnTime) {
+    try {
+      final returnDateTime = DateTime.parse('$returnDate $returnTime');
+      final now = DateTime.now();
+      if (now.isAfter(returnDateTime)) {
+        return now.difference(returnDateTime).inHours;
+      }
+      return 0;
+    } catch (e) {
+      print('Error calculating hours overdue: $e');
+      return 0;
     }
   }
 
@@ -63,7 +88,7 @@ class OverdueService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/extensions/request_extension.php'),
+        Uri.parse('${baseUrl}api/extensions/request_extension.php'),
         body: {
           'booking_id': bookingId.toString(),
           'user_id': userId.toString(),
@@ -90,7 +115,7 @@ class OverdueService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/extensions/manage_extension.php'),
+        Uri.parse('${baseUrl}api/extensions/manage_extension.php'),
         body: {
           'extension_id': extensionId.toString(),
           'owner_id': ownerId.toString(),
@@ -117,7 +142,7 @@ class OverdueService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/extensions/manage_extension.php'),
+        Uri.parse('${baseUrl}api/extensions/manage_extension.php'),
         body: {
           'extension_id': extensionId.toString(),
           'owner_id': ownerId.toString(),

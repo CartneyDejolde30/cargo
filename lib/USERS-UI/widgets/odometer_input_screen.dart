@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class OdometerInputScreen extends StatefulWidget {
   final int bookingId;
@@ -56,8 +56,6 @@ class _OdometerInputScreenState extends State<OdometerInputScreen> {
   }
 
   Future<void> _takePhoto() async {
-    final ImagePicker picker = ImagePicker();
-    
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -66,39 +64,60 @@ class _OdometerInputScreenState extends State<OdometerInputScreen> {
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: Text('Take Photo', style: GoogleFonts.poppins()),
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context);
-                final XFile? photo = await picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 85,
-                );
-                if (photo != null) {
-                  setState(() {
-                    _imageFile = File(photo.path);
-                  });
-                }
+                _capturePhoto(ImageSource.camera);
               },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: Text('Choose from Gallery', style: GoogleFonts.poppins()),
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context);
-                final XFile? photo = await picker.pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 85,
-                );
-                if (photo != null) {
-                  setState(() {
-                    _imageFile = File(photo.path);
-                  });
-                }
+                _capturePhoto(ImageSource.gallery);
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _capturePhoto(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1080,
+      );
+
+      // ✅ CRITICAL: Check if user cancelled
+      if (photo == null) {
+        print("📷 User cancelled photo capture");
+        return;
+      }
+
+      // ✅ CRITICAL: Check mounted before setState
+      if (!mounted) return;
+
+      setState(() {
+        _imageFile = File(photo.path);
+      });
+    } catch (e, stackTrace) {
+      print("❌ Error capturing photo: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to capture photo: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _submitOdometer() async {

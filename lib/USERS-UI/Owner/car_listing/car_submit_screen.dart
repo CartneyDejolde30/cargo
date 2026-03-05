@@ -2,13 +2,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/submit_car_api.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/submit_car_api.dart';
 
 class CarSubmitScreen extends StatefulWidget {
   final CarListing listing;
+  final String vehicleType;
 
-  const CarSubmitScreen({super.key, required this.listing});
+  const CarSubmitScreen({
+    super.key,
+    required this.listing,
+    this.vehicleType = 'car',
+  });
 
   @override
   State<CarSubmitScreen> createState() => _CarSubmitScreenState();
@@ -40,13 +45,13 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
       if (index != 1) extraPhotos.add(File(path));
     });
 
-    // SUBMIT API CALL
-    bool success = await submitCarListing(
+    final success = await submitVehicleListing(
       listing: widget.listing,
       mainPhoto: mainPhoto,
       orFile: orFile,
       crFile: crFile,
       extraPhotos: extraPhotos,
+      vehicleType: widget.vehicleType,
     );
 
     setState(() => isSubmitting = false);
@@ -54,14 +59,11 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
     if (!mounted) return;
 
     if (success) {
+      final isMoto = widget.vehicleType == 'motorcycle';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("🚘 Car successfully submitted!"),
-           backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+          content: Text(isMoto ? "🏍️ Motorcycle successfully submitted!" : "🚗 Car successfully submitted!"),
+          backgroundColor: Theme.of(context).iconTheme.color,
         ),
       );
 
@@ -80,6 +82,8 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMoto = widget.vehicleType == 'motorcycle';
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.black, title: const Text("Review & Submit")),
       body: Padding(
@@ -92,7 +96,7 @@ class _CarSubmitScreenState extends State<CarSubmitScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "📌 Car: ${widget.listing.brand} ${widget.listing.model}",
+                      "📌 ${isMoto ? 'Motorcycle' : 'Car'}: ${widget.listing.brand} ${widget.listing.model}",
                       style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),

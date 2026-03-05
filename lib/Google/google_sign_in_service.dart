@@ -4,9 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/config/api_config.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
-import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/services/user_presence_service.dart';
+import 'package:cargo/services/persistent_auth_service.dart';
 
 class GoogleSignInService {
   // ✅ CRITICAL: Add your Web Client ID from Firebase Console
@@ -108,6 +108,13 @@ class GoogleSignInService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
+        // ✅ Handle suspended accounts
+        if (data is Map && data['suspended'] == true) {
+          final msg = data['message']?.toString() ?? 'Account suspended. Please contact support.';
+          throw Exception(msg);
+        }
+
         if (data['exists'] == true) {
           print('✅ User exists in database');
           return data['user'];

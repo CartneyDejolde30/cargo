@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 import 'car_photos_diagram_screen.dart';
 
 class UploadDocumentsScreen extends StatefulWidget {
@@ -21,6 +21,8 @@ class UploadDocumentsScreen extends StatefulWidget {
 }
 
 class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
+  final ImagePicker _picker = ImagePicker();
+
   // CHANGED: Store File objects instead of just paths
   File? officialReceiptFile;
   File? certificateOfRegistrationFile;
@@ -28,6 +30,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
   @override
   void initState() {
     super.initState();
+    _recoverLostDocument();
     // Try to restore from paths if coming back (mobile only)
     if (!kIsWeb) {
       if (widget.listing.officialReceipt != null) {
@@ -43,31 +46,86 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
     return officialReceiptFile != null && certificateOfRegistrationFile != null;
   }
 
+  // ✅ Android: recover image if the OS killed/recreated the Activity while the camera was open.
+  Future<void> _recoverLostDocument() async {
+    // ✅ Skip on web
+    if (kIsWeb) return;
+    
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      final XFile? file = response.file;
+      if (!mounted || file == null) return;
+
+      // We can't reliably know whether it was OR or CR; prefer filling the first missing slot.
+      final recovered = File(file.path);
+      setState(() {
+        if (officialReceiptFile == null) {
+          officialReceiptFile = recovered;
+          widget.listing.officialReceipt = file.path;
+        } else if (certificateOfRegistrationFile == null) {
+          certificateOfRegistrationFile = recovered;
+          widget.listing.certificateOfRegistration = file.path;
+        }
+      });
+    } catch (e) {
+      print("⚠️ Could not recover lost document: $e");
+      // Ignore: recovery is best-effort.
+    }
+  }
+
   // ✅ NEW: Show bottom sheet to choose camera or gallery
   Future<void> _pickDocument(bool isOR) async {
-    final ImageSource? source = await _showImageSourceBottomSheet();
-    
-    if (source == null) return; // User cancelled
-    
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: source,
-      imageQuality: 85, // Compress image to 85% quality
-      maxWidth: 1920, // Limit image size for better performance
-      maxHeight: 1920,
-    );
-
-    if (image != null) {
-      // FIXED: Properly convert XFile to File for both platforms
-      File imageFile;
-      if (kIsWeb) {
-        // Web: Create File from bytes
-        final bytes = await image.readAsBytes();
-        imageFile = File.fromRawPath(bytes);
-      } else {
-        // Mobile: Use path
-        imageFile = File(image.path);
+    try {
+      final ImageSource? source = await _showImageSourceBottomSheet();
+      
+      if (source == null) {
+        print("📷 User cancelled source selection");
+        return; // User cancelled
       }
+      
+      // ✅ CRITICAL FIX: Use lower quality and resolution to prevent Android from killing the app
+      final XFile? image = source == ImageSource.camera
+          ? await _picker.pickImage(
+              source: source,
+              imageQuality: 60, // ✅ Reduced from 85 to 60
+              maxWidth: 1600,   // ✅ Reduced from 1920 to 1600
+              maxHeight: 1600,  // ✅ Reduced from 1920 to 1600
+              preferredCameraDevice: CameraDevice.rear,
+            )
+          : await _picker.pickImage(
+              source: source,
+              imageQuality: 60,
+              maxWidth: 1600,
+              maxHeight: 1600,
+            );
+
+      // ✅ CRITICAL: Check if widget is still mounted after camera/gallery closes
+      if (!mounted) {
+        print("⚠️ Widget disposed while picking document - app was likely killed by OS");
+        return;
+      }
+
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled document capture");
+        return;
+      }
+
+      // ✅ Check file size
+      final fileSize = await image.length();
+      print("📸 Document size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB");
+
+      // ✅ CRITICAL: Double-check mounted before setState
+      if (!mounted) {
+        print("⚠️ Widget disposed after document selection");
+        return;
+      }
+
+      // FIXED: Properly convert XFile to File for both platforms
+      // NOTE: This screen is primarily used on mobile. On Android/iOS, `image.path` is a real file path.
+      // Some earlier implementations attempted `File.fromRawPath(bytes)` which is not a valid way to
+      // represent a picked image and can crash.
+      final File imageFile = File(image.path);
 
       setState(() {
         if (isOR) {
@@ -78,6 +136,17 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
           widget.listing.certificateOfRegistration = image.path;
         }
       });
+    } catch (e, stackTrace) {
+      print("❌ Document pick error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to capture document: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -125,7 +194,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha :0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -156,7 +225,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha :0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -260,6 +329,20 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
+                            // ✅ CRITICAL FIX: Reduce memory usage by downsampling during decode
+                            cacheWidth: 400, // Limit decoded width to 400px for thumbnails
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
                           ),
                   ),
                   Positioned(

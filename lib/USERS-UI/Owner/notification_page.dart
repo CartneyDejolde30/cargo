@@ -21,22 +21,36 @@ class _NotificationPageState extends State<NotificationPage>
   final NotificationService _notificationService = NotificationService();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  List<NotificationModel> notifications = [];
+  // Main list of all notifications
+  List<NotificationModel> _allNotifications = [];
+  // Filtered list for display
+  List<NotificationModel> _filteredNotifications = [];
   Map<String, List<NotificationModel>> groupedNotifications = {};
-  
+
+  bool _isSelectionMode = false;
+  Set<int> _selectedIds = {};
+
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
   int lastCount = 0;
-  
+
   Timer? _refreshTimer;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  // New state for filtering and search
+  late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _currentFilter = 'all';
+  final List<String> _filters = ['all', 'unread', 'booking', 'payment', 'alert'];
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
+    _initializeControllers(); // Initialize controllers
     _loadNotifications();
     _startAutoRefresh();
   }
@@ -46,6 +60,8 @@ class _NotificationPageState extends State<NotificationPage>
     _refreshTimer?.cancel();
     _audioPlayer.dispose();
     _animationController.dispose();
+    _tabController.dispose(); // Dispose controller
+    _searchController.dispose(); // Dispose controller
     super.dispose();
   }
 
@@ -61,6 +77,18 @@ class _NotificationPageState extends State<NotificationPage>
     );
     
     _animationController.forward();
+  }
+
+  void _initializeControllers() {
+    _tabController = TabController(length: _filters.length, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    _searchController.addListener(() {
+      if (_searchQuery != _searchController.text) {
+        // Just update the query and let _applyFilters handle setState
+        _searchQuery = _searchController.text;
+        _applyFilters();
+      }
+    });
   }
 
   void _startAutoRefresh() {
@@ -89,8 +117,8 @@ class _NotificationPageState extends State<NotificationPage>
       lastCount = fetchedNotifications.length;
 
       setState(() {
-        notifications = fetchedNotifications;
-        groupedNotifications = NotificationHelper.groupByDate(fetchedNotifications);
+        _allNotifications = fetchedNotifications;
+        _applyFilters(); // Apply filters after fetching
         isLoading = false;
         hasError = false;
       });
@@ -123,6 +151,37 @@ class _NotificationPageState extends State<NotificationPage>
     } catch (e) {
       debugPrint("❌ Error vibrating: $e");
     }
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) return;
+    // Just update the filter and let _applyFilters handle setState
+    _currentFilter = _filters[_tabController.index];
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    var filtered = _allNotifications;
+
+    // Apply tab filter
+    if (_currentFilter == 'unread') {
+      filtered = filtered.where((n) => n.isUnread).toList();
+    } else if (_currentFilter != 'all') {
+      filtered = filtered.where((n) => n.type.toLowerCase() == _currentFilter.toLowerCase()).toList();
+    }
+
+    // Apply search query
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((n) =>
+          n.title.toLowerCase().contains(query) ||
+          n.message.toLowerCase().contains(query)).toList();
+    }
+
+    setState(() {
+      _filteredNotifications = filtered;
+      groupedNotifications = NotificationHelper.groupByDate(_filteredNotifications);
+    });
   }
 
   Future<void> _deleteNotification(NotificationModel notification) async {
@@ -188,8 +247,8 @@ class _NotificationPageState extends State<NotificationPage>
 
       if (success) {
         setState(() {
-          notifications.removeWhere((n) => n.id == notification.id);
-          groupedNotifications = NotificationHelper.groupByDate(notifications);
+          _allNotifications.removeWhere((n) => n.id == notification.id);
+          _applyFilters();
         });
 
         if (mounted) {
@@ -212,6 +271,22 @@ class _NotificationPageState extends State<NotificationPage>
   }
 
   void _openNotificationDetail(NotificationModel notification) async {
+    // Mark as read immediately when opening
+    if (notification.isUnread) {
+      await _notificationService.markAsRead(notification.id.toString(), widget.userId);
+      
+      // Update UI state locally
+      setState(() {
+        final index = _allNotifications.indexWhere((n) => n.id == notification.id);
+        if (index != -1) {
+          _allNotifications[index] = _allNotifications[index].copyWith(readStatus: 'read');
+          _applyFilters();
+        }
+      });
+    }
+
+    if (!mounted) return;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -221,33 +296,14 @@ class _NotificationPageState extends State<NotificationPage>
             Navigator.pop(context);
             _deleteNotification(notification);
           },
-          onArchive: () {
-            Navigator.pop(context);
-            _archiveNotification(notification.id);
-          },
         ),
       ),
     );
+    
+    // Refresh to ensure sync with server
+    _loadNotifications(silent: true);
   }
 
-  Future<void> _archiveNotification(int notificationId) async {
-    final success = await _notificationService.archiveNotification(notificationId);
-
-    if (success) {
-      setState(() {
-        notifications.removeWhere((n) => n.id == notificationId);
-        groupedNotifications = NotificationHelper.groupByDate(notifications);
-      });
-
-      if (mounted) {
-        _showSnackBar(
-          icon: Icons.archive_outlined,
-          message: 'Notification archived',
-          backgroundColor: Colors.orange.shade700,
-        );
-      }
-    }
-  }
 
   Future<void> _markAllAsRead() async {
     final success = await _notificationService.markAllAsRead(widget.userId);
@@ -261,6 +317,149 @@ class _NotificationPageState extends State<NotificationPage>
         );
       }
     }
+  }
+
+  // (bulk action helpers)
+  void _toggleSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+
+      if (_selectedIds.isEmpty) {
+        _isSelectionMode = false;
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIds.isEmpty) return;
+
+    final deleteCount = _selectedIds.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.delete_outline_rounded, color: Colors.red.shade600, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete Notification${deleteCount > 1 ? 's' : ''}',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete $deleteCount notification(s)? This action cannot be undone.',
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade700, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Delete', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    int successCount = 0;
+    int failCount = 0;
+    final Set<int> successIds = {};
+
+    for (final id in _selectedIds) {
+      final ok = await _notificationService.deleteNotification(id, widget.userId);
+      if (ok) {
+        successCount++;
+        successIds.add(id);
+      } else {
+        failCount++;
+      }
+    }
+
+    setState(() {
+      _allNotifications.removeWhere((n) => successIds.contains(n.id));
+      _applyFilters();
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+
+    final Color bg = failCount > 0
+        ? (successCount > 0 ? Colors.orange : Colors.red)
+        : Colors.green;
+
+    _showSnackBar(
+      icon: Icons.delete_sweep_rounded,
+      message: failCount > 0
+          ? '$successCount notification(s) deleted, $failCount failed'
+          : '$successCount notification(s) deleted',
+      backgroundColor: bg,
+    );
+  }
+
+
+  Widget _buildSelectionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? colors.surface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _deleteSelected,
+        icon: const Icon(Icons.delete, size: 18),
+        label: Text('Delete Selected', style: GoogleFonts.poppins(fontSize: 14)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size(double.infinity, 48),
+        ),
+      ),
+    );
   }
 
   void _showSnackBar({required IconData icon, required String message, required Color backgroundColor}) {
@@ -326,73 +525,128 @@ class _NotificationPageState extends State<NotificationPage>
 
   @override
   Widget build(BuildContext context) {
-    
-    final unreadCount = notifications.where((n) => n.isUnread).length;
+    final unreadCount = _allNotifications.where((n) => n.isUnread).length;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,      appBar: _buildAppBar(unreadCount),
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,
+      appBar: _buildAppBar(unreadCount),
       body: _buildBody(),
+      bottomNavigationBar: _isSelectionMode ? _buildSelectionBar() : null,
     );
   }
 
   AppBar _buildAppBar(int unreadCount) {
- 
     final colors = Theme.of(context).colorScheme;
+
     return AppBar(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
-      leading: IconButton(
-        icon:  Icon(Icons.arrow_back_ios_new_rounded, color: colors.onSurface, size: 20),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Notifications",
-            style: GoogleFonts.poppins(
-              color: Theme.of(context).iconTheme.color,
-
-
-
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              letterSpacing: -0.5,
-            ),
-          ),
-          if (unreadCount > 0)
-            Text(
-              "$unreadCount unread",
+      automaticallyImplyLeading: false,
+      leading: _isSelectionMode
+          ? IconButton(
+              icon: Icon(Icons.close, color: colors.onSurface, size: 22),
+              onPressed: () => setState(() {
+                _isSelectionMode = false;
+                _selectedIds.clear();
+              }),
+            )
+          : null,
+      title: _isSelectionMode
+          ? Text(
+              '${_selectedIds.length} selected',
               style: GoogleFonts.poppins(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                color: Theme.of(context).iconTheme.color,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Notifications",
+                  style: GoogleFonts.poppins(
+                    color: Theme.of(context).iconTheme.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Text(
+                    "$unreadCount unread",
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+      actions: [
+        if (_isSelectionMode) ...[
+          IconButton(
+            tooltip: 'Select all',
+            icon: Icon(Icons.select_all, color: colors.onSurface),
+            onPressed: () => setState(() {
+              if (_selectedIds.length == _filteredNotifications.length) {
+                _selectedIds.clear();
+                _isSelectionMode = false;
+              } else {
+                _selectedIds = _filteredNotifications.map((n) => n.id).toSet();
+              }
+            }),
+          ),
+        ] else ...[
+          if (unreadCount > 0)
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: TextButton.icon(
+                onPressed: _markAllAsRead,
+                icon: const Icon(Icons.done_all_rounded, size: 18),
+                label: Text(
+                  "Mark all read",
+                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).iconTheme.color,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
         ],
-      ),
-      actions: [
-        if (unreadCount > 0)
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: TextButton.icon(
-              onPressed: _markAllAsRead,
-              icon: const Icon(Icons.done_all_rounded, size: 18),
-              label: Text(
-                "Mark all read",
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).iconTheme.color,
-
-
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(110.0),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search notifications...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  filled: true,
+                  fillColor: Theme.of(context).dividerColor.withAlpha(50),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
             ),
-          ),
-      ],
+            TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabs: _filters.map((filter) => Tab(text: filter.toUpperCase())).toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -539,19 +793,22 @@ class _NotificationPageState extends State<NotificationPage>
     final color = _getColorByType(n.type);
     final icon = _getIconByType(n.type);
     final isUnread = n.isUnread;
+    final isSelected = _selectedIds.contains(n.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark
+            ? (isSelected ? colors.primaryContainer : const Color(0xFF1E1E1E))
+            : (isSelected ? Colors.blue.shade50 : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnread ? color.withOpacity(0.3) : Colors.grey.shade200,
+          color: isUnread ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
           width: isUnread ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -560,23 +817,44 @@ class _NotificationPageState extends State<NotificationPage>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _openNotificationDetail(n),
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleSelection(n.id);
+            } else {
+              _openNotificationDetail(n);
+            }
+          },
+          onLongPress: () {
+            setState(() {
+              _isSelectionMode = true;
+              _toggleSelection(n.id);
+            });
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                if (_isSelectionMode)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12, top: 6),
+                    child: Checkbox(
+                      value: isSelected,
+                      onChanged: (_) => _toggleSelection(n.id),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
                   ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                const SizedBox(width: 14),
+                if (!_isSelectionMode) const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,7 +867,8 @@ class _NotificationPageState extends State<NotificationPage>
                               style: GoogleFonts.poppins(
                                 fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
                                 fontSize: 15,
-                                color: colors.onSurface,                              ),
+                                color: colors.onSurface,
+                              ),
                             ),
                           ),
                           if (isUnread)
@@ -607,7 +886,7 @@ class _NotificationPageState extends State<NotificationPage>
                       Text(
                         n.message,
                         style: GoogleFonts.poppins(
-                          color: colors.onSurface.withOpacity(0.7),
+                          color: colors.onSurface.withValues(alpha :0.7),
 
                           fontSize: 13,
                           height: 1.4,
@@ -623,7 +902,7 @@ class _NotificationPageState extends State<NotificationPage>
                           Text(
                             n.formattedTime,
                             style: GoogleFonts.poppins(
-                              color: colors.onSurface.withOpacity(0.6),
+                              color: colors.onSurface.withValues(alpha :0.6),
 
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -634,36 +913,11 @@ class _NotificationPageState extends State<NotificationPage>
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onSelected: (v) {
-                    if (v == 'delete') _deleteNotification(n);
-                    if (v == 'archive') _archiveNotification(n.id);
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'archive',
-                      child: Row(
-                        children: [
-                          Icon(Icons.archive_outlined, size: 20, color: Colors.orange.shade600),
-                          const SizedBox(width: 12),
-                          Text('Archive', style: GoogleFonts.poppins(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded, size: 20, color: Colors.red.shade600),
-                          const SizedBox(width: 12),
-                          Text('Delete', style: GoogleFonts.poppins(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                if (!_isSelectionMode)
+                  IconButton(
+                    icon: Icon(Icons.delete_outline_rounded, color: Colors.grey.shade400, size: 20),
+                    onPressed: () => _deleteNotification(n),
+                  ),
               ],
             ),
           ),
@@ -676,13 +930,11 @@ class _NotificationPageState extends State<NotificationPage>
 class NotificationDetailScreen extends StatelessWidget {
   final NotificationModel notification;
   final VoidCallback onDelete;
-  final VoidCallback onArchive;
 
   const NotificationDetailScreen({
     super.key,
     required this.notification,
     required this.onDelete,
-    required this.onArchive,
   });
 
   IconData _getIconByType(String type) {
@@ -748,35 +1000,10 @@ class NotificationDetailScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.black),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            onSelected: (v) {
-              if (v == 'delete') onDelete();
-              if (v == 'archive') onArchive();
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'archive',
-                child: Row(
-                  children: [
-                    Icon(Icons.archive_outlined, size: 20, color: Colors.orange.shade600),
-                    const SizedBox(width: 12),
-                    Text('Archive', style: GoogleFonts.poppins(fontSize: 14)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline_rounded, size: 20, color: Colors.red.shade600),
-                    const SizedBox(width: 12),
-                    Text('Delete', style: GoogleFonts.poppins(fontSize: 14)),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: Icon(Icons.delete_outline_rounded, color: colors.onSurface),
+            onPressed: onDelete,
+            tooltip: 'Delete notification',
           ),
         ],
       ),
@@ -790,7 +1017,7 @@ class NotificationDetailScreen extends StatelessWidget {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha :0.15),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Icon(icon, color: color, size: 48),
@@ -800,9 +1027,9 @@ class NotificationDetailScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha :0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withOpacity(0.3)),
+                border: Border.all(color: color.withValues(alpha :0.3)),
               ),
               child: Text(
                 notification.type.toUpperCase(),

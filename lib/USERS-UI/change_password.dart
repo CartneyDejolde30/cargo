@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 final String baseUrl = GlobalApiConfig.baseUrl;
 
@@ -20,7 +20,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final newPassController = TextEditingController();
   final confirmPassController = TextEditingController();
   
-  bool loading = false;
+  bool _isLoading = false;
   bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
@@ -131,7 +131,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return;
     }
 
-    setState(() => loading = true);
+    setState(() => _isLoading = true);
 
     try {
       final response = await http.post(
@@ -143,7 +143,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         },
       );
 
-      setState(() => loading = false);
+      setState(() => _isLoading = false);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -166,7 +166,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _showMessage("Server error. Please try again", isError: true);
       }
     } catch (e) {
-      setState(() => loading = false);
+      setState(() => _isLoading = false);
       _showMessage("Network error. Please check your connection", isError: true);
     }
   }
@@ -381,7 +381,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: loading ? null : changePassword,
+                  onPressed: _isLoading ? null : changePassword,
                   style: ElevatedButton.styleFrom(
                      backgroundColor: Theme.of(context).iconTheme.color,
 
@@ -395,7 +395,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: loading
+                  child: _isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,

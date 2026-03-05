@@ -6,14 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'booking_card_widget.dart';
 import 'booking_empty_state_widget.dart';
 import 'booking_tabs_widget.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
-import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_history_screen.dart';
+import 'package:cargo/USERS-UI/Renter/widgets/bottom_nav_bar.dart';
+import 'package:cargo/USERS-UI/Renter/models/booking.dart';
+import 'package:cargo/USERS-UI/services/booking_service.dart';
+import 'package:cargo/USERS-UI/Renter/payments/refund_history_screen.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 // GPS Tracking imports
-import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
-import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:cargo/USERS-UI/services/renter_gps_service.dart';
+import 'package:cargo/USERS-UI/widgets/location_permission_helper.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -235,52 +236,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     }
   }
 
-  void _updateBadgeCountsFromBookings(List<Booking> bookings) {
-    final now = DateTime.now();
-    
-    // Store old counts to check if changed
-    final oldActive = _activeCount;
-    final oldPending = _pendingCount;
-    final oldCompleted = _completedCount;
-    final oldRejected = _rejectedCount;
-    
-    // Active = approved bookings that have started
-    _activeCount = bookings.where((b) {
-      if (b.status.toLowerCase() != 'approved') return false;
-      final pickup = _parseDate(b.pickupDate);
-      final returnDate = _parseDate(b.returnDate);
-      return pickup != null && returnDate != null && 
-             !pickup.isAfter(now) && !returnDate.isBefore(now);
-    }).length;
-    
-    // Pending = unpaid + upcoming (approved but not started)
-    _pendingCount = bookings.where((b) {
-      // Unpaid bookings
-      if (b.status.toLowerCase() == 'pending') return true;
-      
-      // Upcoming bookings (approved but not started)
-      if (b.status.toLowerCase() == 'approved') {
-        final pickup = _parseDate(b.pickupDate);
-        if (pickup == null) return false;
-        return pickup.isAfter(now);
-      }
-      
-      return false;
-    }).length;
-    
-    _completedCount = bookings.where((b) => b.status.toLowerCase() == 'completed').length;
-    
-    // ✅ FIXED: Case-insensitive comparison for rejected/cancelled
-    _rejectedCount = bookings.where((b) => 
-      b.status.toLowerCase() == 'rejected' || b.status.toLowerCase() == 'cancelled'
-    ).length;
-    
-    // Only log if counts changed
-    if (oldActive != _activeCount || oldPending != _pendingCount || 
-        oldCompleted != _completedCount || oldRejected != _rejectedCount) {
-      debugPrint('📊 Badge counts updated: Active=$_activeCount, Pending=$_pendingCount, Completed=$_completedCount, Rejected=$_rejectedCount');
-    }
-  }
 
   void _showLoginRequiredDialog() {
     showDialog(
@@ -548,7 +503,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       future: _bookingFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const LoadingScreen(message: 'Loading bookings...');
         }
 
         if (snapshot.hasError) {

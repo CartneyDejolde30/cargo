@@ -35,15 +35,15 @@ class RevenueOverview extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : colors.outline.withOpacity(0.2),
+              ? Colors.white.withValues(alpha :0.1)
+              : colors.outline.withValues(alpha :0.2),
           width: 1,
         ),
         boxShadow: isDark
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha :0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -137,13 +137,13 @@ class RevenueOverview extends StatelessWidget {
       padding: EdgeInsets.all(isMain ? 16 : 12),
       decoration: BoxDecoration(
         color: isDark
-            ? color.withOpacity(0.15)
-            : color.withOpacity(0.1),
+            ? color.withValues(alpha :0.15)
+            : color.withValues(alpha :0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
-              ? color.withOpacity(0.4)
-              : color.withOpacity(0.3),
+              ? color.withValues(alpha :0.4)
+              : color.withValues(alpha :0.3),
           width: 1,
         ),
       ),
@@ -174,8 +174,8 @@ class RevenueOverview extends StatelessWidget {
                         fontSize: isMain ? 14 : 12,
                         fontWeight: FontWeight.w500,
                         color: isDark
-                            ? colors.onSurface.withOpacity(0.7)
-                            : colors.onSurface.withOpacity(0.8),
+                            ? colors.onSurface.withValues(alpha :0.7)
+                            : colors.onSurface.withValues(alpha :0.8),
                       ),
                 ),
                 const SizedBox(height: 2),

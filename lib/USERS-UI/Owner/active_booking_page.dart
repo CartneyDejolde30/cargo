@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard/booking_service.dart';
 import 'mycar/api_config.dart';
 import 'live_tracking_screen.dart'; // Import the new tracking screen
+import 'package:cargo/widgets/optimized_network_image.dart';
+import 'package:cargo/USERS-UI/widgets/odometer_input_screen.dart'; // Odometer tracking
 
 class ActiveBookingsPage extends StatefulWidget {
   const ActiveBookingsPage({super.key});
@@ -15,6 +17,20 @@ class ActiveBookingsPage extends StatefulWidget {
 
 class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   final BookingService _bookingService = BookingService();
+
+  DateTime? _tryParseScheduledPickup(String? pickupDateRaw, String? pickupTimeRaw) {
+    if (pickupDateRaw == null || pickupDateRaw.trim().isEmpty) return null;
+
+    // Expecting: pickupDateRaw = "YYYY-MM-DD" and pickupTimeRaw = "HH:MM" or "HH:MM:SS"
+    String time = (pickupTimeRaw ?? '').trim();
+    if (time.isEmpty) time = '00:00:00';
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(time)) {
+      time = '$time:00';
+    }
+
+    final iso = '${pickupDateRaw.trim()}T$time';
+    return DateTime.tryParse(iso);
+  }
   
   String? _ownerId;
   bool _isLoading = true;
@@ -105,6 +121,49 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   }
 
   Future<void> _handleStartTrip(Map<String, dynamic> booking) async {
+    final isUnlimited = (booking['has_unlimited_mileage'] == 1) || (booking['has_unlimited_mileage'] == true);
+    if (isUnlimited) {
+      final result = await _bookingService.startTrip(
+        booking['booking_id'].toString(),
+        _ownerId!,
+      );
+      if (!mounted) return;
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Trip started'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _handleRefresh();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to start trip'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    // Navigate to odometer input screen for START reading (limited mileage)
+    final odometerResult = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OdometerInputScreen(
+          bookingId: int.tryParse(booking['booking_id'].toString()) ?? 0,
+          vehicleName: booking['car_full_name'] ?? 'Vehicle',
+          vehicleImage: booking['car_image'] ?? '',
+          isStartOdometer: true,
+          userId: int.tryParse(_ownerId ?? '0') ?? 0,
+          userType: 'owner',
+        ),
+      ),
+    );
+
+    // If user cancelled odometer input, don't proceed
+    if (odometerResult == null || !mounted) return;
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -190,25 +249,85 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
 
     if (confirmed != true || !mounted) return;
 
+    // ✅ Client-side guard (UX): block starting before scheduled pickup datetime.
+    // Server will also enforce this, but we avoid an unnecessary API call.
+    final String? pickupDateRaw = booking['pickup_date_raw']?.toString();
+    final String? pickupTimeRaw = booking['pickup_time_raw']?.toString();
+    final DateTime? scheduledPickup = _tryParseScheduledPickup(pickupDateRaw, pickupTimeRaw);
+    if (scheduledPickup != null && DateTime.now().isBefore(scheduledPickup)) {
+      final pretty = "${booking['pickup_date'] ?? pickupDateRaw ?? ''} ${booking['pickup_time'] ?? ''}".trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.schedule, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'You can only start pickup at the scheduled time: $pretty',
+                  style: GoogleFonts.inter(),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     // Show loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Center(
         child: Container(
-          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.symmetric(horizontal: 40),
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(color: Colors.green),
-              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: CircularProgressIndicator(
+                  color: Colors.green.shade600,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 24),
               Text(
-                'Starting rental...',
-                style: GoogleFonts.inter(fontSize: 14),
+                'Starting Rental',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please wait...',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),
@@ -513,8 +632,9 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
   // NEW: Check trip status
   final tripStatus = booking['trip_status'] ?? 'in_progress';
   final isUpcoming = tripStatus == 'upcoming';
-  final statusColor = isUpcoming ? Colors.orange : Colors.green;
-  final statusLabel = isUpcoming ? 'Starts Soon' : 'Active';
+  final isOverdue = tripStatus == 'overdue';
+  final statusColor = isOverdue ? Colors.red : (isUpcoming ? Colors.orange : Colors.green);
+  final statusLabel = isOverdue ? 'Overdue' : (isUpcoming ? 'Starts Soon' : 'Active');
 
   return GestureDetector(
     onTap: () {
@@ -552,38 +672,17 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                child: Image.network(
-                  imageUrl,
+                child: OptimizedNetworkImage(
+                  imageUrl: imageUrl,
                   height: 220,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 220,
-                      color: Colors.grey.shade200,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          color: Colors.black,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 220,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.grey.shade300, Colors.grey.shade200],
-                        ),
-                      ),
-                      child: const Icon(Icons.directions_car, size: 80, color: Colors.white),
-                    );
-                  },
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  errorIcon: Icons.directions_car,
+                  errorIconSize: 80,
                 ),
               ),
               
@@ -709,10 +808,14 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                       _buildInfoRow(
                         Icons.calendar_today_outlined, 
                         isUpcoming ? 'Starts' : 'Started', 
-                        booking['pickup_date'] ?? ''
+                        '${booking['pickup_date'] ?? ''} at ${booking['pickup_time_display'] ?? booking['pickup_time'] ?? ''}'
                       ),
                       const Divider(height: 24),
-                      _buildInfoRow(Icons.event_outlined, 'End Date', booking['return_date'] ?? ''),
+                      _buildInfoRow(
+                        Icons.event_outlined, 
+                        'End Date', 
+                        '${booking['return_date'] ?? ''} at ${booking['return_time_display'] ?? booking['return_time'] ?? ''}'
+                      ),
                     ],
                   ),
                 ),
@@ -749,14 +852,16 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: progress / 100,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            progress < 33 ? Colors.green :
-                            progress < 66 ? Colors.orange : Colors.red
+                        child: SizedBox(
+                          height: 6,
+                          child: LinearProgressIndicator(
+                            value: progress / 100,
+                            backgroundColor: Colors.grey.shade200,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              progress < 33 ? Colors.green :
+                              progress < 66 ? Colors.orange : Colors.red
+                            ),
                           ),
-                          minHeight: 8,
                         ),
                       ),
                     ],
@@ -887,6 +992,89 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   bool _isEnding = false;
 
   Future<void> _handleEndTrip() async {
+    final isUnlimited = (widget.booking['has_unlimited_mileage'] == 1) || (widget.booking['has_unlimited_mileage'] == true);
+    if (isUnlimited) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('End Trip?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          content: Text(
+            'End this rental now? Odometer tracking is not required for this vehicle.',
+            style: GoogleFonts.inter(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('End Trip'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      setState(() => _isEnding = true);
+      try {
+        final result = await _bookingService.endTrip(
+          widget.booking['booking_id'].toString(),
+          widget.ownerId,
+        );
+        if (!mounted) return;
+        setState(() => _isEnding = false);
+        if (result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Trip ended'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to end trip'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isEnding = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Network error. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    // Navigate to odometer input screen for END reading (limited mileage)
+    final odometerResult = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OdometerInputScreen(
+          bookingId: int.tryParse(widget.booking['booking_id'].toString()) ?? 0,
+          vehicleName: widget.booking['car_full_name'] ?? 'Vehicle',
+          vehicleImage: widget.booking['car_image'] ?? '',
+          isStartOdometer: false,
+          startOdometer: int.tryParse(widget.booking['odometer_start']?.toString() ?? '0'),
+          userId: int.tryParse(widget.ownerId) ?? 0,
+          userType: 'owner',
+        ),
+      ),
+    );
+
+    // If user cancelled odometer input, don't proceed
+    if (odometerResult == null || !mounted) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1027,16 +1215,14 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                imageUrl,
+              child: OptimizedNetworkImage(
+                imageUrl: imageUrl,
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: Colors.grey.shade300,
-                  child: const Icon(Icons.directions_car, size: 80),
-                ),
+                borderRadius: BorderRadius.circular(16),
+                errorIcon: Icons.directions_car,
+                errorIconSize: 80,
               ),
             ),
             const SizedBox(height: 20),
@@ -1086,17 +1272,88 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  
+                  // Trip Timeline
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.play_circle, size: 16, color: Colors.green.shade700),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Start',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.booking['pickup_time_display'] ?? widget.booking['pickup_time'] ?? 'N/A',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'End',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(Icons.stop_circle, size: 16, color: Colors.red.shade700),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.booking['return_time_display'] ?? widget.booking['return_time'] ?? 'N/A',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  
                   const SizedBox(height: 16),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress / 100,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        progress < 33 ? Colors.green :
-                        progress < 66 ? Colors.orange : Colors.red
+                    child: SizedBox(
+                      height: 8,
+                      child: LinearProgressIndicator(
+                        value: progress / 100,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progress < 33 ? Colors.green :
+                          progress < 66 ? Colors.orange : Colors.red
+                        ),
                       ),
-                      minHeight: 10,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1105,6 +1362,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                     children: [
                       _buildStat('Days Left', '$daysRemaining'),
                       _buildStat('Total Days', widget.booking['rental_period'] ?? ''),
+                      _buildStat('Days Elapsed', '${widget.booking['days_elapsed'] ?? '0'}'),
                     ],
                   ),
                 ],
@@ -1120,43 +1378,112 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             const SizedBox(height: 20),
             
             _buildSection('Trip Details', [
-              _buildDetailRow('Start', widget.booking['pickup_date'] ?? ''),
-              _buildDetailRow('End', widget.booking['return_date'] ?? ''),
+              _buildDetailRow(
+                'Pickup', 
+                '${widget.booking['pickup_date'] ?? ''} at ${widget.booking['pickup_time_display'] ?? widget.booking['pickup_time'] ?? ''}'
+              ),
+              _buildDetailRow(
+                'Return', 
+                '${widget.booking['return_date'] ?? ''} at ${widget.booking['return_time_display'] ?? widget.booking['return_time'] ?? ''}'
+              ),
               _buildDetailRow('Location', widget.booking['location'] ?? ''),
             ]),
+            const SizedBox(height: 20),
+            
+            // Odometer/Mileage Section
+            _buildMileageSection(),
             const SizedBox(height: 30),
             
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isEnding ? null : _handleEndTrip,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Show End Trip button:
+            // - Limited mileage: require start recorded and end not recorded
+            // - Unlimited mileage: show always
+            if (((widget.booking['has_unlimited_mileage'] == 1) || (widget.booking['has_unlimited_mileage'] == true)) ||
+                (widget.booking['odometer_start'] != null && widget.booking['odometer_end'] == null))
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isEnding ? null : _handleEndTrip,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                child: _isEnding
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                  child: _isEnding
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'End Trip',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      )
-                    : Text(
-                        'End Trip',
+                ),
+              )
+            else if (widget.booking['odometer_end'] != null)
+              // Show completion message if trip is already ended
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Trip completed - Odometer readings recorded',
                         style: GoogleFonts.inter(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: Colors.green.shade700,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // Show message that start odometer needs to be recorded first
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Start odometer must be recorded before ending trip',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -1232,6 +1559,298 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMileageSection() {
+    final isUnlimited = (widget.booking['has_unlimited_mileage'] == 1) || (widget.booking['has_unlimited_mileage'] == true);
+    if (isUnlimited) {
+      return const SizedBox.shrink();
+    }
+    final odometerStart = widget.booking['odometer_start'];
+    final odometerEnd = widget.booking['odometer_end'];
+    final startPhoto = widget.booking['odometer_start_photo'];
+    final endPhoto = widget.booking['odometer_end_photo'];
+    
+    // Calculate distance if both readings exist
+    final distance = (odometerStart != null && odometerEnd != null)
+        ? (int.tryParse(odometerEnd.toString()) ?? 0) - (int.tryParse(odometerStart.toString()) ?? 0)
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Mileage Tracking',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // Start Odometer
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.play_circle_outline, size: 18, color: Colors.green.shade600),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Start Odometer',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          odometerStart != null ? '$odometerStart km' : 'Not recorded',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: odometerStart != null ? Colors.black : Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (startPhoto != null && startPhoto.toString().trim().isNotEmpty)
+                    GestureDetector(
+                      onTap: () => _showOdometerPhoto(startPhoto.toString(), 'Start Odometer'),
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.green.shade400, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: OptimizedNetworkImage(
+                                imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/${startPhoto.toString().trim()}',
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                borderRadius: BorderRadius.circular(8),
+                                errorIcon: Icons.image_not_supported,
+                                errorIconSize: 24,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade700,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(Icons.search, color: Colors.white, size: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              const Divider(height: 24),
+              
+              // End Odometer
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.stop_circle_outlined, size: 18, color: Colors.red.shade600),
+                            const SizedBox(width: 8),
+                            Text(
+                              'End Odometer',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          odometerEnd != null ? '$odometerEnd km' : 'Not recorded',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: odometerEnd != null ? Colors.black : Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (endPhoto != null && endPhoto.toString().trim().isNotEmpty)
+                    GestureDetector(
+                      onTap: () => _showOdometerPhoto(endPhoto.toString(), 'End Odometer'),
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.shade400, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: OptimizedNetworkImage(
+                                imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/${endPhoto.toString().trim()}',
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                borderRadius: BorderRadius.circular(8),
+                                errorIcon: Icons.image_not_supported,
+                                errorIconSize: 24,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade700,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(Icons.search, color: Colors.white, size: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              // Distance Traveled
+              if (distance != null) ...[
+                const Divider(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.route, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Distance Traveled: ',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        '$distance km',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showOdometerPhoto(String photoPath, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: OptimizedNetworkImage(
+                      imageUrl: ApiConfig.getImageUrl(photoPath),
+                      fit: BoxFit.contain,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/renter_vehicle_availability_widget.dart';
-import 'booking_screen.dart';
+import 'package:cargo/USERS-UI/Renter/widgets/renter_vehicle_availability_widget.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/booking_screen.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
 
 /// Enhanced Booking Screen with automatic availability checking
 /// Shows availability calendar before booking
@@ -157,27 +158,16 @@ class _BookingScreenWithAvailabilityState extends State<BookingScreenWithAvailab
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: widget.carImage.trim().isEmpty
-                ? Container(
-                    width: 80,
-                    height: 80,
-                    color: Colors.grey[200],
-                    child: Icon(Icons.directions_car, color: Colors.grey[400], size: 40),
-                  )
-                : Image.network(
-                    widget.carImage,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[200],
-                        child: Icon(Icons.directions_car, color: Colors.grey[400], size: 40),
-                      );
-                    },
-                  ),
+            child: OptimizedNetworkImage(
+              imageUrl: widget.carImage,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorIcon: widget.vehicleType.toLowerCase() == 'motorcycle' 
+                  ? Icons.two_wheeler 
+                  : Icons.directions_car,
+              errorIconSize: 40,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(

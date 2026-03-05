@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/config/api_config.dart';
 import 'models/favorite.dart';
 import 'services/favorites_service.dart';
 import 'services/debug_favorites_service.dart';
@@ -8,6 +7,8 @@ import 'car_detail_screen.dart';
 import 'motorcycle_detail_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/notification_icon.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
+import '../../utils/image_helper.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -20,9 +21,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
   final FavoritesService _favoritesService = FavoritesService();
   
   List<Favorite> _allFavorites = [];
-  List<Favorite> _filteredFavorites = [];
   bool _isLoading = true;
-  String _selectedFilter = 'all'; // 'all', 'car', 'motorcycle'
   int _selectedNavIndex = 2; // Assuming favorites is at index 2
   
   late TabController _tabController;
@@ -44,14 +43,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
       setState(() {
-        if (_tabController.index == 0) {
-          _selectedFilter = 'all';
-        } else if (_tabController.index == 1) {
-          _selectedFilter = 'car';
-        } else {
-          _selectedFilter = 'motorcycle';
-        }
-        _applyFilter();
+        // Tab change triggers rebuild automatically
       });
     }
   }
@@ -74,28 +66,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
     if (mounted) {
       setState(() {
         _allFavorites = favorites;
-        _applyFilter();
         _isLoading = false;
       });
     }
   }
 
-  void _applyFilter() {
-    if (_selectedFilter == 'all') {
-      _filteredFavorites = _allFavorites;
-    } else {
-      _filteredFavorites = _allFavorites
-          .where((fav) => fav.vehicleType == _selectedFilter)
-          .toList();
-    }
-  }
 
   String _formatImage(String? rawPath) {
-    final path = rawPath?.toString().trim() ?? '';
-    if (path.isEmpty) return "https://via.placeholder.com/300";
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    final cleanPath = path.replaceFirst("uploads/", "");
-    return GlobalApiConfig.getImageUrl(cleanPath);
+    return ImageHelper.formatImageUrl(rawPath);
   }
 
   Future<void> _removeFavorite(Favorite favorite) async {
@@ -269,7 +247,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingScreen(message: 'Loading favorites...')
           : TabBarView(
               controller: _tabController,
               children: [

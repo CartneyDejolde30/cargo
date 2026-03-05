@@ -10,13 +10,13 @@ class NotificationService {
 
   // API folder (for actions inside /api/notifications/)
   static String get _apiBase =>
-      "${ApiConstants.baseUrl}/api/notifications";
+      "${ApiConstants.baseUrl}api/notifications";
 
   /* ---------------- FETCH ALL NOTIFICATIONS ---------------- */
   Future<List<NotificationModel>> fetchNotifications(int userId) async {
     try {
       final url =
-          Uri.parse("$_rootBase/get_notification.php?user_id=$userId");
+          Uri.parse("${_rootBase}get_notification.php?user_id=$userId");
 
       debugPrint("📡 Fetching notifications: $url");
 
@@ -46,7 +46,7 @@ class NotificationService {
   /* ---------------- DELETE NOTIFICATION ---------------- */
   Future<bool> deleteNotification(int notificationId, int userId) async {
     try {
-      final url = Uri.parse("$_apiBase/delete_notification.php");
+      final url = Uri.parse("$_apiBase/delete_user_notification.php");
 
       debugPrint("📡 Delete notification: $url");
 
@@ -75,7 +75,7 @@ class NotificationService {
     try {
       final url = Uri.parse("$_apiBase/archive_notification.php");
 
-      debugPrint("📡 Archive notification: $url");
+      debugPrint("📡 Archive notification ID $notificationId: $url");
 
       final response = await http
           .post(url, body: {
@@ -83,30 +83,42 @@ class NotificationService {
           })
           .timeout(ApiConstants.apiTimeout);
 
-      debugPrint("📥 Response: ${response.body}");
+      debugPrint("📥 Archive Response Status: ${response.statusCode}");
+      debugPrint("📥 Archive Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['success'] == true;
+        final success = data['success'] == true;
+        
+        if (success) {
+          debugPrint("✅ Notification $notificationId archived successfully");
+        } else {
+          debugPrint("❌ Archive failed: ${data['message'] ?? 'Unknown error'}");
+        }
+        
+        return success;
+      } else {
+        debugPrint("❌ HTTP Error ${response.statusCode}: ${response.body}");
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint("❌ Error archiving notification: $e");
+      debugPrint("Stack trace: $stackTrace");
     }
 
     return false;
   }
 
   /* ---------------- MARK AS READ ---------------- */
-  Future<bool> markAsRead(String notificationId) async {
+  Future<bool> markAsRead(String notificationId, int userId) async {
     try {
-      final url = Uri.parse(
-          "${ApiConstants.baseUrl}/api/mark_notification_read.php");
+      final url = Uri.parse("$_apiBase/mark_as_read.php");
 
       debugPrint("📡 Mark as read: $url");
 
       final response = await http
           .post(url, body: {
             'notification_id': notificationId,
+            'user_id': userId.toString(),
           })
           .timeout(ApiConstants.apiTimeout);
 
@@ -127,7 +139,7 @@ class NotificationService {
   Future<Map<String, int>> fetchUnreadCounts(String userId) async {
     try {
       final url = Uri.parse(
-          "${ApiConstants.baseUrl}/api/dashboard/unread_counts.php?user_id=$userId");
+          "${ApiConstants.baseUrl}api/dashboard/unread_counts.php?user_id=$userId");
 
       // Removed verbose debug print to reduce log clutter
       // debugPrint("📡 Fetch unread counts: $url");

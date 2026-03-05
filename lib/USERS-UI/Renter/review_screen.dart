@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
@@ -69,8 +69,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
     setState(() {
       _filteredReviews = _reviews.where((review) {
-        final name = review['name'].toString().toLowerCase();
-        final text = review['comment'].toString().toLowerCase();
+        final name = review['reviewer_name'].toString().toLowerCase();
+        final text = review['review'].toString().toLowerCase();
         return name.contains(query) || text.contains(query);
       }).toList();
     });
@@ -198,11 +198,11 @@ final colors = Theme.of(context).colorScheme;
                           itemBuilder: (context, index) {
                             final r = _filteredReviews[index];
                             return _buildReviewCard(
-                              name: r["name"],
-                              avatar: r["avatar"],
-                              rating: r["rating"],
+                              name: r["reviewer_name"],
+                              avatar: r["reviewer_image"],
+                              rating: (r["rating"] as num).toDouble(),
                               date: _formatDate(r["created_at"]),
-                              review: r["comment"],
+                              review: r["review"],
                             );
                           },
                         ),

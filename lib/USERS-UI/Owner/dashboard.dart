@@ -3,27 +3,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 // Services
-import './dashboard/dashboard_service.dart';
-import '../Owner/dashboard/booking_service.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/dashboard_service.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/booking_service.dart';
 
 // Models
-import './dashboard/dashboard_stats.dart';
-import './dashboard/booking_model.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/dashboard_stats.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/booking_model.dart';
 
 // Widgets
-import './dashboard/dashboard_header.dart';
-import './dashboard/stat_card_widget.dart';
-import './dashboard/revenue_overview_widget.dart';
-import './dashboard/quick_action_card.dart';
-import './dashboard/recent_activity_widget.dart';
-import './dashboard/upcoming_bookings_widget.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/dashboard_header.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/stat_card_widget.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/revenue_overview_widget.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/quick_action_card.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/recent_activity_widget.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/upcoming_bookings_widget.dart';
 
 // Pages
-import 'pending_requests_page.dart';
-import 'active_booking_page.dart';
-import 'cancelled_bookings_page.dart';
-import 'rejected_bookings_page.dart';
-import 'insurance/owner_insurance_screen.dart';
+import 'package:cargo/USERS-UI/Owner/pending_requests_page.dart';
+import 'package:cargo/USERS-UI/Owner/active_booking_page.dart';
+import 'package:cargo/USERS-UI/Owner/cancelled_bookings_page.dart';
+import 'package:cargo/USERS-UI/Owner/rejected_bookings_page.dart';
+import 'package:cargo/USERS-UI/Owner/insurance/owner_insurance_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -90,16 +90,13 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       userName = prefs.getString("fullname") ?? "User";
-      isDarkMode = prefs.getBool("isDarkMode") ?? false;
-
+      
       // Get owner ID
       ownerId = prefs.getString("user_id") ?? 
                 prefs.getInt("user_id")?.toString() ?? 
                 "0";
       debugPrint("PREF OWNER ID => $ownerId");
-      
-      // ✅ PERFORMANCE: Use Future.wait with error handling for each request
-      // This prevents one failed API call from blocking others
+      // Fetch all data in parallel
       await Future.wait([
         _fetchDashboardStats().catchError((e) {
           debugPrint("⚠️ Dashboard stats fetch failed: $e");
@@ -127,12 +124,15 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   }
 
   Future<void> _fetchRecentBookings() async {
-    final bookings = await _bookingService.fetchRecentBookings(ownerId, limit: 5);
+
+    final bookings =
+        await _bookingService.fetchRecentBookings(ownerId, limit: 5);
     if (mounted) setState(() => recentBookings = bookings);
   }
 
   Future<void> _fetchUpcomingBookings() async {
-    final bookings = await _bookingService.fetchUpcomingBookings(ownerId);
+    final bookings =
+        await _bookingService.fetchUpcomingBookings(ownerId);
     if (mounted) setState(() => upcomingBookings = bookings);
   }
 
@@ -144,7 +144,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
 
       body: RefreshIndicator(
         onRefresh: _loadData,

@@ -149,11 +149,16 @@ class RevenueBreakdownChart extends StatelessWidget {
               const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: item.revenue / total,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                  minHeight: 8,
+                child: SizedBox(
+                  height: 8,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: item.revenue / total,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
                 ),
               ),
             ],

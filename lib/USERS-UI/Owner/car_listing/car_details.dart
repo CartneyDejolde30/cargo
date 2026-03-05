@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 import 'car_preferences_screen.dart';
 
 class CarDetailsScreen extends StatefulWidget {
@@ -254,6 +254,11 @@ void initState() {
   
   final trimsList = isMotorcycle ? engineDisplacements : ['N/A', 'Base', 'Sport', 'Luxury'];
   listing.trim = _getValidValue(listing.trim, trimsList) ?? (isMotorcycle ? engineDisplacements[0] : 'N/A');
+  
+  // ✅ Initialize transmission type for motorcycles
+  if (isMotorcycle) {
+    listing.transmissionType = _getValidValue(listing.transmissionType, transmissionTypes) ?? transmissionTypes[0];
+  }
 
   if (listing.brand != null) {
     final models = isMotorcycle 
@@ -368,9 +373,9 @@ Widget build(BuildContext context) {
                       setState(() => listing.trim = value);
                     }),
                     const SizedBox(height: 20),
-                    _buildDropdown('Transmission', transmissionTypes, null, (value) {
+                    _buildDropdown('Transmission', transmissionTypes, listing.transmissionType, (value) {
                       setState(() {
-                        // You can add a transmission field to CarListing model if needed
+                        listing.transmissionType = value; // ✅ Now saves transmission type
                       });
                     }),
                   ] else ...[

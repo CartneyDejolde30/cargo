@@ -43,6 +43,9 @@ class OverdueBooking {
 
   bool get isSeverlyOverdue => overdueStatus == 'severely_overdue';
   bool get hasLateFee => lateFeeAmount > 0;
+  
+  // Getter for clarity: totalAmount represents the rental fee
+  double get rentalFee => totalAmount;
 
   factory OverdueBooking.fromJson(Map<String, dynamic> json) {
     return OverdueBooking(
@@ -60,11 +63,17 @@ class OverdueBooking {
       daysOverdue: int.tryParse(json['overdue_days']?.toString() ?? '0') ?? 0,
       hoursOverdue: int.tryParse(json['hours_overdue']?.toString() ?? '0') ?? 0,
       lateFeeAmount: double.tryParse(json['late_fee_amount']?.toString() ?? '0') ?? 0.0,
-      totalAmount: double.tryParse(json['total_amount']?.toString() ?? '0') ?? 0.0,
-      totalDue: double.tryParse(json['total_due']?.toString() ?? '0') ?? 0.0,
+      // Use rental_fee if available (new API), fallback to total_amount (old API)
+      totalAmount: double.tryParse(json['rental_fee']?.toString() ?? json['total_amount']?.toString() ?? '0') ?? 0.0,
+      // Use amount_due if available (new API), fallback to total_due (old API)
+      totalDue: double.tryParse(json['amount_due']?.toString() ?? json['total_due']?.toString() ?? '0') ?? 0.0,
       overdueStatus: json['overdue_status']?.toString() ?? 'on_time',
       lateFeeCharged: json['late_fee_charged'] == true || json['late_fee_charged'] == 1,
-      isRentalPaid: json['payment_status']?.toString() == 'paid' || 
+      // Check is_rental_paid from API or fallback to payment_status check
+      isRentalPaid: json['is_rental_paid'] == true || 
+                    json['rental_payment_status']?.toString() == 'paid' || 
+                    json['rental_payment_status']?.toString() == 'verified' ||
+                    json['payment_status']?.toString() == 'paid' || 
                     json['payment_status']?.toString() == 'verified',
     );
   }

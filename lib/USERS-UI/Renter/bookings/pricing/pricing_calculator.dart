@@ -2,7 +2,6 @@
 
 class PricingCalculator {
   // Base configuration
-  static const double driverFeePerDay = 600.0; // ₱600/day in PH
   static const double insuranceRate = 0.12; // 12% of base rental
   static const double deliveryFeeBase = 300.0; // Base delivery fee
   static const double deliveryFeePerKm = 15.0; // ₱15 per km
@@ -19,15 +18,19 @@ class PricingCalculator {
   static const double lateReturnFeePerHour = 300.0;
   static const double cleaningFee = 400.0;
   
+  // Security deposit
+  static const double securityDepositRate = 0.20; // 20% of rental amount
+  static const double minimumSecurityDeposit = 500.0; // ₱500 minimum
+  static const double maximumSecurityDeposit = 10000.0; // ₱10,000 maximum
+  
   /// Calculate total booking price
   static BookingPriceBreakdown calculatePrice({
     required double pricePerDay,
     required int numberOfDays,
-    required bool withDriver,
     required String rentalPeriod, // 'Day', 'Weekly', 'Monthly'
     bool needsDelivery = false,
     double deliveryDistance = 0.0,
-    bool includeInsurance = true,
+    double insuranceFee = 0.0,
   }) {
     
     // 1. Base rental cost
@@ -43,32 +46,27 @@ class PricingCalculator {
     
     double discountedRental = baseRental - discount;
     
-    // 3. Driver fee
-    double driverFee = withDriver ? (driverFeePerDay * numberOfDays) : 0.0;
+    // 3. Insurance fee (now passed directly)
     
-    // 4. Insurance fee
-    double insuranceFee = includeInsurance ? (discountedRental * insuranceRate) : 0.0;
-    
-    // 5. Delivery fee
+    // 4. Delivery fee
     double deliveryFee = 0.0;
     if (needsDelivery) {
       deliveryFee = deliveryFeeBase + (deliveryDistance * deliveryFeePerKm);
     }
     
-    // 6. Calculate subtotal
-    double subtotal = discountedRental + driverFee + insuranceFee + deliveryFee;
+    // 5. Calculate subtotal
+    double subtotal = discountedRental + insuranceFee + deliveryFee;
     
-    // 7. Service fee (platform fee) - 5%
+    // 6. Service fee (platform fee) - 5%
     double serviceFee = subtotal * 0.05;
     
-    // 8. Total amount
+    // 7. Total amount
     double totalAmount = subtotal + serviceFee;
     
     return BookingPriceBreakdown(
       baseRental: baseRental,
       discount: discount,
       discountedRental: discountedRental,
-      driverFee: driverFee,
       insuranceFee: insuranceFee,
       deliveryFee: deliveryFee,
       serviceFee: serviceFee,
@@ -99,6 +97,20 @@ class PricingCalculator {
     return hoursLate * lateReturnFeePerHour;
   }
   
+  /// Calculate security deposit amount
+  static double calculateSecurityDeposit(double totalAmount) {
+    double deposit = totalAmount * securityDepositRate;
+    
+    // Apply minimum and maximum limits
+    if (deposit < minimumSecurityDeposit) {
+      deposit = minimumSecurityDeposit;
+    } else if (deposit > maximumSecurityDeposit) {
+      deposit = maximumSecurityDeposit;
+    }
+    
+    return deposit;
+  }
+  
   /// Format currency for display
   static String formatCurrency(double amount) {
     return '₱${amount.toStringAsFixed(2).replaceAllMapped(
@@ -113,7 +125,6 @@ class BookingPriceBreakdown {
   final double baseRental;
   final double discount;
   final double discountedRental;
-  final double driverFee;
   final double insuranceFee;
   final double deliveryFee;
   final double serviceFee;
@@ -121,12 +132,12 @@ class BookingPriceBreakdown {
   final double totalAmount;
   final int numberOfDays;
   final double pricePerDay;
+  final double securityDeposit;
   
   BookingPriceBreakdown({
     required this.baseRental,
     required this.discount,
     required this.discountedRental,
-    required this.driverFee,
     required this.insuranceFee,
     required this.deliveryFee,
     required this.serviceFee,
@@ -134,7 +145,8 @@ class BookingPriceBreakdown {
     required this.totalAmount,
     required this.numberOfDays,
     required this.pricePerDay,
-  });
+    double? securityDeposit,
+  }) : securityDeposit = securityDeposit ?? PricingCalculator.calculateSecurityDeposit(totalAmount);
   
   /// Get discount percentage applied
   double get discountPercentage {
@@ -148,16 +160,20 @@ class BookingPriceBreakdown {
     return totalAmount / numberOfDays;
   }
   
+  /// Get grand total including security deposit
+  double get grandTotal => totalAmount + securityDeposit;
+  
   Map<String, dynamic> toJson() => {
     'baseRental': baseRental,
     'discount': discount,
     'discountedRental': discountedRental,
-    'driverFee': driverFee,
     'insuranceFee': insuranceFee,
     'deliveryFee': deliveryFee,
     'serviceFee': serviceFee,
     'subtotal': subtotal,
     'totalAmount': totalAmount,
+    'securityDeposit': securityDeposit,
+    'grandTotal': grandTotal,
     'numberOfDays': numberOfDays,
     'pricePerDay': pricePerDay,
   };

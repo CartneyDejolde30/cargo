@@ -7,14 +7,14 @@ import '../calendar/enhanced_vehicle_calendar.dart';
 
 class CarDetailPage extends StatelessWidget {
   final Map<String, dynamic> car;
-  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final int? ownerId; // Optional: fallback if car data doesn't have owner_id
 
   const CarDetailPage({
     super.key,
     required this.car,
-    this.onEdit,
     this.onDelete,
+    this.ownerId,
   });
 
   String get status => (car['status'] ?? 'Unknown').toString().toLowerCase();
@@ -420,10 +420,25 @@ class CarDetailPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    // Get owner_id from car data
-    final ownerId = car['owner_id'];
-    final vehicleId = car['id'];
+    // Get owner_id from car data - ensure it's an integer
+    // Use fallback ownerId parameter if car data doesn't have owner_id
+    final ownerIdFromCar = int.tryParse(car['owner_id']?.toString() ?? '0') ?? 0;
+    final finalOwnerId = ownerIdFromCar > 0 ? ownerIdFromCar : (ownerId ?? 0);
+    final vehicleId = int.tryParse(car['id']?.toString() ?? '0') ?? 0;
+    final vehicleType = car['vehicle_type']?.toString() ?? 'car';
     final vehicleName = "${car['brand']} ${car['model']}";
+    
+    // Debug logging
+    debugPrint('🔍 CarDetailPage - Full car data: $car');
+    debugPrint('🔍 CarDetailPage - ownerIdFromCar: $ownerIdFromCar, fallback: $ownerId, final: $finalOwnerId');
+    debugPrint('🔍 CarDetailPage - vehicleId: $vehicleId, vehicleType: $vehicleType');
+    debugPrint('🔍 CarDetailPage - car[owner_id]: ${car['owner_id']}, car[id]: ${car['id']}');
+    
+    // Safety check
+    if (finalOwnerId == 0 || vehicleId == 0) {
+      debugPrint('❌ Invalid owner_id or vehicle_id - car data might be corrupted');
+      debugPrint('❌ Please ensure owner_id is passed to CarDetailPage or exists in car data');
+    }
 
     // Rented cars can't be edited or deleted, but can manage availability
     if (isRented) {
@@ -446,9 +461,9 @@ class CarDetailPage extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => EnhancedVehicleCalendar(
-                    ownerId: ownerId,
+                    ownerId: finalOwnerId,
                     vehicleId: vehicleId,
-                    vehicleType: 'car',
+                    vehicleType: vehicleType,
                     vehicleName: vehicleName,
                   ),
                 ),
@@ -476,7 +491,7 @@ class CarDetailPage extends StatelessWidget {
       );
     }
 
-    // For approved cars, show manage availability, edit and delete buttons
+    // For approved cars, show manage availability and delete buttons
     if (isApproved) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -503,9 +518,9 @@ class CarDetailPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => EnhancedVehicleCalendar(
-                          ownerId: ownerId,
+                          ownerId: finalOwnerId,
                           vehicleId: vehicleId,
-                          vehicleType: 'car',
+                          vehicleType: vehicleType,
                           vehicleName: vehicleName,
                         ),
                       ),
@@ -531,66 +546,34 @@ class CarDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              // Edit and Delete Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final confirm = await DeleteCarDialog.show(context);
-                        if (confirm == true && onDelete != null) {
-                          onDelete!();
-                          if (context.mounted) Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(Icons.delete_outline),
-                      label: Text(
-                        "Delete",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: BorderSide(color: Colors.red.shade300, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+              // Delete Button (Full Width)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await DeleteCarDialog.show(context);
+                    if (confirm == true && onDelete != null) {
+                      onDelete!();
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(
+                    "Delete Vehicle",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (onEdit != null) {
-                          onEdit!();
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: Text(
-                        "Edit Details",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).iconTheme.color,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: BorderSide(color: Colors.red.shade300, width: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -598,7 +581,7 @@ class CarDetailPage extends StatelessWidget {
       );
     }
 
-    // For pending/rejected, show edit and delete buttons only
+    // For pending/rejected, show delete button only
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -612,65 +595,33 @@ class CarDetailPage extends StatelessWidget {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final confirm = await DeleteCarDialog.show(context);
-                  if (confirm == true && onDelete != null) {
-                    onDelete!();
-                    if (context.mounted) Navigator.pop(context);
-                  }
-                },
-                icon: const Icon(Icons.delete_outline),
-                label: Text(
-                  "Delete",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: BorderSide(color: Colors.red.shade300, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              final confirm = await DeleteCarDialog.show(context);
+              if (confirm == true && onDelete != null) {
+                onDelete!();
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            icon: const Icon(Icons.delete_outline),
+            label: Text(
+              "Delete Vehicle",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  if (onEdit != null) {
-                    onEdit!();
-                    Navigator.pop(context);
-                  }
-                },
-                icon: const Icon(Icons.edit),
-                label: Text(
-                  isRejected ? "Fix & Resubmit" : "Edit Details",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).iconTheme.color,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: BorderSide(color: Colors.red.shade300, width: 2),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

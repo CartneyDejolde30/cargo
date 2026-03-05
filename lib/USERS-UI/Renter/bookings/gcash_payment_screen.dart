@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class GCashPaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -23,6 +23,8 @@ class GCashPaymentScreen extends StatefulWidget {
   final String rentalPeriod;
   final bool needsDelivery;
   final double totalAmount;
+  final double serviceFee;
+  final double securityDeposit;
 
   const GCashPaymentScreen({
     super.key,
@@ -42,6 +44,8 @@ class GCashPaymentScreen extends StatefulWidget {
     required this.rentalPeriod,
     required this.needsDelivery,
     required this.totalAmount,
+    required this.serviceFee,
+    this.securityDeposit = 0.0,
   });
 
   @override
@@ -52,12 +56,12 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   final TextEditingController gcashNumberController = TextEditingController();
   final TextEditingController referenceNumberController = TextEditingController();
 
-  bool isProcessing = false;
+  bool _isLoading = false;
   bool hasAgreedToTerms = false;
   
   String? _transactionId;
 
-  final String gcashQRCodeUrl = "assets/gcash.jpg";
+  final String gcashQRCodeUrl = "assets/qr.jpg";
   final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
   @override
@@ -163,7 +167,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   Future<void> _submitPayment() async {
     if (!_validateForm()) return;
 
-    setState(() => isProcessing = true);
+    setState(() => _isLoading = true);
 
     // ✅ FIX: Clean the numbers before sending to API
     final cleanGcash = gcashNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
@@ -178,7 +182,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           "car_id": widget.carId.toString(),
           "owner_id": widget.ownerId,
           "user_id": widget.userId,
-          "total_amount": widget.totalAmount.toStringAsFixed(2),
+          "total_amount": (widget.totalAmount + widget.securityDeposit).toStringAsFixed(2),
           "payment_method": "gcash",
           "gcash_number": cleanGcash, // Send cleaned number
           "payment_reference": cleanRef, // Send cleaned reference
@@ -192,7 +196,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
       final data = jsonDecode(response.body);
 
       if (mounted) {
-        setState(() => isProcessing = false);
+        setState(() => _isLoading = false);
 
         if (data['success'] == true) {
           _transactionId = data['transaction_id']?.toString();
@@ -203,7 +207,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => isProcessing = false);
+        setState(() => _isLoading = false);
         _showError('Network error: ${e.toString()}');
       }
     }
@@ -503,6 +507,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   }
 
   Widget _buildAmountCard() {
+    final grandTotal = widget.totalAmount + widget.securityDeposit;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -530,15 +536,11 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Image.network(
-                  'https://upload.wikimedia.org/wikipedia/commons/5/5c/GCash_logo.png',
-                  height: 24,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.payment, color: Color(0xFF007DFF)),
-                ),
+                child: const Icon(Icons.payment, color: Color(0xFF007DFF)),
               ),
               const Spacer(),
               Text(
-                'Total Amount',
+                'Total to Pay',
                 style: GoogleFonts.poppins(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
@@ -549,7 +551,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _formatCurrency(widget.totalAmount),
+            _formatCurrency(grandTotal),
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 36,
@@ -559,10 +561,10 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Philippine Peso',
+            'Rental: ${_formatCurrency(widget.totalAmount)} + Service Fee: ${_formatCurrency(widget.serviceFee)} + Deposit: ${_formatCurrency(widget.securityDeposit)}',
             style: GoogleFonts.poppins(
               color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ],
@@ -842,12 +844,39 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           _buildSummaryRow('Pickup Date', widget.pickupDate),
           _buildSummaryRow('Return Date', widget.returnDate),
           _buildSummaryRow('Delivery', widget.needsDelivery ? 'Yes' : 'No'),
+          const Divider(height: 24),
+          _buildSummaryRow('Rental Amount', _formatCurrency(widget.totalAmount), isBold: true),
+          _buildSummaryRow('Security Deposit', _formatCurrency(widget.securityDeposit), isBold: true),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Deposit is refundable after successful return',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -857,7 +886,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: isBold ? Colors.black87 : Colors.grey.shade600,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
           Flexible(
@@ -866,7 +896,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
               textAlign: TextAlign.right,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                color: isBold ? Colors.black : null,
               ),
             ),
           ),
@@ -893,7 +924,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isProcessing || !hasAgreedToTerms
+              colors: _isLoading || !hasAgreedToTerms
                   ? [Colors.grey.shade400, Colors.grey.shade500]
                   : [const Color(0xFF1a73e8), const Color(0xFF0d47a1)],
               begin: Alignment.centerLeft,
@@ -902,7 +933,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: (isProcessing || !hasAgreedToTerms)
+                color: (_isLoading || !hasAgreedToTerms)
                     ? Colors.grey.withValues(alpha: 0.3)
                     : const Color(0xFF1a73e8).withValues(alpha: 0.4),
                 blurRadius: 12,
@@ -913,11 +944,11 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: (isProcessing || !hasAgreedToTerms) ? null : _submitPayment,
+              onTap: (_isLoading || !hasAgreedToTerms) ? null : _submitPayment,
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                child: isProcessing
+                child: _isLoading
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

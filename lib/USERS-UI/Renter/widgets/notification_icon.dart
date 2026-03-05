@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../notification_screen.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/services/network_resilience_service.dart';
 
 class NotificationIcon extends StatefulWidget {
   final Color? iconColor;
@@ -22,6 +22,7 @@ class NotificationIcon extends StatefulWidget {
 class _NotificationIconState extends State<NotificationIcon> {
   int _unreadCount = 0;
   bool _isLoading = false;
+  final _resilienceService = NetworkResilienceService();
 
   @override
   void initState() {
@@ -39,10 +40,12 @@ class _NotificationIconState extends State<NotificationIcon> {
       final userId = prefs.getString('user_id');
 
       if (userId == null) {
-        setState(() {
-          _unreadCount = 0;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _unreadCount = 0;
+            _isLoading = false;
+          });
+        }
         return;
       }
 
@@ -50,9 +53,23 @@ class _NotificationIconState extends State<NotificationIcon> {
         '${GlobalApiConfig.baseUrl}/get_notification_renter.php?user_id=$userId'
       );
 
-      final response = await http.get(url).timeout(
-        const Duration(seconds: 10),
+      // Use resilient GET with circuit breaker
+      final response = await _resilienceService.resilientGet(
+        url,
+        timeout: const Duration(seconds: 10),
+        maxRetries: 2,
       );
+
+      if (response == null) {
+        // Network error or circuit breaker open
+        if (mounted) {
+          setState(() {
+            _unreadCount = 0;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
 
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
@@ -73,6 +90,7 @@ class _NotificationIconState extends State<NotificationIcon> {
         }
       }
     } catch (e) {
+      debugPrint('❌ NotificationIcon fetch error: $e');
       if (mounted) {
         setState(() {
           _unreadCount = 0;

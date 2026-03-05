@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 import '../req_model/booking_request.dart';
 import '../req_model/request_dialog.dart';
 import '../pending_requests_page.dart';
@@ -514,19 +515,18 @@ class RequestDetailsPage extends StatelessWidget {
         Uri.parse(GlobalApiConfig.approveRequestEndpoint);
 
     try {
-      // Show loading
-      showDialog(
-        context: context,
+      // Show loading dialog
+      LoadingDialog.show(
+        context,
+        message: 'Approving booking...\nPlease wait',
         barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
       );
 
       final response = await http.post(url, body: {
         "booking_id": request.bookingId,
       });
 
+      if (!context.mounted) return;
       Navigator.pop(context); // Remove loading
 
       final data = jsonDecode(response.body);

@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import '../../Owner/verification/personal_info_screen.dart';
 
 class VerifyPopup {
@@ -38,26 +38,38 @@ class VerifyPopup {
     
     debugPrint("✅ [VERIFY POPUP] User ID found: $userId, proceeding with verification check...");
 
-    // ✅ Check cache first (valid for 5 minutes)
-    if (_verificationCache.containsKey(userId) && _lastCacheUpdate != null) {
+    // ✅ Check cache first (valid for 1 minute only, and ONLY for verified users)
+    // We cache verified status to avoid repeated API calls, but NOT unverified status
+    // This ensures that newly verified users see the change immediately on next app restart
+    if (_verificationCache.containsKey(userId) && 
+        _lastCacheUpdate != null && 
+        _verificationCache[userId] == true) {
       final cacheAge = DateTime.now().difference(_lastCacheUpdate!);
-      debugPrint("📦 [VERIFY POPUP] Cache exists for user $userId, age: ${cacheAge.inMinutes} minutes");
-      if (cacheAge.inMinutes < 5 && _verificationCache[userId] == true) {
+      debugPrint("📦 [VERIFY POPUP] Verified cache exists for user $userId, age: ${cacheAge.inSeconds} seconds");
+      if (cacheAge.inMinutes < 1) {
         debugPrint("✅ [VERIFY POPUP] User is verified (from cache) - popup will NOT show");
         return;
       }
-      debugPrint("🔄 [VERIFY POPUP] Cache expired or user not verified, checking database...");
+      debugPrint("🔄 [VERIFY POPUP] Cache expired, checking database...");
     } else {
-      debugPrint("📭 [VERIFY POPUP] No cache found, checking database...");
+      debugPrint("📭 [VERIFY POPUP] No verified cache found, checking database...");
     }
 
     // Check verification status from database
     debugPrint("🌐 [VERIFY POPUP] Calling _checkVerificationFromDatabase($userId)...");
     final isVerified = await _checkVerificationFromDatabase(userId);
     
-    // ✅ Update cache
-    _verificationCache[userId] = isVerified;
-    _lastCacheUpdate = DateTime.now();
+    // ✅ Update cache ONLY if user is verified
+    // We don't cache "not verified" status to ensure newly approved users see the change immediately
+    if (isVerified) {
+      _verificationCache[userId] = true;
+      _lastCacheUpdate = DateTime.now();
+      debugPrint("💾 [VERIFY POPUP] Cached verified status for user $userId");
+    } else {
+      // Remove from cache if exists (in case status changed from verified to not verified)
+      _verificationCache.remove(userId);
+      debugPrint("🗑️ [VERIFY POPUP] Removed cache for user $userId (not verified)");
+    }
     
     debugPrint("🔍 [VERIFY POPUP] Verification check result: $isVerified");
 
@@ -94,7 +106,7 @@ class VerifyPopup {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha :0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -114,7 +126,7 @@ class VerifyPopup {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha :0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -158,7 +170,7 @@ class VerifyPopup {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.green.withOpacity(0.3),
+                            color: Colors.green.withValues(alpha :0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -316,10 +328,8 @@ class VerifyPopup {
 
   /// Check verification status from database
   static Future<bool> _checkVerificationFromDatabase(String userId) async {
-    final String baseUrl = GlobalApiConfig.baseUrl;
-    
     try {
-      final url = Uri.parse("$baseUrl/api/check_user_verification.php?user_id=$userId");
+      final url = Uri.parse("${GlobalApiConfig.checkVerificationEndpoint}?user_id=$userId");
       debugPrint("📡 [VERIFY POPUP] API URL: $url");
       
       final response = await http.get(url).timeout(const Duration(seconds: 10));
@@ -356,7 +366,7 @@ class VerifyPopup {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha :0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20, color: Colors.green[700]),
@@ -381,20 +391,6 @@ class VerifyPopup {
     );
   }
 
-  /// Reusable step text widget (kept for backward compatibility)
-  static Widget _stepText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(
-        text,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
-        ),
-      ),
-    );
-  }
   
   /// ✅ New: Clear cache (useful after user completes verification)
   static void clearCache() {

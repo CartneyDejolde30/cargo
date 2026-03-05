@@ -4,22 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
-import 'package:flutter_application_1/USERS-UI/services/booking_service.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_status_tracker.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
-import 'package:flutter_application_1/USERS-UI/services/renter_gps_service.dart';
-import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
-import 'package:flutter_application_1/USERS-UI/models/overdue_booking.dart';
-import 'package:flutter_application_1/USERS-UI/services/overdue_service.dart';
-import 'package:flutter_application_1/USERS-UI/widgets/overdue_badge.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/USERS-UI/Renter/models/booking.dart';
+import 'package:cargo/USERS-UI/services/booking_service.dart';
+import 'package:cargo/USERS-UI/Renter/payments/payment_status_tracker.dart';
+import 'package:cargo/USERS-UI/Renter/payments/receipt_viewer_screen.dart';
+import 'package:cargo/USERS-UI/Renter/payments/refund_request_screen.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/history/live_trip_tracker_screen.dart';
+import 'package:cargo/USERS-UI/services/renter_gps_service.dart';
+import 'package:cargo/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:cargo/USERS-UI/models/overdue_booking.dart';
+import 'package:cargo/USERS-UI/services/overdue_service.dart';
+import 'package:cargo/USERS-UI/widgets/overdue_badge.dart';
+import 'package:cargo/USERS-UI/Renter/payments/late_fee_payment_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/insurance/insurance_policy_screen.dart';
+import 'package:cargo/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:cargo/USERS-UI/Renter/insurance/insurance_policy_screen.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -36,6 +38,138 @@ class BookingDetailScreen extends StatefulWidget {
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  Widget _buildLateFeePaymentStatusCard() {
+    final booking = _lateFeeStatusData is Map ? _lateFeeStatusData!['booking'] : null;
+    final lateFeePayment = _lateFeeStatusData is Map ? _lateFeeStatusData!['late_fee_payment'] : null;
+
+    // If the endpoint hasn't been called yet, show a lightweight placeholder while loading.
+    if (_isLoadingLateFeeStatus) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red[700]),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Loading late fee payment status…',
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[700]),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // If not available (e.g., user not logged in), don't take space.
+    if (_lateFeeStatusData == null || userId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // If API returned success=false, still show a neutral card (avoid confusing blank UI).
+    final bool success = _lateFeeStatusData!['success'] == true;
+
+    String statusLabel = 'Not submitted';
+    Color statusColor = Colors.grey.shade700;
+    IconData statusIcon = Icons.info_outline;
+
+    if (success && booking != null) {
+      final bookingStatus = (booking['late_fee_payment_status'] ?? booking['late_fee_payment_status'.toString()])
+          ?.toString()
+          .toLowerCase();
+      final paymentStatus = lateFeePayment != null ? (lateFeePayment['payment_status']?.toString().toLowerCase()) : null;
+
+      // Prefer the late_fee_payments table status if present; otherwise use booking field.
+      final normalized = (paymentStatus ?? bookingStatus ?? '').toLowerCase();
+
+      if (normalized == 'pending') {
+        statusLabel = 'Pending verification';
+        statusColor = Colors.orange.shade800;
+        statusIcon = Icons.hourglass_top;
+      } else if (normalized == 'verified' || normalized == 'paid') {
+        statusLabel = 'Verified';
+        statusColor = Colors.green.shade700;
+        statusIcon = Icons.check_circle_outline;
+      } else if (normalized == 'rejected') {
+        statusLabel = 'Rejected';
+        statusColor = Colors.red.shade700;
+        statusIcon = Icons.cancel_outlined;
+      } else if (normalized.isNotEmpty) {
+        statusLabel = normalized;
+        statusColor = Colors.blueGrey;
+        statusIcon = Icons.info_outline;
+      }
+    }
+
+    final String? ref = lateFeePayment != null ? lateFeePayment['payment_reference']?.toString() : null;
+    final String? amount = lateFeePayment != null ? lateFeePayment['total_amount']?.toString() : null;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long, color: Colors.red[700]),
+              const SizedBox(width: 10),
+              Text(
+                'Late Fee Payment Status',
+                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Icon(statusIcon, color: statusColor, size: 20),
+              const SizedBox(width: 6),
+              Text(
+                statusLabel,
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (ref != null && ref.isNotEmpty)
+            Text(
+              'Reference: $ref',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[800]),
+            ),
+          if (amount != null && amount.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Submitted amount: ₱$amount',
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[800]),
+              ),
+            ),
+          if (!success)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Unable to load late fee status right now. Please try again later.',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   String? userId;
   bool _isLoading = true;
   bool _isLoadingPayment = true;
@@ -50,6 +184,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final OverdueService _overdueService = OverdueService();
   OverdueBooking? _overdueInfo;
   bool _isCheckingOverdue = false;
+
+  // Late fee payment status (separate from normal booking payment)
+  bool _isLoadingLateFeeStatus = false;
+  Map<String, dynamic>? _lateFeeStatusData;
 
   final String baseUrl = GlobalApiConfig.baseUrl + "/";
 
@@ -74,12 +212,67 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     setState(() => _isCheckingOverdue = true);
     
     try {
+      // First, check using API
       final overdueInfo = await _overdueService.checkBookingOverdue(widget.booking.bookingId);
+      
+      // Fallback: Calculate client-side if API returns null but booking is actually overdue
+      if (overdueInfo == null) {
+        final isOverdueLocal = _overdueService.isBookingOverdueLocal(
+          widget.booking.returnDate, 
+          widget.booking.returnTime
+        );
+        
+        if (isOverdueLocal) {
+          final hoursOverdue = _overdueService.calculateHoursOverdue(
+            widget.booking.returnDate,
+            widget.booking.returnTime
+          );
+          
+          final lateFee = _overdueService.calculateLateFee(hoursOverdue);
+          final daysOverdue = (hoursOverdue / 24).floor();
+          
+          // Create a temporary overdue booking object for display
+          if (mounted) {
+            setState(() {
+              _overdueInfo = OverdueBooking(
+                bookingId: widget.booking.bookingId,
+                userId: 0, // Unknown from client
+                ownerId: 0,
+                renterName: '',
+                renterContact: '',
+                ownerName: '',
+                ownerContact: '',
+                vehicleName: widget.booking.carName,
+                vehicleImage: widget.booking.carImage,
+                returnDate: DateTime.tryParse(widget.booking.returnDate) ?? DateTime.now(),
+                returnTime: widget.booking.returnTime,
+                overdueStatus: hoursOverdue > 72 ? 'severely_overdue' : 'overdue',
+                daysOverdue: daysOverdue,
+                hoursOverdue: hoursOverdue,
+                lateFeeAmount: lateFee,
+                lateFeeCharged: false,
+                totalAmount: double.tryParse(widget.booking.totalPrice.replaceAll(',', '')) ?? 0, // Rental fee
+                totalDue: lateFee, // FIXED: Only late fee is due (rental already paid)
+                isRentalPaid: true, // FIXED: Assume rental is paid for approved bookings
+              );
+              _isCheckingOverdue = false;
+            });
+            
+            debugPrint('⚠️ Booking is overdue (client-side detection): $hoursOverdue hours, Fee: ₱$lateFee');
+          }
+          return;
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _overdueInfo = overdueInfo;
           _isCheckingOverdue = false;
         });
+        
+        if (overdueInfo != null) {
+          debugPrint('✅ Overdue info loaded from API: ${overdueInfo.hoursOverdue} hours, Fee: ₱${overdueInfo.lateFeeAmount}');
+        }
       }
     } catch (e) {
       debugPrint('Error checking overdue status: $e');
@@ -170,17 +363,47 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     print('📱 _loadUserIdAndPayment called');
     final prefs = await SharedPreferences.getInstance();
     final loadedUserId = prefs.getString('user_id');
-    
+
     print('👤 User ID: $loadedUserId');
-    
+
     setState(() {
       userId = loadedUserId;
       _isLoading = false;
     });
 
+    // Fetch both the normal booking payment info and the late-fee-specific payment status
     print('💳 About to call _fetchPaymentInfo...');
     await _fetchPaymentInfo();
+    await _fetchLateFeeStatus();
     print('✅ _fetchPaymentInfo completed');
+  }
+
+  Future<void> _fetchLateFeeStatus() async {
+    if (userId == null || userId!.isEmpty) return;
+    if (_isLoadingLateFeeStatus) return;
+
+    setState(() => _isLoadingLateFeeStatus = true);
+
+    try {
+      final url =
+          '${baseUrl}api/payment/get_renter_late_fee_status.php?booking_id=${widget.booking.bookingId}&user_id=$userId';
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _lateFeeStatusData = data;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching late fee status: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingLateFeeStatus = false);
+      }
+    }
   }
 
   Future<void> _fetchPaymentInfo() async {
@@ -230,7 +453,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       case 'approved':
         return 'Active';
       case 'pending':
-        return 'Pending Payment';
+        return 'Pending Approval';
       case 'completed':
         return 'Completed';
       case 'cancelled':
@@ -265,10 +488,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(child: CircularProgressIndicator(
-  color: Theme.of(context).colorScheme.primary,
-)
-),
+        body: const LoadingScreen(message: 'Loading booking details...'),
       );
     }
 
@@ -310,19 +530,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            widget.booking.carImage.trim().isEmpty
-                ? Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.directions_car, size: 100),
-                  )
-                : Image.network(
-                    widget.booking.carImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.directions_car, size: 100),
-                    ),
-                  ),
+            OptimizedNetworkImage(
+              imageUrl: widget.booking.carImage,
+              width: double.infinity,
+              height: 300,
+              fit: BoxFit.cover,
+              errorIcon: Icons.directions_car,
+              errorIconSize: 100,
+            ),
             _imageGradient(),
             _statusBadge(),
           ],
@@ -339,36 +554,46 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _rentalPeriod(),
         const SizedBox(height: 20),
         
-        // Overdue Badge - Show if booking has late fees
-        if (_overdueInfo != null && _overdueInfo!.hasLateFee) ...[
+        // Overdue Banner - Show whenever booking is overdue (even if late fee is not yet set)
+        if (_overdueInfo != null && _overdueInfo!.hoursOverdue > 0) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: OverdueWarningBanner(
               daysOverdue: _overdueInfo!.daysOverdue,
               lateFee: _overdueInfo!.lateFeeAmount,
-              onPayNow: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LateFeePaymentScreen(
-                      bookingId: widget.booking.bookingId,
-                      rentalAmount: _overdueInfo!.totalAmount,
-                      lateFee: _overdueInfo!.lateFeeAmount,
-                      hoursOverdue: _overdueInfo!.hoursOverdue,
-                      vehicleName: _overdueInfo!.vehicleName,
-                      isRentalPaid: _overdueInfo!.isRentalPaid,
-                    ),
-                  ),
-                );
-                
-                if (result == true) {
-                  // Refresh overdue status and payment info
-                  await _checkOverdueStatus();
-                  await _fetchPaymentInfo();
-                }
-              },
+              onPayNow: _overdueInfo!.lateFeeAmount > 0
+                  ? () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LateFeePaymentScreen(
+                            bookingId: widget.booking.bookingId,
+                            rentalAmount: _overdueInfo!.rentalFee,  // Use rentalFee instead of totalAmount
+                            lateFee: _overdueInfo!.lateFeeAmount,
+                            hoursOverdue: _overdueInfo!.hoursOverdue,
+                            vehicleName: _overdueInfo!.vehicleName,
+                            isRentalPaid: _overdueInfo!.isRentalPaid,
+                          ),
+                        ),
+                      );
+
+                      if (result == true) {
+                        // Refresh overdue status and payment info
+                        await _checkOverdueStatus();
+                        await _fetchPaymentInfo();
+                        await _fetchLateFeeStatus();
+                      }
+                    }
+                  : null,
             ),
           ),
+
+          // Late fee payment status (Pending / Verified / etc.)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildLateFeePaymentStatusCard(),
+          ),
+
           const SizedBox(height: 20),
         ],
         
@@ -1071,9 +1296,6 @@ final colors = Theme.of(context).colorScheme;
   }
 
   Widget _buildRefundButton(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = Theme.of(context).colorScheme;
-    
     // Check if refund has been requested
     final refundStatus = _paymentData?['refund_status'] ?? 'not_requested';
     final hasRefundRequested = refundStatus != 'not_requested' && refundStatus.isNotEmpty;
@@ -1090,9 +1312,7 @@ final colors = Theme.of(context).colorScheme;
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: hasRefundRequested 
-                ? (isDark ? Colors.orange.shade900.withOpacity(0.3) : Colors.orange.shade50)
-                : (isDark ? colors.errorContainer : Colors.red.shade50),
+            color: hasRefundRequested ? Colors.orange.shade50 : Colors.red.shade50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasRefundRequested ? Colors.orange.shade200 : Colors.red.shade200,
@@ -1114,9 +1334,7 @@ final colors = Theme.of(context).colorScheme;
                           : 'This booking was cancelled'),
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: hasRefundRequested 
-                        ? (isDark ? Colors.orange.shade200 : Colors.orange.shade900)
-                        : (isDark ? colors.onErrorContainer : Colors.red.shade900),
+                    color: hasRefundRequested ? Colors.orange.shade900 : Colors.red.shade900,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

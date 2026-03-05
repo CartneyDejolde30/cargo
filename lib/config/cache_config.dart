@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/http.dart' as http;
 
@@ -6,15 +7,112 @@ import 'package:http/http.dart' as http;
 class ChatImageCacheManager {
   static const key = 'chatImageCache';
   
-  static CacheManager instance = CacheManager(
-    Config(
-      key,
-      stalePeriod: const Duration(days: 30), // Cache for 30 days
-      maxNrOfCacheObjects: 200, // Store up to 200 images
-      repo: JsonCacheInfoRepository(databaseName: key),
-      fileService: CustomHttpFileService(),
-    ),
-  );
+  static CacheManager get instance {
+    // ✅ FIX: For web platform, use in-memory cache manager (no repo needed)
+    if (kIsWeb) {
+      return CacheManager(
+        Config(
+          key,
+          stalePeriod: const Duration(days: 1), // Shorter cache for web
+          maxNrOfCacheObjects: 100, // Less objects for web
+          fileService: CustomHttpFileService(),
+        ),
+      );
+    }
+    
+    // For mobile/desktop platforms, use persistent cache with database
+    return CacheManager(
+      Config(
+        key,
+        stalePeriod: const Duration(days: 30), // Cache for 30 days
+        maxNrOfCacheObjects: 200, // Store up to 200 images
+        repo: JsonCacheInfoRepository(databaseName: key),
+        fileService: CustomHttpFileService(),
+      ),
+    );
+  }
+}
+
+/// ✅ NEW: Optimized cache manager for vehicle images (cars/motorcycles)
+/// Longer cache period, more objects, optimized for thumbnails
+class VehicleImageCacheManager {
+  static const key = 'vehicleImageCache';
+  
+  static CacheManager get instance {
+    // ✅ FIX: For web platform, use in-memory cache manager (no repo needed)
+    if (kIsWeb) {
+      return CacheManager(
+        Config(
+          key,
+          stalePeriod: const Duration(days: 1), // Shorter cache for web
+          maxNrOfCacheObjects: 200, // Less objects for web
+          fileService: CustomHttpFileService(),
+        ),
+      );
+    }
+    
+    // For mobile/desktop platforms, use persistent cache with database
+    return CacheManager(
+      Config(
+        key,
+        stalePeriod: const Duration(days: 60), // Cache for 60 days (vehicles don't change often)
+        maxNrOfCacheObjects: 500, // Store up to 500 vehicle images
+        repo: JsonCacheInfoRepository(databaseName: key),
+        fileService: CustomHttpFileService(),
+      ),
+    );
+  }
+  
+  /// Clear cache manually if needed
+  static Future<void> clearCache() async {
+    await instance.emptyCache();
+    print('✅ Vehicle image cache cleared');
+  }
+  
+  /// Get cache size
+  static Future<int> getCacheSize() async {
+    try {
+      // ✅ FIX: Handle web platform gracefully
+      if (kIsWeb) {
+        return 0; // Web doesn't persist cache
+      }
+      final files = await instance.store.retrieveCacheData('');
+      return files?.length ?? 0;
+    } catch (e) {
+      debugPrint('Error getting cache size: $e');
+      return 0;
+    }
+  }
+}
+
+/// ✅ NEW: Cache manager for profile/avatar images
+class ProfileImageCacheManager {
+  static const key = 'profileImageCache';
+  
+  static CacheManager get instance {
+    // ✅ FIX: For web platform, use in-memory cache manager (no repo needed)
+    if (kIsWeb) {
+      return CacheManager(
+        Config(
+          key,
+          stalePeriod: const Duration(hours: 12), // Shorter cache for web
+          maxNrOfCacheObjects: 50, // Less objects for web
+          fileService: CustomHttpFileService(),
+        ),
+      );
+    }
+    
+    // For mobile/desktop platforms, use persistent cache with database
+    return CacheManager(
+      Config(
+        key,
+        stalePeriod: const Duration(days: 7), // Profile images change more often
+        maxNrOfCacheObjects: 100,
+        repo: JsonCacheInfoRepository(databaseName: key),
+        fileService: CustomHttpFileService(),
+      ),
+    );
+  }
 }
 
 /// Custom HTTP file service with extended timeout and retry logic
@@ -33,12 +131,10 @@ class CustomHttpFileService extends HttpFileService {
     final client = http.Client();
     
     try {
-      if (retryCount == 0) {
-        print('🌐 Fetching image: $url');
-      } else {
+      // Only log retries, not every single image fetch (reduces console spam)
+      if (retryCount > 0) {
         print('🔄 Retry attempt $retryCount/$maxRetries for: $url');
       }
-      print('⏱️ Timeout set to 45 seconds');
       
       final request = http.Request('GET', Uri.parse(url));
       
@@ -59,8 +155,6 @@ class CustomHttpFileService extends HttpFileService {
           throw TimeoutException('Connection timeout');
         },
       );
-      
-      print('✓ Response received: ${streamedResponse.statusCode}');
       
       if (streamedResponse.statusCode == 200) {
         // Wrap the stream to detect connection drops during download
@@ -91,7 +185,10 @@ class CustomHttpFileService extends HttpFileService {
         );
       }
     } catch (e) {
-      print('❌ Network error: $e');
+      // Only log network errors, not 404s (missing images are common)
+      if (!e.toString().contains('404')) {
+        print('❌ Network error: $e');
+      }
       
       // Retry logic for connection issues
       if (retryCount < maxRetries) {

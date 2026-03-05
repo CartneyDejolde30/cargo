@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class LateFeePaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -35,10 +35,10 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
   final TextEditingController gcashNumberController = TextEditingController();
   final TextEditingController referenceNumberController = TextEditingController();
   bool hasAgreedToTerms = false;
-  bool isProcessing = false;
+  bool _isLoading = false;
   
   final String baseUrl = GlobalApiConfig.baseUrl + "/";
-  final String gcashQRCodeUrl = "assets/gcash.jpg";
+  final String gcashQRCodeUrl = "assets/qr.jpg";
 
   @override
   void initState() {
@@ -529,9 +529,9 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: (isProcessing || !hasAgreedToTerms) ? null : _handlePayment,
+        onPressed: (_isLoading || !hasAgreedToTerms) ? null : _handlePayment,
         style: ElevatedButton.styleFrom(
-          backgroundColor: (isProcessing || !hasAgreedToTerms) 
+          backgroundColor: (_isLoading || !hasAgreedToTerms) 
               ? Colors.grey[400] 
               : Colors.green[600],
           foregroundColor: Colors.white,
@@ -541,7 +541,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
           ),
           elevation: 0,
         ),
-        child: isProcessing
+        child: _isLoading
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -693,7 +693,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
     
     if (!_validateForm()) return;
 
-    setState(() => isProcessing = true);
+    setState(() => _isLoading = true);
 
     try {
       // Submit late fee payment
@@ -717,7 +717,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
         final data = json.decode(response.body);
         
         if (mounted) {
-          setState(() => isProcessing = false);
+          setState(() => _isLoading = false);
           
           if (data['success'] == true) {
             _showSuccessDialog();
@@ -730,7 +730,7 @@ class _LateFeePaymentScreenState extends State<LateFeePaymentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => isProcessing = false);
+        setState(() => _isLoading = false);
         _showErrorDialog('Network error: ${e.toString()}');
       }
     }

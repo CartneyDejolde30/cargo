@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/config/api_config.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:flutter_application_1/widgets/map_controls.dart';
-import 'package:flutter_application_1/widgets/map_style_switcher.dart';
+import 'package:cargo/widgets/map_controls.dart';
+import 'package:cargo/widgets/map_style_switcher.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 

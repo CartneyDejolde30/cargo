@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -214,20 +214,42 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
   }
 
   Future _pickImageFromSource(ImageSource source) async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: source, imageQuality: 85);
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
 
-    if (file == null) return;
+      // ✅ CRITICAL: Check if user cancelled
+      if (file == null) {
+        print("📷 User cancelled image selection");
+        return;
+      }
 
-    if (kIsWeb) {
-      webImage = await file.readAsBytes();
-    } else {
-      imageFile = File(file.path);
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      if (kIsWeb) {
+        webImage = await file.readAsBytes();
+      } else {
+        imageFile = File(file.path);
+      }
+
+      // ✅ CRITICAL: Check mounted again after async read
+      if (!mounted) return;
+      
+      setState(() => hasChanges = true);
+    } catch (e, stackTrace) {
+      print("❌ Error picking image: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      _showSnackBar("Failed to select image. Please try again.", isError: true);
     }
-
-    // ✅ CRASH FIX: Check mounted before setState
-    if (!mounted) return;
-    setState(() => hasChanges = true);
   }
 
   ImageProvider? getImage() {

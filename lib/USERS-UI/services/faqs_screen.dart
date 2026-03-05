@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'policy_document_screen.dart';
 
 class FAQsScreen extends StatefulWidget {
   const FAQsScreen({super.key});
@@ -121,7 +122,7 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
     FAQItem(
       category: 'Payment, Pricing and Refunds',
       question: 'Does Cargo charge a security deposit for rentals?',
-      answer: 'Yes, a refundable security deposit is required for all bookings. The amount varies by vehicle type and rental duration (typically ₱2,000-₱10,000). The deposit is held during your trip and refunded within 3-5 days after successful return.',
+      answer: 'No separate security deposit is required. Instead, your full rental payment is held securely in our escrow system during your rental period. This provides better protection for both renters and owners. The payment is only released to the owner after successful trip completion. If the booking is cancelled or there are issues, refunds are processed automatically through the escrow system within 5-7 business days.',
       icon: Icons.account_balance_wallet_outlined,
     ),
     FAQItem(
@@ -129,6 +130,44 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
       question: 'I just made a booking request and payment has been deducted from my card?',
       answer: 'When you make a booking request, the payment is authorized but not charged immediately. The actual charge occurs only when the owner accepts your request. If declined, the authorization is released within 24-48 hours.',
       icon: Icons.credit_card_outlined,
+    ),
+    FAQItem(
+      category: 'Payment, Pricing and Refunds',
+      question: 'What is the cancellation policy?',
+      answer: 'Cancellation policies vary by owner, but generally: More than 48 hours before pickup = 90% refund, 24-48 hours before = 50% refund, Less than 24 hours = No refund. Platform fees are non-refundable. If the owner cancels, you receive a full refund within 5-7 business days.',
+      icon: Icons.cancel_outlined,
+    ),
+    FAQItem(
+      category: 'Payment, Pricing and Refunds',
+      question: 'How long does payment verification take?',
+      answer: 'Admin verification of GCash payments typically takes 24-48 hours during business days. You will receive an in-app notification and email once your payment is verified. Check the "Payment History" section to track verification status.',
+      icon: Icons.verified_outlined,
+    ),
+    FAQItem(
+      category: 'Payment, Pricing and Refunds',
+      question: 'How do refunds work?',
+      answer: 'Refunds are processed automatically through the escrow system. Approved refunds are sent back to your GCash account within 5-7 business days. You can track refund status in the "Payment History" section. Platform service fees (5%) are non-refundable.',
+      icon: Icons.money_off_outlined,
+    ),
+
+    // Booking Management
+    FAQItem(
+      category: 'Booking',
+      question: 'Can I extend my rental period?',
+      answer: 'Yes, you can request an extension through the app if the vehicle is available. Go to "Active Bookings" → Select your booking → "Request Extension". The owner must approve the extension. Additional charges apply based on the extended duration.',
+      icon: Icons.access_time_filled,
+    ),
+    FAQItem(
+      category: 'Booking',
+      question: 'Is there a mileage limit?',
+      answer: 'Mileage limits are set by individual car owners and displayed on each vehicle listing (typically 200-300 km/day). Excess mileage charges apply if you exceed the limit. GPS tracking helps calculate total distance traveled. Check the specific vehicle listing for exact limits and rates.',
+      icon: Icons.speed_outlined,
+    ),
+    FAQItem(
+      category: 'Booking',
+      question: 'What if I disagree with damage charges?',
+      answer: 'If you dispute damage charges: 1) Submit a dispute through the app within 48 hours, 2) Provide photos/evidence taken during pickup and return, 3) Our admin team will review both parties\' evidence, 4) A fair resolution will be determined within 5-7 business days. The escrow system holds funds until disputes are resolved.',
+      icon: Icons.gavel_outlined,
     ),
 
     // Safety and Car Rules
@@ -167,6 +206,50 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
       question: 'How are rentals insured?',
       answer: 'Insurance coverage varies by owner. Some provide comprehensive coverage, while others require you to have your own insurance. Always clarify insurance details before booking. Cargo recommends all users maintain valid insurance coverage.',
       icon: Icons.shield_outlined,
+    ),
+
+    // Traffic Violations and Towing
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What if I get a traffic ticket during my rental?',
+      answer: 'As the renter, you are responsible for ALL traffic violations that occur during your rental period. This includes speeding tickets, red light violations, illegal parking, NCAP violations, and any other traffic offenses. The owner will forward the violation notice to you within 72 hours, and you must pay within 15 days. Cargo uses GPS data to verify when violations occurred.',
+      icon: Icons.local_police_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'Who pays if the vehicle gets towed?',
+      answer: 'If the vehicle is towed during your rental period due to illegal parking or traffic violations, you are responsible for: all towing fees (₱2,000-₱5,000), impound storage fees (₱500/day), and any fines associated with the towing. You must notify the owner and Cargo immediately and coordinate with the owner to release the vehicle. Rental fees continue until the vehicle is returned.',
+      icon: Icons.local_shipping_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What about toll violations (RFID)?',
+      answer: 'You are responsible for all toll violations during your rental, including RFID violations if you use RFID lanes without sufficient balance. These can result in fines of ₱5,000+ per violation. Make sure to use cash lanes or verify RFID balance before using toll roads. The owner will forward any violation notices to you.',
+      icon: Icons.toll_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'How does Cargo verify who is responsible for violations?',
+      answer: 'Cargo uses GPS tracking data, booking timestamps, and location history to verify whether a violation occurred during your rental period. This evidence is used to resolve disputes. The system automatically correlates violation dates/times with your booking period to establish liability.',
+      icon: Icons.gps_fixed_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What if I dispute a violation charge?',
+      answer: 'If you believe a violation did not occur during your rental, you can dispute it within 7 days through the app. Provide evidence such as GPS data, timestamps, or photos. Cargo admin will review all evidence from both parties and make a final binding decision. A ₱200 mediation fee applies to the party found liable.',
+      icon: Icons.gavel_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What violations is the OWNER responsible for?',
+      answer: 'Owners are responsible for violations resulting from: expired vehicle registration, invalid insurance, vehicle defects (broken lights, missing plates), pre-existing unpaid violations, and smoke belching/emissions issues. These are vehicle-condition issues, not driving-related.',
+      icon: Icons.warning_amber_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What happens if I don\'t pay a violation fine?',
+      answer: 'Failure to pay violations within 15 days may result in: account suspension until payment, deduction from future escrow funds, negative impact on your renter rating, collection actions, and permanent account termination for repeated non-payment. Take violation notices seriously.',
+      icon: Icons.block_outlined,
     ),
 
     // Platform Policies
@@ -259,7 +342,13 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
       category: 'Earnings and Taxes',
       question: 'How much can I earn as a host?',
       answer: 'Earnings vary based on vehicle type, location, pricing, and availability. On average, owners earn ₱5,000-₱25,000 per month. Premium vehicles in high-demand areas can earn more. Cargo takes a platform fee (typically 15-20%) from each booking.',
-      icon: Icons.attach_money_outlined,
+      icon: Icons.payments_outlined,
+    ),
+    FAQItem(
+      category: 'Earnings and Taxes',
+      question: 'When do I receive payment?',
+      answer: 'Payments are released from escrow 24-48 hours after successful trip completion and vehicle inspection. Once released, you can request a payout through the "Payout Settings" section. Payouts are processed within 3-5 business days to your registered GCash account.',
+      icon: Icons.schedule_send_outlined,
     ),
     FAQItem(
       category: 'Earnings and Taxes',
@@ -271,20 +360,32 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
     // Safety and Listing Management
     FAQItem(
       category: 'Safety and Listing Management',
+      question: 'How do I report damage after a trip?',
+      answer: 'Report damage within 24 hours of vehicle return: 1) Go to "Active Bookings" → Select the completed trip, 2) Tap "Report Damage", 3) Upload clear photos of damage, 4) Describe the issue in detail, 5) Submit the report. Our admin team will review and determine liability. Funds are held in escrow until resolution.',
+      icon: Icons.report_problem_outlined,
+    ),
+    FAQItem(
+      category: 'Safety and Listing Management',
+      question: 'Can I cancel a confirmed booking?',
+      answer: 'Yes, but penalties may apply. Cancelling more than 48 hours before pickup: minimal penalty. Cancelling 24-48 hours before: moderate penalty. Cancelling less than 24 hours: significant penalty and negative impact on your host rating. Emergency cancellations are reviewed case-by-case.',
+      icon: Icons.cancel_schedule_send_outlined,
+    ),
+    FAQItem(
+      category: 'Safety and Listing Management',
       question: 'Is it safe to rent out my car to a stranger?',
-      answer: 'Cargo implements multiple safety measures: government ID verification for all renters, selfie authentication, GPS tracking during trips, security deposits held until return, rating system for accountability, in-app messaging for documentation, and 24/7 support for issues.',
+      answer: 'Cargo implements multiple safety measures: government ID verification for all renters, selfie authentication, GPS tracking during trips, escrow payment protection, rating system for accountability, in-app messaging for documentation, and 24/7 support for issues.',
       icon: Icons.security_outlined,
     ),
     FAQItem(
       category: 'Safety and Listing Management',
       question: 'How is the safety of my car insured?',
-      answer: 'Security deposits cover minor damages, GPS tracking monitors vehicle location, all renters are verified users, you can review renter profiles before accepting, document vehicle condition before/after trips, and maintain your own comprehensive insurance coverage.',
+      answer: 'Escrow system protects your payment, GPS tracking monitors vehicle location in real-time, all renters are verified users with government ID, you can review renter profiles and ratings before accepting, document vehicle condition with photos before/after trips, and maintain your own comprehensive insurance coverage for additional protection.',
       icon: Icons.verified_outlined,
     ),
     FAQItem(
       category: 'Safety and Listing Management',
       question: 'What protection do I have against car damage?',
-      answer: 'Security deposits can cover repair costs, photo documentation before/after trips establishes liability, damage reporting system in the app, dispute resolution support from Cargo, and recommendations to maintain comprehensive insurance coverage.',
+      answer: 'Escrow system holds payment until trip completion, photo documentation before/after trips establishes liability, 24-hour damage reporting window, admin-mediated dispute resolution, and recommendations to maintain comprehensive insurance coverage. Renters are liable for damages caused during their rental period.',
       icon: Icons.health_and_safety_outlined,
     ),
     FAQItem(
@@ -302,7 +403,7 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
     FAQItem(
       category: 'Safety and Listing Management',
       question: 'What are the cleaning policies?',
-      answer: 'Vehicles must be clean for each renter. Renters are expected to return vehicles in similar condition. If returned excessively dirty, you can charge a cleaning fee from the security deposit (typically ₱500-₱1,500 depending on condition).',
+      answer: 'Vehicles must be clean for each renter. Renters are expected to return vehicles in similar condition. If returned excessively dirty, you can report it within 24 hours and request a cleaning fee (typically ₱500-₱1,500 depending on condition). Provide photo evidence for admin review.',
       icon: Icons.cleaning_services_outlined,
     ),
     FAQItem(
@@ -316,6 +417,50 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
       question: 'What kind of uses of my car are permitted and what is not allowed?',
       answer: 'Permitted: Personal transportation, business trips, family vacations, weekend getaways. NOT Allowed: Commercial ride-sharing (Grab/Uber), racing or competitions, off-road driving (unless specified), smoking inside vehicle, pet transportation (unless allowed), illegal activities.',
       icon: Icons.rule_outlined,
+    ),
+
+    // Traffic Violations and Towing
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What do I do when I receive a traffic violation notice?',
+      answer: 'When you receive a violation notice for your vehicle: 1) Check the violation date/time, 2) Verify if it occurred during a rental booking, 3) Forward the complete notice to the renter within 72 hours through the app, 4) Provide booking documentation, 5) Wait for renter payment (15 days), 6) If unpaid after 15 days, contact Cargo admin for assistance.',
+      icon: Icons.mail_outline,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'How do I report a violation to a renter?',
+      answer: 'Use the "Report Violation" feature in the app (coming soon). Upload a photo of the violation notice, enter details (date, type, amount), and submit. The system will automatically verify if it occurred during a booking and notify the renter. You can track payment status through the app.',
+      icon: Icons.report_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What if the renter denies responsibility for a violation?',
+      answer: 'If the renter disputes the violation, Cargo admin will review GPS tracking data, timestamps, violation notice details, and booking records to determine liability. The admin decision is final and binding. A ₱200 mediation fee is charged to the party found liable.',
+      icon: Icons.balance_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'Can I pay the violation first and get reimbursed?',
+      answer: 'Yes, if you need to pay the violation immediately to avoid penalties, you can do so and request reimbursement from the renter. The renter must reimburse you within 7 days plus a ₱500 processing fee for your inconvenience. Document all payments with receipts.',
+      icon: Icons.receipt_long_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What if my vehicle gets towed during a rental?',
+      answer: 'The renter must notify you immediately if the vehicle is towed. The renter is responsible for all towing fees, impound charges, and storage fees. They must coordinate with you to release the vehicle. Rental fees continue to accrue during impoundment, and you may claim additional compensation for loss of income from other bookings.',
+      icon: Icons.local_shipping_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'How long do I have to forward violation notices to renters?',
+      answer: 'You must forward violation notices to the renter within 72 hours of receiving them. Include the complete notice, booking dates, and any supporting documentation. Prompt notification allows renters to pay before deadlines and avoid additional penalties.',
+      icon: Icons.schedule_outlined,
+    ),
+    FAQItem(
+      category: 'Traffic Violations and Towing',
+      question: 'What violations am I responsible for as an owner?',
+      answer: 'You remain responsible for violations related to your vehicle\'s condition: expired registration, invalid insurance, broken lights, missing license plates, smoke belching, and pre-existing unpaid violations. These are not the renter\'s fault. Keep your vehicle registration and documentation current.',
+      icon: Icons.description_outlined,
     ),
 
     // Platform Policies
@@ -357,6 +502,65 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
              faq.answer.toLowerCase().contains(_searchQuery.toLowerCase()) ||
              faq.category.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
+  }
+
+  void _openPolicyDocument(BuildContext context, String documentTitle) {
+    late PolicyDocument document;
+    String title = documentTitle;
+
+    // Map FAQ question to the corresponding policy document
+    switch (documentTitle) {
+      case 'Platform User Agreement':
+        document = CargoDocuments.platformUserAgreement;
+        title = 'Platform User Agreement';
+        break;
+      case 'Key Policy':
+        document = CargoDocuments.keyPolicy;
+        title = 'Key Policy';
+        break;
+      case 'Privacy Policy':
+        document = CargoDocuments.privacyPolicy;
+        title = 'Privacy Policy';
+        break;
+      case 'Vehicle Lease Agreement':
+        document = CargoDocuments.vehicleLeaseAgreement;
+        title = 'Vehicle Lease Agreement';
+        break;
+      case 'Terms of Service':
+        document = CargoDocuments.termsOfService;
+        title = 'Terms of Service';
+        break;
+      case 'Community Guidelines':
+        document = CargoDocuments.communityGuidelines;
+        title = 'Community Guidelines';
+        break;
+      default:
+        // Show error if document not found
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Document not found',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyDocumentScreen(
+          title: title,
+          document: document,
+        ),
+      ),
+    );
   }
 
   @override
@@ -704,22 +908,7 @@ class _FAQsScreenState extends State<FAQsScreen> with SingleTickerProviderStateM
                   if (faq.isDocument) ...[
                     const SizedBox(height: 16),
                     InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Opening ${faq.question}...',
-                              style: GoogleFonts.poppins(fontSize: 14),
-                            ),
-                            duration: const Duration(seconds: 2),
-                            backgroundColor: Colors.black87,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => _openPolicyDocument(context, faq.question),
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         padding: const EdgeInsets.symmetric(

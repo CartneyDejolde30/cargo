@@ -3,11 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/config/api_config.dart';
-import 'package:flutter_application_1/widgets/map_controls.dart';
-import 'package:flutter_application_1/widgets/map_style_switcher.dart';
-import 'package:flutter_application_1/USERS-UI/widgets/location_permission_helper.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/map_controls.dart';
+import 'package:cargo/widgets/map_style_switcher.dart';
+import 'package:cargo/USERS-UI/widgets/location_permission_helper.dart';
 import 'car_detail_screen.dart';
 
 class CarsMapViewScreen extends StatefulWidget {
@@ -496,6 +496,57 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
               ),
             ),
 
+          // Bottom info panel (when no car selected)
+          if (_selectedCar == null && _markers.isNotEmpty)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${widget.cars.length} Cars',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'Tap markers to view details',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      Icons.directions_car,
+                      size: 32,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Car details bottom sheet
           if (_selectedCar != null)
             Positioned(
@@ -639,7 +690,7 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
                             Icon(Icons.star, size: 13, color: Colors.amber),
                             const SizedBox(width: 4),
                             Text(
-                              _selectedCar!['rating']?.toString() ?? '5.0',
+                              _selectedCar!['rating']?.toString() ?? '0.0',
                               style: GoogleFonts.poppins(fontSize: 11),
                             ),
                             const SizedBox(width: 8),
@@ -685,7 +736,7 @@ class _CarsMapViewScreenState extends State<CarsMapViewScreen> {
                                       carName: '${_selectedCar!['brand']} ${_selectedCar!['model']}',
                                       carImage: getImageUrl(_selectedCar!['image'] ?? ''),
                                       price: _selectedCar!['price']?.toString() ?? '0',
-                                      rating: double.tryParse(_selectedCar!['rating']?.toString() ?? '5.0') ?? 5.0,
+                                      rating: double.tryParse(_selectedCar!['rating']?.toString() ?? '0.0') ?? 0.0,
                                       location: _selectedCar!['location'] ?? 'Unknown',
                                     ),
                                   ),

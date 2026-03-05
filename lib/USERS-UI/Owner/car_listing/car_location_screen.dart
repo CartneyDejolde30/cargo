@@ -3,10 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/services/maptiler_geocoding_service.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/services/maptiler_geocoding_service.dart';
 
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
 import 'upload_documents_screen.dart';
 
 class CarLocationScreen extends StatefulWidget {

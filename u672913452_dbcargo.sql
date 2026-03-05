@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 08, 2026 at 04:29 AM
+-- Generation Time: Feb 10, 2026 at 01:25 PM
 -- Server version: 11.8.3-MariaDB-log
 -- PHP Version: 7.2.34
 
@@ -219,7 +219,12 @@ INSERT INTO `admin_notifications` (`id`, `admin_id`, `type`, `title`, `message`,
 (10, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #49). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:09:17', NULL),
 (11, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #50). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:40:29', NULL),
 (12, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by Ethan james Estino for Honda Click 125i (Booking #51). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-07 07:48:31', NULL),
-(13, NULL, 'system', 'New Insurance Claim Filed', 'Claim #CLM-2026-000051-E879 - collision - ₱2,000.00', NULL, 'bi-bell', 'high', 'unread', '2026-02-07 07:54:59', NULL);
+(13, NULL, 'system', 'New Insurance Claim Filed', 'Claim #CLM-2026-000051-E879 - collision - ₱2,000.00', NULL, 'bi-bell', 'high', 'unread', '2026-02-07 07:54:59', NULL),
+(14, NULL, 'payment', 'New Payment Pending', 'New payment of ₱3,150.00 submitted by ethan jr for Mercedes-Benz A-Class (Booking #53). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-09 11:32:25', NULL),
+(15, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by ethan jr for Honda Click 125i (Booking #54). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-09 12:04:41', NULL),
+(16, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by ethan jr for Honda Click 125i (Booking #55). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-09 12:10:00', NULL),
+(17, NULL, 'payment', 'New Payment Pending', 'New payment of ₱1,050.00 submitted by ethan jr for Honda Click 125i (Booking #56). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-09 12:14:49', NULL),
+(18, NULL, 'payment', 'New Payment Pending', 'New payment of ₱3,150.00 submitted by Ethan james Estino for Mercedes-Benz A-Class (Booking #57). Please verify.', 'payment.php', 'credit-card', 'high', 'unread', '2026-02-10 01:48:38', NULL);
 
 -- --------------------------------------------------------
 
@@ -406,7 +411,13 @@ INSERT INTO `bookings` (`id`, `user_id`, `owner_id`, `car_id`, `vehicle_type`, `
 (48, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:38:39', '2026-02-07', '2026-02-08', NULL, '10:31:00', '2026-02-07 02:48:21', '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 02:24:42', '2026-02-07 07:38:39', 97, 'gcash', '2026-02-07 02:25:04', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-07 02:25:39', NULL, 'pending', NULL, NULL, '2026-02-07 02:25:39', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 1, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
 (49, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451517348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:38:35', '2026-02-07', '2026-02-08', NULL, '15:10:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 07:09:00', '2026-02-08 04:22:30', 99, 'gcash', '2026-02-07 07:09:17', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 105.00, 945.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
 (50, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, 'Payment verification failed', '2026-02-07 07:45:49', '2026-02-07', '2026-02-08', NULL, '15:40:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'rejected', 0, '', '2026-02-07 07:40:05', '2026-02-08 04:22:30', 101, 'gcash', '2026-02-07 07:40:29', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 105.00, 945.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
-(51, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07', '2026-02-08', NULL, '15:48:00', '2026-02-07 07:50:25', '17:00:00', 500.00, 0.00, 1050.00, 'approved', 0, 'paid', '2026-02-07 07:48:13', '2026-02-07 07:50:25', 103, 'gcash', '2026-02-07 07:48:31', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-07 07:48:48', NULL, 'pending', NULL, NULL, '2026-02-07 07:48:48', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 2, 126.00, 'basic', 1);
+(51, 15, 16, 6, 'motorcycle', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07', '2026-02-08', NULL, '15:48:00', '2026-02-07 07:50:25', '17:00:00', 500.00, 0.00, 1050.00, 'completed', 0, 'paid', '2026-02-07 07:48:13', '2026-02-10 01:32:19', 103, 'gcash', '2026-02-07 07:48:31', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-07 07:48:48', NULL, 'pending', NULL, NULL, '2026-02-07 07:48:48', 1, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 20400.00, 1, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 2, 126.00, 'basic', 1),
+(52, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-09', '2026-02-10', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'pending', 0, 'pending', '2026-02-09 11:29:11', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(53, 7, 1, 37, 'car', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-28', '2026-03-01', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'pending', 0, 'pending', '2026-02-09 11:32:14', '2026-02-09 11:32:25', 106, 'gcash', '2026-02-09 11:32:25', NULL, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0),
+(54, 7, 16, 6, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Weekly', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-09', '2026-02-10', NULL, '09:00:00', '2026-02-09 12:06:17', '17:00:00', 500.00, 0.00, 1050.00, 'completed', 0, 'paid', '2026-02-09 12:04:33', '2026-02-09 12:08:01', 108, 'gcash', '2026-02-09 12:04:41', NULL, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'released_to_owner', 105.00, 945.00, '1234567890123', NULL, '2026-02-09 12:05:12', '2026-02-09 12:07:49', 'completed', '2026-02-09 12:08:01', NULL, '2026-02-09 12:05:12', 1, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 1, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 3, 126.00, 'basic', 1),
+(55, 7, 16, 6, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-27', '2026-02-28', NULL, '09:00:00', NULL, '17:00:00', 500.00, 0.00, 1050.00, 'cancelled', 0, 'paid', '2026-02-09 12:09:25', '2026-02-09 12:13:55', 110, 'gcash', '2026-02-09 12:10:00', NULL, 'Cancelled by renter', NULL, '2026-02-09 12:13:02', 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-09 12:10:26', NULL, 'pending', NULL, NULL, '2026-02-09 12:10:26', 1, NULL, 0, 1, 'approved', 1050.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 4, 126.00, 'basic', 1),
+(56, 7, 16, 6, 'motorcycle', NULL, NULL, 'ethan jr', 'renter@gmail.com', '09770433849', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-09', '2026-02-10', NULL, '09:00:00', '2026-02-09 12:15:50', '17:00:00', 500.00, 0.00, 1050.00, 'completed', 0, 'paid', '2026-02-09 12:14:38', '2026-02-09 12:22:48', 112, 'gcash', '2026-02-09 12:14:49', NULL, NULL, NULL, NULL, 0x3039373730343333383439, 0x31323334353637383930313233, NULL, 'held', 105.00, 945.00, NULL, NULL, '2026-02-09 12:15:20', NULL, 'pending', NULL, NULL, '2026-02-09 12:15:20', 1, NULL, 1, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 1, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, 5, 126.00, 'basic', 1),
+(57, 15, 1, 37, 'car', NULL, NULL, 'Ethan james Estino', 'ethanjamesestino@gmail.com', '09451547348', 'Male', 0, 'Day', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-15', '2026-02-16', NULL, '09:00:00', NULL, '17:00:00', 1500.00, 0.00, 3150.00, 'pending', 0, 'pending', '2026-02-10 01:48:23', '2026-02-10 01:48:38', 114, 'gcash', '2026-02-10 01:48:38', NULL, NULL, NULL, NULL, 0x3039343531353437333438, 0x31323132313231323132313231, NULL, 'pending', 0.00, 0.00, NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, 0.00, NULL, NULL, NULL, 'on_time', 0, 0.00, 0, NULL, 0, 0, NULL, 0.00, 'none', 0, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.00, 0, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 'basic', 0);
 
 --
 -- Triggers `bookings`
@@ -541,7 +552,7 @@ CREATE TABLE `cars` (
 --
 
 INSERT INTO `cars` (`id`, `owner_id`, `color`, `description`, `car_year`, `body_style`, `brand`, `model`, `trim`, `plate_number`, `price_per_day`, `image`, `location`, `issues`, `created_at`, `advance_notice`, `min_trip_duration`, `max_trip_duration`, `delivery_types`, `features`, `rules`, `has_unlimited_mileage`, `mileage_limit`, `daily_rate`, `unlimited_mileage`, `latitude`, `longitude`, `address`, `official_receipt`, `certificate_of_registration`, `extra_images`, `remarks`, `seat`, `status`, `rating`, `transmission`, `fuel_type`, `report_count`, `daily_mileage_limit`, `excess_mileage_rate`) VALUES
-(3, 1, 'yellow', NULL, '2020', '4 setter', 'Audi', 'A3', '', '1234-5647', 600.00, 'uploads/car_1763279764.png', 'P1 Lapinigan ADS', 'None', '2025-11-16 07:43:16', NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 0, NULL, NULL, NULL, NULL, NULL, NULL, '', 0, 'approved', 5, '', '', 1, NULL, 10.00),
+(3, 1, 'yellow', NULL, '2020', '4 setter', 'Audi', 'A3', '', '1234-5647', 600.00, 'uploads/car_1763279764.png', 'P1 Lapinigan ADS', 'None', '2025-11-16 07:43:16', NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 0.00, 0, NULL, NULL, NULL, NULL, NULL, NULL, '', 0, 'approved', 5, '', '', 2, NULL, 10.00),
 (16, 1, 'red', 'wow', '2025', '3-Door Hatchback', 'Audi', 'A1', 'N/A', '12345', 2000.00, 'uploads/car_1763396591_4187.jpg', NULL, 'None', '2025-11-17 16:23:11', '1 hour', '2', '1', '[\"Guest Pickup & Guest Return\",\"Guest Pickup & Host Collection\"]', '[\"All-wheel drive\",\"Android auto\",\"AUX input\"]', '[\"No pets allowed\",\"No off-roading or driving through flooded areas\"]', 1, '0', 0.00, 0, 8.4312419, 125.9831042, '0', 'uploads/or_1763396591_3720.jpg', 'uploads/cr_1763396591_3812.jpg', '[]', '', 0, 'approved', 5, '', '', 0, NULL, 10.00),
 (17, 5, 'ref', 'wee', '2025', '3-Door Hatchback', 'Audi', 'A1', 'N/A', '123', 1000.00, 'uploads/car_1763430946_7051.jpg', NULL, 'None', '2025-11-18 01:55:46', '1 hour', '2', '1', '[\"Guest Pickup & Guest Return\"]', '[\"AUX input\",\"All-wheel drive\"]', '[\"No Littering\"]', 1, '0', 0.00, 0, 8.430187499999999, 125.98298439999998, '0', 'uploads/or_1763430946_2587.jpg', 'uploads/cr_1763430946_5849.jpg', '[]', '', 0, 'approved', 5, '', '', 1, NULL, 10.00),
 (18, 5, 'black', 'wow', '2025', '3-Door Hatchback', 'Audi', 'A1', 'N/A', '1233678900', 100.00, 'uploads/car_1763433044_8701.jpg', NULL, 'None', '2025-11-18 02:30:44', '1 hour', '2', '1', '[\"Guest Pickup & Guest Return\"]', '[\"AUX input\"]', '[\"Clean As You Go (CLAYGO)\"]', 1, '0', 0.00, 0, 8.429774758408513, 125.98353150875825, '0', 'uploads/or_1763433044_9642.jpg', 'uploads/cr_1763433044_9489.jpg', '[]', '', 0, 'rejected', 5, '', '', 0, NULL, 10.00),
@@ -554,9 +565,9 @@ INSERT INTO `cars` (`id`, `owner_id`, `color`, `description`, `car_year`, `body_
 (32, 1, 'blue', 'wow', '2025', 'Sedan', 'Toyota', 'Vios', 'Sport', '4566778', 900.00, 'uploads/car_1764549889_5758.jpg', 'Purok 4, San Francisco, Caraga', 'None', '2025-12-01 00:44:49', '1 hour', '1', '1', '[\"Guest Pickup & Guest Return\"]', '[\"All-wheel drive\"]', '[\"No eating or drinking inside\"]', 1, '0', 0.00, 0, 8.4319398, 125.9830886, NULL, 'uploads/or_1764549889_3847.jpg', 'uploads/cr_1764549889_1909.jpg', '[]', 'dont match', 4, 'rejected', 5, '', '', 0, NULL, 10.00),
 (33, 1, 'yellow', 'wow', '2025', 'Sedan', 'Toyota', 'Vios', 'N/A', '09876544', 830.00, 'uploads/car_1765107943_3989.jpg', 'P2-Lapinigan, SFADS', 'None', '2025-12-07 11:45:43', '1 hour', '2', '1', '[\"Guest Pickup & Guest Return\"]', '[\"AUX input\"]', '[\"Clean As You Go (CLAYGO)\",\"No eating or drinking inside\"]', 1, '0', 0.00, 0, 8.430216699999999, 125.9751094, NULL, 'uploads/or_1765107943_9142.jpg', 'uploads/cr_1765107943_2706.jpg', '[]', '', 4, 'approved', 5, '', '', 0, NULL, 10.00),
 (34, 1, 'red', 'a', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', '1', 122.00, 'uploads/car_1767582182_4309.jpg', '1600 Amphitheatre Pkwy, Mountain View, California', 'None', '2026-01-05 03:03:02', '1 hour', '1', '5', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\"]', 1, '0', 0.00, 0, 37.4219983, -122.084, NULL, 'uploads/or_1767582182_1623.jpg', 'uploads/cr_1767582182_4905.jpg', '[]', '', 4, 'approved', 5, 'Automatic', 'Gasoline', 0, NULL, 10.00),
-(35, 1, 'red', 'wee', '2025', 'Sedan', 'Toyota', 'Vios', 'N/A', '12345', 800.00, 'uploads/car_main_6962ff99bf708.jpg', 'CXJM+G7X, San Francisco, Caraga', 'None', '2026-01-11 01:40:41', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"AUX input\"]', '[\"No Littering\"]', 1, NULL, 0.00, 0, 8.431944, 125.9831046, NULL, 'uploads/or_6962ff99c04bf.jpg', 'uploads/cr_6962ff99c0729.jpg', '[]', '', 4, 'approved', 5, 'Automatic', 'Gasoline', 1, NULL, 10.00),
+(35, 1, 'red', 'wee', '2025', 'Sedan', 'Toyota', 'Vios', 'N/A', '12345', 800.00, 'uploads/car_main_6962ff99bf708.jpg', 'CXJM+G7X, San Francisco, Caraga', 'None', '2026-01-11 01:40:41', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"AUX input\"]', '[\"No Littering\"]', 1, NULL, 0.00, 0, 8.431944, 125.9831046, NULL, 'uploads/or_6962ff99c04bf.jpg', 'uploads/cr_6962ff99c0729.jpg', '[]', '', 4, 'approved', 5, 'Automatic', 'Gasoline', 2, NULL, 10.00),
 (36, 1, 'yellow', 'wow', '2025', 'Sedan', 'Toyota', 'Vios', 'N/A', '167e8e9qoqe', 750.00, 'uploads/car_main_69632368c3936.jpg', 'Purok 4, San Francisco, Caraga', 'None', '2026-01-11 04:13:28', '1 hour', '2 days', '5 days', '[\"Guest Pickup & Guest Return\"]', '[\"All-wheel drive\"]', '[\"No Littering\"]', 1, NULL, 0.00, 0, 8.4324983, 125.9820836, NULL, 'uploads/or_69632368c498a.jpg', 'uploads/cr_69632368c4a95.jpg', '[]', NULL, 4, 'pending', 5, 'Automatic', 'Gasoline', 0, NULL, 10.00),
-(37, 1, 'red', 'amazing', '2025', 'Sedan', 'Mercedes-Benz', 'A-Class', 'Base', '1463829192', 1500.00, 'uploads/car_main_696cb9e818fae.jpg', 'CXJM+G7X, San Francisco, Caraga', 'None', '2026-01-18 10:46:00', '1 hour', '2 days', '5 days', '[\"Guest Pickup & Guest Return\"]', '[\"All-wheel drive\",\"AUX input\"]', '[\"Clean As You Go (CLAYGO)\",\"No Littering\",\"No eating or drinking inside\"]', 1, NULL, 0.00, 0, 8.4319229, 125.9830948, NULL, 'uploads/or_696cb9e819155.jpg', 'uploads/cr_696cb9e819258.jpg', '[\"uploads\\/extra_696cb9e81934c.jpg\",\"uploads\\/extra_696cb9e81944f.jpg\",\"uploads\\/extra_696cb9e819536.jpg\"]', '', 4, 'approved', 5, 'Automatic', 'Gasoline', 1, NULL, 10.00);
+(37, 1, 'red', 'amazing', '2025', 'Sedan', 'Mercedes-Benz', 'A-Class', 'Base', '1463829192', 1500.00, 'uploads/car_main_696cb9e818fae.jpg', 'CXJM+G7X, San Francisco, Caraga', 'None', '2026-01-18 10:46:00', '1 hour', '2 days', '5 days', '[\"Guest Pickup & Guest Return\"]', '[\"All-wheel drive\",\"AUX input\"]', '[\"Clean As You Go (CLAYGO)\",\"No Littering\",\"No eating or drinking inside\"]', 1, NULL, 0.00, 0, 8.4319229, 125.9830948, NULL, 'uploads/or_696cb9e819155.jpg', 'uploads/cr_696cb9e819258.jpg', '[\"uploads\\/extra_696cb9e81934c.jpg\",\"uploads\\/extra_696cb9e81944f.jpg\",\"uploads\\/extra_696cb9e819536.jpg\"]', '', 4, 'approved', 5, 'Automatic', 'Gasoline', 4, NULL, 10.00);
 
 -- --------------------------------------------------------
 
@@ -648,7 +659,10 @@ INSERT INTO `escrow` (`id`, `booking_id`, `payment_id`, `amount`, `status`, `hel
 (33, 48, 97, 1050.00, 'held', '2026-02-07 02:25:39', NULL, NULL, NULL, NULL, 1, '2026-02-07 02:25:39', '2026-02-07 02:25:39'),
 (34, 51, 103, 1050.00, 'held', '2026-02-07 07:48:48', NULL, NULL, NULL, NULL, 1, '2026-02-07 07:48:48', '2026-02-07 07:48:48'),
 (35, 46, 93, 3150.00, 'held', '2026-02-07 14:09:05', NULL, NULL, NULL, NULL, 1, '2026-02-07 14:09:05', '2026-02-07 14:09:05'),
-(36, 45, 91, 3150.00, 'held', '2026-02-07 14:09:08', NULL, NULL, NULL, NULL, 1, '2026-02-07 14:09:08', '2026-02-07 14:09:08');
+(36, 45, 91, 3150.00, 'held', '2026-02-07 14:09:08', NULL, NULL, NULL, NULL, 1, '2026-02-07 14:09:08', '2026-02-07 14:09:08'),
+(37, 54, 108, 1050.00, 'released', '2026-02-09 12:05:12', '2026-02-09 12:08:01', 'Payout completed to owner', NULL, NULL, 1, '2026-02-09 12:05:12', '2026-02-09 12:08:01'),
+(38, 55, 110, 1050.00, 'held', '2026-02-09 12:10:26', NULL, NULL, NULL, NULL, 1, '2026-02-09 12:10:26', '2026-02-09 12:10:26'),
+(39, 56, 112, 1050.00, 'held', '2026-02-09 12:15:20', NULL, NULL, NULL, NULL, 1, '2026-02-09 12:15:20', '2026-02-09 12:15:20');
 
 -- --------------------------------------------------------
 
@@ -675,7 +689,8 @@ INSERT INTO `escrow_logs` (`id`, `booking_id`, `action`, `previous_status`, `new
 (1, 39, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-01-30 11:29:59'),
 (2, 32, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-01-30 11:30:02'),
 (3, 7, 'refund', 'held', 'refunded', 1, 'Refunded to renter - Reason: car_unavailable - asdasd', '2026-02-06 07:28:51'),
-(5, 1, '', 'none', 'complete', NULL, 'Escrow system migration completed successfully at 2026-02-08 04:25:29', '2026-02-08 04:25:29');
+(5, 1, '', 'none', 'complete', NULL, 'Escrow system migration completed successfully at 2026-02-08 04:25:29', '2026-02-08 04:25:29'),
+(6, 54, 'release', 'held', 'released_to_owner', 1, 'Escrow released to owner', '2026-02-09 12:07:49');
 
 -- --------------------------------------------------------
 
@@ -693,6 +708,30 @@ CREATE TABLE `escrow_transactions` (
   `processed_by` int(11) DEFAULT NULL COMMENT 'Admin ID who processed',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `favorites`
+--
+
+CREATE TABLE `favorites` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `vehicle_type` enum('car','motorcycle') NOT NULL,
+  `vehicle_id` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `favorites`
+--
+
+INSERT INTO `favorites` (`id`, `user_id`, `vehicle_type`, `vehicle_id`, `created_at`) VALUES
+(4, 15, 'car', 34, '2026-02-08 05:20:26'),
+(6, 7, 'motorcycle', 6, '2026-02-09 12:27:51'),
+(7, 15, 'car', 37, '2026-02-10 01:47:30'),
+(8, 15, 'motorcycle', 6, '2026-02-10 01:47:40');
 
 -- --------------------------------------------------------
 
@@ -1507,7 +1546,10 @@ CREATE TABLE `insurance_policies` (
 
 INSERT INTO `insurance_policies` (`id`, `policy_number`, `provider_id`, `booking_id`, `vehicle_type`, `vehicle_id`, `user_id`, `owner_id`, `coverage_type`, `policy_start`, `policy_end`, `premium_amount`, `coverage_limit`, `deductible`, `collision_coverage`, `liability_coverage`, `theft_coverage`, `personal_injury_coverage`, `roadside_assistance`, `status`, `policy_document`, `terms_accepted`, `terms_accepted_at`, `issued_at`, `cancelled_at`, `cancellation_reason`, `created_at`, `updated_at`) VALUES
 (1, 'INS-2026-000001-BAS', 1, 1, 'car', 26, 7, 1, '', '2025-12-13 00:00:00', '2025-12-14 00:00:00', 252.00, 100000.00, 5000.00, 50000.00, 50000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, '2026-02-01 20:57:45', '2026-02-01 20:57:45', NULL, NULL, '2026-02-01 12:57:45', '2026-02-01 13:02:04'),
-(2, 'POL-20260207-000051', 1, 51, 'motorcycle', 6, 15, 16, 'basic', '2026-02-07 00:00:00', '2026-02-08 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, NULL, '2026-02-07 07:49:53', NULL, NULL, '2026-02-07 07:49:53', '2026-02-07 08:49:56');
+(2, 'POL-20260207-000051', 1, 51, 'motorcycle', 6, 15, 16, 'basic', '2026-02-07 00:00:00', '2026-02-08 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'claimed', NULL, 1, NULL, '2026-02-07 07:49:53', NULL, NULL, '2026-02-07 07:49:53', '2026-02-07 08:49:56'),
+(3, 'POL-20260209-000054', 1, 54, '', 6, 7, 16, 'basic', '2026-02-09 00:00:00', '2026-02-10 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'active', NULL, 1, NULL, '2026-02-09 12:05:21', NULL, NULL, '2026-02-09 12:05:21', '2026-02-09 12:05:21'),
+(4, 'POL-20260209-000055', 1, 55, '', 6, 7, 16, 'basic', '2026-02-27 00:00:00', '2026-02-28 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'active', NULL, 1, NULL, '2026-02-09 12:10:42', NULL, NULL, '2026-02-09 12:10:42', '2026-02-09 12:10:42'),
+(5, 'POL-20260209-000056', 1, 56, '', 6, 7, 16, 'basic', '2026-02-09 00:00:00', '2026-02-10 00:00:00', 126.00, 100000.00, 5000.00, 50000.00, 100000.00, 0.00, 0.00, 0, 'active', NULL, 1, NULL, '2026-02-09 12:15:43', NULL, NULL, '2026-02-09 12:15:43', '2026-02-09 12:15:43');
 
 -- --------------------------------------------------------
 
@@ -1675,7 +1717,7 @@ INSERT INTO `motorcycles` (`id`, `owner_id`, `color`, `description`, `motorcycle
 (2, 1, 'black', 'wow', '2025', 'Standard/Naked', 'Honda', 'Wave 110', '100-125cc', '12345', 500.00, 'uploads/motorcycle_main_6963250d10290.jpg', 'p2 lapinigan', '2026-01-11 04:20:29', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Traction Control\",\"Riding Modes\"]', '[\"No eating or drinking inside\"]', 1, 0.00, 8.430216699999999, 125.9751094, 'uploads/or_6963250d103bc.jpg', 'uploads/cr_6963250d10473.jpg', '[\"uploads\\/extra_6963250d10511.jpg\",\"uploads\\/extra_6963250d105f0.jpg\"]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
 (3, 1, 'blue', 'wew', '2025', 'Café Racer', 'CFMoto', '400NK', '100-125cc', '12345677', 750.00, 'uploads/motorcycle_main_696aec2843857.jpg', 'Purok 4, San Francisco, Caraga', '2026-01-17 01:55:52', '3 hours', '3 days', '2 weeks', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\",\"No eating or drinking inside\"]', 1, 0.00, 8.432009, 125.9829288, 'uploads/or_696aec2843b36.jpg', 'uploads/cr_696aec2843c07.jpg', '[]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
 (4, 5, 'red', 'wew', '2025', 'Touring', 'Kymco', 'Xciting 400i', '100-125cc', '987268191', 850.00, 'uploads/motorcycle_main_696aed424d965.jpg', 'P-2, San Francisco, Caraga', '2026-01-17 02:00:34', '1 hour', '2 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Traction Control\",\"Riding Modes\"]', '[\"No Littering\",\"No eating or drinking inside\"]', 1, 0.00, 8.4317083, 125.9814032, 'uploads/or_696aed424dc70.jpg', 'uploads/cr_696aed424dd2e.jpg', '[]', '', 'approved', 5, 'Manual', 0, NULL, 10.00),
-(5, 1, 'red', 'wt', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 'rars', 50.00, 'uploads/motorcycle_main_6980942f5fb70.jpg', 'Isetann Cinerama Complex, Manila, Metro Manila', '2026-02-02 12:10:23', '30 minutes', '1 day', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\"]', 1, 0.00, 14.60133824658561, 120.98485355139668, 'uploads/or_6980942f601e1.jpg', 'uploads/cr_6980942f604cc.jpg', '[\"uploads\\/extra_6980942f6080b.jpg\"]', NULL, 'pending', 5, 'Manual', 0, NULL, 10.00),
+(5, 1, 'red', 'wt', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 'rars', 50.00, NULL, 'Isetann Cinerama Complex, Manila, Metro Manila', '2026-02-02 12:10:23', '30 minutes', '1 day', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"ABS Brakes\"]', '[\"No Littering\"]', 1, 0.00, 14.60133824658561, 120.98485355139668, 'uploads/or_6980942f601e1.jpg', 'uploads/cr_6980942f604cc.jpg', '[\"uploads\\/extra_6980942f6080b.jpg\"]', NULL, 'pending', 5, 'Manual', 0, NULL, 10.00),
 (6, 16, 'gtee', 'jayd', '2025', 'Scooter', 'Honda', 'Click 125i', '100-125cc', 're', 500.00, 'uploads/motorcycle_main_69854c0c24472.jpg', '904, Philippines', '2026-02-06 02:03:56', 'Others', '3 days', '1 week', '[\"Guest Pickup & Guest Return\"]', '[\"Cruise Control\",\"Quick Shifter\",\"ABS Brakes\",\"Traction Control\"]', '[\"No eating or drinking inside\",\"No inter-island travel\"]', 0, 0.00, 8.607775074226366, 125.90965140232585, 'uploads/or_69854c0c245d7.jpg', 'uploads/cr_69854c0c247b7.jpg', '[\"uploads\\/extra_69854c0c2496d.jpg\"]', '', 'approved', 5, 'Manual', 0, NULL, 10.00);
 
 -- --------------------------------------------------------
@@ -1717,29 +1759,29 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (77, 1, 'Car Rejected ❌', 'Your vehicle \'Toyota Vios\' was rejected. Reason: sorry', 'info', 'read', '2025-11-29 15:21:33'),
 (78, 1, 'Car Approved ✔️', 'Your vehicle \'Toyota Vios\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-01 00:45:46'),
 (79, 1, 'Car Approved ✔️', 'Your vehicle \'Toyota Vios\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-01 00:45:53'),
-(80, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'unread', '2025-12-07 10:00:53'),
+(80, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'read', '2025-12-07 10:00:53'),
 (81, 1, 'You Approved a Booking', 'You approved booking #1 for Audi.', 'info', 'read', '2025-12-07 10:00:53'),
-(82, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'unread', '2025-12-07 10:03:26'),
+(82, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'read', '2025-12-07 10:03:26'),
 (83, 1, 'You Approved a Booking', 'You approved booking #4 for Audi.', 'info', 'read', '2025-12-07 10:03:26'),
 (84, 1, 'Car Approved ✔️', 'Your vehicle \'Audi A1\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-07 11:42:32'),
 (85, 1, 'Car Approved ✔️', 'Your vehicle \'Subaru BRZ\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-07 12:35:55'),
-(86, 7, 'Booking Approved', 'Your booking for Toyota has been approved by the owner.', 'info', 'unread', '2025-12-07 12:43:13'),
+(86, 7, 'Booking Approved', 'Your booking for Toyota has been approved by the owner.', 'info', 'read', '2025-12-07 12:43:13'),
 (87, 1, 'You Approved a Booking', 'You approved booking #5 for Toyota.', 'info', 'read', '2025-12-07 12:43:13'),
-(88, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'unread', '2025-12-07 12:43:36'),
+(88, 7, 'Booking Approved', 'Your booking for Audi has been approved by the owner.', 'info', 'read', '2025-12-07 12:43:36'),
 (89, 1, 'You Approved a Booking', 'You approved booking #6 for Audi.', 'info', 'read', '2025-12-07 12:43:36'),
-(90, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: pangit', 'info', 'unread', '2025-12-07 13:09:57'),
+(90, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: pangit', 'info', 'read', '2025-12-07 13:09:57'),
 (91, 1, 'Booking Rejected', 'You rejected booking #7 for Audi.', 'info', 'read', '2025-12-07 13:09:57'),
 (92, 1, 'Car Approved ✔️', 'Your vehicle \'Toyota Vios\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-10 03:43:30'),
 (93, 1, 'Car Rejected ❌', 'Your vehicle \'Toyota Vios\' was rejected. Reason: wla lang', 'info', 'read', '2025-12-10 11:30:52'),
 (94, 1, 'Car Rejected ❌', 'Your vehicle \'Toyota Vios\' was rejected. Reason: dont match', 'info', 'read', '2025-12-10 11:37:37'),
 (95, 1, 'Car Rejected ❌', 'Your vehicle \'Subaru BRZ\' was rejected. Reason: dont match', 'info', 'read', '2025-12-10 11:38:21'),
-(96, 7, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2025-12-10 14:31:38'),
+(96, 7, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'read', '2025-12-10 14:31:38'),
 (97, 1, 'Car Approved ✔️', 'Your vehicle \'Toyota Vios\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-13 06:34:20'),
 (98, 1, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'read', '2025-12-13 07:51:08'),
 (99, 4, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2025-12-13 07:54:13'),
-(100, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2025-12-15 12:45:53'),
+(100, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2025-12-15 12:45:53'),
 (101, 5, 'You Approved a Booking', 'You approved booking #4 for Audi.', 'info', 'read', '2025-12-15 12:45:53'),
-(102, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2025-12-20 14:10:53'),
+(102, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2025-12-20 14:10:53'),
 (103, 1, 'You Approved a Booking', 'You approved booking #1 for Audi.', 'info', 'read', '2025-12-20 14:10:53'),
 (104, 1, 'Car Approved âœ”ï¸', 'Your vehicle \'Subaru BRZ\' has been approved and is now visible to renters.', 'info', 'read', '2025-12-22 04:04:47'),
 (105, 5, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'read', '2025-12-22 05:29:53'),
@@ -1753,30 +1795,30 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (116, 1, 'Motorcycle Submitted ✅', 'Your motorcycle \'Honda Wave 110\' has been submitted for approval.', 'info', 'read', '2026-01-11 04:20:29'),
 (117, 1, 'Motorcycle Approved ✅', 'Your motorcycle \'Honda Wave 110\' has been approved and is now visible to renters.', 'info', 'read', '2026-01-11 04:34:52'),
 (118, 1, 'Motorcycle Rejected ❌', 'Your motorcycle \'Honda Click 125i\' was rejected. Reason: INvalid', 'info', 'read', '2026-01-11 04:45:31'),
-(119, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'unread', '2026-01-11 07:15:39'),
+(119, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'read', '2026-01-11 07:15:39'),
 (120, 1, 'You Approved a Booking', 'You approved booking #7 for Honda.', 'info', 'read', '2026-01-11 07:15:39'),
-(121, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: not valid', 'info', 'unread', '2026-01-11 07:15:50'),
+(121, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: not valid', 'info', 'read', '2026-01-11 07:15:50'),
 (122, 1, 'Booking Rejected', 'You rejected booking #5 for Toyota.', 'info', 'read', '2026-01-11 07:15:50'),
-(123, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'unread', '2026-01-11 07:15:59'),
+(123, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'read', '2026-01-11 07:15:59'),
 (124, 1, 'Booking Rejected', 'You rejected booking #2 for Toyota.', 'info', 'read', '2026-01-11 07:15:59'),
 (125, 1, 'Motorcycle Approved ✅', 'Your motorcycle \'Honda Click 125i\' has been approved and is now visible to renters.', 'info', 'read', '2026-01-11 13:00:45'),
-(126, 7, 'Booking Approved', 'Your booking for Toyota has been approved.', 'info', 'unread', '2026-01-12 01:19:10'),
+(126, 7, 'Booking Approved', 'Your booking for Toyota has been approved.', 'info', 'read', '2026-01-12 01:19:10'),
 (127, 1, 'You Approved a Booking', 'You approved booking #3 for Toyota.', 'info', 'read', '2026-01-12 01:19:10'),
-(128, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2026-01-12 05:39:47'),
+(128, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2026-01-12 05:39:47'),
 (129, 1, 'You Approved a Booking', 'You approved booking #9 for Audi.', 'info', 'read', '2026-01-12 05:39:47'),
-(130, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'unread', '2026-01-12 05:39:58'),
+(130, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'read', '2026-01-12 05:39:58'),
 (131, 1, 'Booking Rejected', 'You rejected booking #10 for Toyota.', 'info', 'read', '2026-01-12 05:39:58'),
-(132, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2026-01-13 02:06:18'),
+(132, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2026-01-13 02:06:18'),
 (133, 1, 'You Approved a Booking', 'You approved booking #17 for Audi.', 'info', 'read', '2026-01-13 02:06:18'),
-(134, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'unread', '2026-01-13 07:11:44'),
+(134, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: invalid', 'info', 'read', '2026-01-13 07:11:44'),
 (135, 1, 'Booking Rejected', 'You rejected booking #11 for Toyota.', 'info', 'read', '2026-01-13 07:11:44'),
-(136, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'unread', '2026-01-13 07:11:48'),
+(136, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'read', '2026-01-13 07:11:48'),
 (137, 1, 'You Approved a Booking', 'You approved booking #15 for Honda.', 'info', 'read', '2026-01-13 07:11:48'),
-(138, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'unread', '2026-01-13 07:11:50'),
+(138, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'read', '2026-01-13 07:11:50'),
 (139, 1, 'You Approved a Booking', 'You approved booking #16 for Honda.', 'info', 'read', '2026-01-13 07:11:50'),
-(140, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'unread', '2026-01-13 07:11:51'),
+(140, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'read', '2026-01-13 07:11:51'),
 (141, 1, 'You Approved a Booking', 'You approved booking #18 for Honda.', 'info', 'read', '2026-01-13 07:11:51'),
-(142, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'unread', '2026-01-13 07:11:53'),
+(142, 7, 'Booking Approved', 'Your booking for Honda has been approved.', 'info', 'read', '2026-01-13 07:11:53'),
 (143, 1, 'You Approved a Booking', 'You approved booking #19 for Honda.', 'info', 'read', '2026-01-13 07:11:53'),
 (144, 1, 'Motorcycle Submitted ✅', 'Your motorcycle \'CFMoto 400NK\' has been submitted for approval.', 'info', 'read', '2026-01-17 01:55:52'),
 (145, 1, 'Motorcycle Approved ✅', 'Your motorcycle \'CFMoto 400NK\' has been approved and is now visible to renters.', 'info', 'read', '2026-01-17 01:56:24'),
@@ -1784,121 +1826,121 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (147, 5, 'Motorcycle Approved ✅', 'Your motorcycle \'Kymco Xciting 400i\' has been approved and is now visible to renters.', 'info', 'read', '2026-01-17 02:01:34'),
 (148, 1, 'Car Submitted ✅', 'Your car \'Mercedes-Benz A-Class\' has been submitted for approval.', 'info', 'read', '2026-01-18 10:46:00'),
 (149, 1, 'Car Approved ✔️', 'Your vehicle \'Mercedes-Benz A-Class\' has been approved and is now visible to renters.', 'info', 'read', '2026-01-18 10:46:53'),
-(150, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-18 11:38:14'),
+(150, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-18 11:38:14'),
 (151, 1, 'You Approved a Booking', 'You approved booking #28 for Mercedes-Benz.', 'info', 'read', '2026-01-18 11:38:14'),
-(152, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: pangit', 'info', 'unread', '2026-01-20 07:02:33'),
+(152, 7, 'Booking Rejected', 'Your booking for Toyota was rejected. Reason: pangit', 'info', 'read', '2026-01-20 07:02:33'),
 (153, 1, 'Booking Rejected', 'You rejected booking #27 for Toyota.', 'info', 'read', '2026-01-20 07:02:33'),
-(154, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-20 09:54:53'),
+(154, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-20 09:54:53'),
 (155, 1, 'New Booking 🚗', 'Booking #28 has been confirmed. Payment received.', 'info', 'read', '2026-01-20 09:54:53'),
-(156, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-20 10:14:44'),
+(156, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-20 10:14:44'),
 (157, 1, 'New Booking 🚗', 'Booking #28 has been confirmed. Payment received.', 'info', 'read', '2026-01-20 10:14:44'),
-(158, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2026-01-20 11:42:59'),
+(158, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2026-01-20 11:42:59'),
 (159, 5, 'You Approved a Booking', 'You approved booking #29 for Audi.', 'info', 'read', '2026-01-20 11:42:59'),
-(160, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: pangit', 'info', 'unread', '2026-01-20 11:45:28'),
+(160, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: pangit', 'info', 'read', '2026-01-20 11:45:28'),
 (161, 5, 'Booking Rejected', 'You rejected booking #30 for Audi.', 'info', 'read', '2026-01-20 11:45:28'),
-(162, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: aaa', 'info', 'unread', '2026-01-20 12:14:26'),
+(162, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: aaa', 'info', 'read', '2026-01-20 12:14:26'),
 (163, 5, 'Booking Rejected', 'You rejected booking #31 for Audi.', 'info', 'read', '2026-01-20 12:14:26'),
-(164, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: aaa', 'info', 'unread', '2026-01-20 12:15:54'),
+(164, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: aaa', 'info', 'read', '2026-01-20 12:15:54'),
 (165, 5, 'Booking Rejected', 'You rejected booking #8 for Audi.', 'info', 'read', '2026-01-20 12:15:54'),
-(166, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: assdr', 'info', 'unread', '2026-01-20 12:46:03'),
+(166, 7, 'Booking Rejected', 'Your booking for Audi was rejected. Reason: assdr', 'info', 'read', '2026-01-20 12:46:03'),
 (167, 5, 'Booking Rejected', 'You rejected booking #32 for Audi.', 'info', 'read', '2026-01-20 12:46:03'),
-(168, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 01:42:13'),
+(168, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 01:42:13'),
 (169, 5, 'New Booking 🚗', 'Booking #32 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 01:42:13'),
-(170, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 01:42:38'),
+(170, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 01:42:38'),
 (171, 5, 'New Booking 🚗', 'Booking #32 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 01:42:38'),
-(172, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 01:52:05'),
+(172, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 01:52:05'),
 (173, 5, 'New Booking 🚗', 'Booking #31 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 01:52:05'),
-(174, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:01:57'),
+(174, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:01:57'),
 (175, 5, 'New Booking 🚗', 'Booking #31 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:01:57'),
-(176, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:44:34'),
+(176, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:44:34'),
 (177, 1, 'New Booking 🚗', 'Booking #7 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:44:34'),
-(178, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:45:08'),
+(178, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:45:08'),
 (179, 1, 'New Booking 🚗', 'Booking #7 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:45:08'),
-(180, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:46:19'),
+(180, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:46:19'),
 (181, 1, 'New Booking 🚗', 'Booking #19 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:46:19'),
-(182, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:47:34'),
+(182, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:47:34'),
 (183, 1, 'New Booking 🚗', 'Booking #15 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:47:34'),
-(184, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:48:09'),
+(184, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:48:09'),
 (185, 1, 'New Booking 🚗', 'Booking #16 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:48:09'),
-(186, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:54:30'),
+(186, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:54:30'),
 (187, 5, 'New Booking 🚗', 'Booking #30 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:54:30'),
-(188, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:55:18'),
+(188, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:55:18'),
 (189, 1, 'New Booking 🚗', 'Booking #25 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:55:18'),
-(190, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 02:55:31'),
+(190, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 02:55:31'),
 (191, 1, 'New Booking 🚗', 'Booking #25 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 02:55:31'),
-(192, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:23'),
+(192, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:23'),
 (193, 1, 'You Approved a Booking', 'You approved booking #39 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:23'),
-(194, 7, 'Booking Rejected', 'Your booking for Mercedes-Benz was rejected. Reason: pangit', 'info', 'unread', '2026-01-21 03:47:33'),
+(194, 7, 'Booking Rejected', 'Your booking for Mercedes-Benz was rejected. Reason: pangit', 'info', 'read', '2026-01-21 03:47:33'),
 (195, 1, 'Booking Rejected', 'You rejected booking #38 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:33'),
-(196, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:47'),
+(196, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:47'),
 (197, 1, 'You Approved a Booking', 'You approved booking #33 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:47'),
-(198, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:49'),
+(198, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:49'),
 (199, 1, 'You Approved a Booking', 'You approved booking #37 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:49'),
-(200, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:51'),
+(200, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:51'),
 (201, 1, 'You Approved a Booking', 'You approved booking #35 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:51'),
-(202, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:53'),
+(202, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:53'),
 (203, 1, 'You Approved a Booking', 'You approved booking #36 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:53'),
-(204, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'unread', '2026-01-21 03:47:55'),
+(204, 7, 'Booking Approved', 'Your booking for Mercedes-Benz has been approved.', 'info', 'read', '2026-01-21 03:47:55'),
 (205, 1, 'You Approved a Booking', 'You approved booking #34 for Mercedes-Benz.', 'info', 'read', '2026-01-21 03:47:55'),
-(206, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:52:28'),
+(206, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:52:28'),
 (207, 1, 'New Booking 🚗', 'Booking #39 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 03:52:28'),
-(208, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:52:31'),
+(208, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:52:31'),
 (209, 1, 'New Booking 🚗', 'Booking #39 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 03:52:31'),
-(210, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:52:48'),
+(210, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:52:48'),
 (211, 1, 'New Booking 🚗', 'Booking #38 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 03:52:48'),
-(212, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:53:44'),
+(212, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:53:44'),
 (213, 1, 'New Booking 🚗', 'Booking #38 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 03:53:44'),
-(214, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:54:22'),
+(214, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:54:22'),
 (215, 1, 'New Booking 🚗', 'Booking #37 has been confirmed. Payment received.', 'info', 'read', '2026-01-21 03:54:22'),
-(216, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-21 03:54:28'),
-(218, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2026-01-21 10:50:17'),
+(216, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-21 03:54:28'),
+(218, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2026-01-21 10:50:17'),
 (219, 5, 'You Approved a Booking', 'You approved booking #40 for Audi.', 'info', 'read', '2026-01-21 10:50:17'),
-(220, 7, 'Trip Completed ✓', 'Your rental for booking #35 has been completed. Thank you!', 'info', 'unread', '2026-01-22 00:18:42'),
-(221, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-22 01:17:14'),
+(220, 7, 'Trip Completed ✓', 'Your rental for booking #35 has been completed. Thank you!', 'info', 'read', '2026-01-22 00:18:42'),
+(221, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-22 01:17:14'),
 (222, 5, 'New Booking 🚗', 'Booking #41 has been confirmed. Payment received.', 'info', 'read', '2026-01-22 01:17:14'),
-(223, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-22 01:17:46'),
+(223, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-22 01:17:46'),
 (224, 1, 'New Booking 🚗', 'Booking #36 has been confirmed. Payment received.', 'info', 'read', '2026-01-22 01:17:46'),
-(225, 7, 'Booking Approved', 'Your booking for Toyota has been approved.', 'info', 'unread', '2026-01-22 01:34:38'),
+(225, 7, 'Booking Approved', 'Your booking for Toyota has been approved.', 'info', 'read', '2026-01-22 01:34:38'),
 (226, 1, 'You Approved a Booking', 'You approved booking #23 for Toyota.', 'info', 'read', '2026-01-22 01:34:38'),
-(227, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-24 07:16:37'),
+(227, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-24 07:16:37'),
 (228, 5, 'New Booking ðŸš—', 'Booking #40 has been confirmed. Payment received.', 'info', 'unread', '2026-01-24 07:16:37'),
-(229, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'unread', '2026-01-25 05:19:43'),
+(229, 7, 'Booking Approved', 'Your booking for Audi has been approved.', 'info', 'read', '2026-01-25 05:19:43'),
 (230, 5, 'You Approved a Booking', 'You approved booking #41 for Audi.', 'info', 'unread', '2026-01-25 05:19:43'),
-(231, 7, 'Booking Rejected', 'Your booking for Mercedes-Benz was rejected. Reason: nope', 'info', 'unread', '2026-01-29 11:55:08'),
+(231, 7, 'Booking Rejected', 'Your booking for Mercedes-Benz was rejected. Reason: nope', 'info', 'read', '2026-01-29 11:55:08'),
 (232, 1, 'Booking Rejected', 'You rejected booking #42 for Mercedes-Benz.', 'info', 'unread', '2026-01-29 11:55:08'),
-(233, 7, 'Booking Rejected', 'Your booking for Honda was rejected. Reason: aa', 'info', 'unread', '2026-01-29 12:21:09'),
+(233, 7, 'Booking Rejected', 'Your booking for Honda was rejected. Reason: aa', 'info', 'read', '2026-01-29 12:21:09'),
 (234, 1, 'Booking Rejected', 'You rejected booking #44 for Honda.', 'info', 'unread', '2026-01-29 12:21:09'),
-(235, 7, 'Booking Rejected', 'Your booking for Honda was rejected. Reason: aa', 'info', 'unread', '2026-01-29 12:21:19'),
+(235, 7, 'Booking Rejected', 'Your booking for Honda was rejected. Reason: aa', 'info', 'read', '2026-01-29 12:21:19'),
 (236, 1, 'Booking Rejected', 'You rejected booking #43 for Honda.', 'info', 'unread', '2026-01-29 12:21:19'),
-(237, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-29 12:25:14'),
+(237, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-29 12:25:14'),
 (238, 1, 'New Booking ðŸš—', 'Booking #44 has been confirmed. Payment received.', 'info', 'unread', '2026-01-29 12:25:14'),
-(239, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-29 12:25:23'),
+(239, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-29 12:25:23'),
 (240, 1, 'New Booking ðŸš—', 'Booking #44 has been confirmed. Payment received.', 'info', 'unread', '2026-01-29 12:25:23'),
-(241, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-29 12:25:49'),
+(241, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-29 12:25:49'),
 (242, 1, 'New Booking ðŸš—', 'Booking #43 has been confirmed. Payment received.', 'info', 'unread', '2026-01-29 12:25:49'),
-(243, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'unread', '2026-01-30 10:39:56'),
+(243, 7, 'Payment Verified âœ“', 'Your payment has been verified. Booking approved!', 'info', 'read', '2026-01-30 10:39:56'),
 (244, 1, 'New Booking ðŸš—', 'Booking #42 has been confirmed. Payment received.', 'info', 'unread', '2026-01-30 10:39:56'),
-(245, 7, 'Trip Completed âœ“', 'Your rental for booking #32 has been completed. Thank you!', 'info', 'unread', '2026-01-30 11:25:42'),
-(246, 7, 'Trip Completed âœ“', 'Your rental for booking #33 has been completed. Thank you!', 'info', 'unread', '2026-01-30 11:27:27'),
-(247, 7, 'Trip Completed âœ“', 'Your rental for booking #34 has been completed. Thank you!', 'info', 'unread', '2026-01-30 11:27:44'),
-(248, 7, 'Trip Completed âœ“', 'Your rental for booking #39 has been completed. Thank you!', 'info', 'unread', '2026-01-30 11:27:55'),
+(245, 7, 'Trip Completed âœ“', 'Your rental for booking #32 has been completed. Thank you!', 'info', 'read', '2026-01-30 11:25:42'),
+(246, 7, 'Trip Completed âœ“', 'Your rental for booking #33 has been completed. Thank you!', 'info', 'read', '2026-01-30 11:27:27'),
+(247, 7, 'Trip Completed âœ“', 'Your rental for booking #34 has been completed. Thank you!', 'info', 'read', '2026-01-30 11:27:44'),
+(248, 7, 'Trip Completed âœ“', 'Your rental for booking #39 has been completed. Thank you!', 'info', 'read', '2026-01-30 11:27:55'),
 (249, 1, 'Payout Completed ðŸ’¸', 'Your payout of â‚±2,835.00 for booking #BK-0039 has been transferred to your GCash account. Reference: 1234567890909', 'info', 'unread', '2026-01-30 13:42:31'),
 (250, 5, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Audi A1. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 12:08:34'),
-(251, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:08:34'),
+(251, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'read', '2026-01-31 12:08:34'),
 (252, 1, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Mercedes-Benz A-Class. Late fee: â‚±35900.00', 'info', 'unread', '2026-01-31 12:10:15'),
-(253, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±35900.00 for Mercedes-Benz A-Class has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:10:15'),
+(253, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±35900.00 for Mercedes-Benz A-Class has been submitted and is pending verification.', 'info', 'read', '2026-01-31 12:10:15'),
 (254, 5, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Audi A1. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 12:19:25'),
-(255, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:19:25'),
+(255, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'read', '2026-01-31 12:19:25'),
 (256, 5, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Audi A1. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 12:19:55'),
-(257, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:19:55'),
+(257, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±300.00 for Audi A1 has been submitted and is pending verification.', 'info', 'read', '2026-01-31 12:19:55'),
 (258, 1, 'Late Fee Payment Submitted', 'Renter ethan jr submitted a late fee payment for Toyota Vios. Total: â‚±53580.00 (Rental + Late Fee)', 'info', 'read', '2026-01-31 12:38:21'),
-(259, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±53580.00 for Toyota Vios has been submitted and is pending verification.', 'info', 'unread', '2026-01-31 12:38:21'),
-(260, 7, 'Late Fee Payment Approved', 'Your late fee payment of â‚±53580.00 has been verified and approved.', 'info', 'unread', '2026-01-31 12:57:42'),
+(259, 7, 'Late Fee Payment Submitted', 'Your late fee payment of â‚±53580.00 for Toyota Vios has been submitted and is pending verification.', 'info', 'read', '2026-01-31 12:38:21'),
+(260, 7, 'Late Fee Payment Approved', 'Your late fee payment of â‚±53580.00 has been verified and approved.', 'info', 'read', '2026-01-31 12:57:42'),
 (261, 1, 'Late Fee Payment Approved', 'Late fee payment of â‚±53580.00 for Toyota Vios has been verified.', 'info', 'read', '2026-01-31 12:57:42'),
-(262, 7, 'Late Fee Confirmed âš ï¸', 'Your overdue booking #BK-0001 has a confirmed late fee of â‚±109,900.00. Please submit payment to complete your booking.', 'info', 'unread', '2026-01-31 13:29:56'),
-(263, 7, 'âš ï¸ Overdue Booking Reminder #1', 'Your booking #BK-0001 for Audi A1 is 48 days overdue. Late fee: â‚±109,900.00. Please return the vehicle and complete payment immediately.', 'info', 'unread', '2026-01-31 13:30:02'),
-(264, 7, 'Booking Completed âœ…', 'Your booking #BK-0001 has been completed. Late fee: â‚±109,900.00', 'info', 'unread', '2026-01-31 13:32:57'),
-(265, 7, 'Booking Completed âœ…', 'Your booking #BK-0041 has been completed. Late fee: â‚±300.00', 'info', 'unread', '2026-01-31 13:33:24'),
+(262, 7, 'Late Fee Confirmed âš ï¸', 'Your overdue booking #BK-0001 has a confirmed late fee of â‚±109,900.00. Please submit payment to complete your booking.', 'info', 'read', '2026-01-31 13:29:56'),
+(263, 7, 'âš ï¸ Overdue Booking Reminder #1', 'Your booking #BK-0001 for Audi A1 is 48 days overdue. Late fee: â‚±109,900.00. Please return the vehicle and complete payment immediately.', 'info', 'read', '2026-01-31 13:30:02'),
+(264, 7, 'Booking Completed âœ…', 'Your booking #BK-0001 has been completed. Late fee: â‚±109,900.00', 'info', 'read', '2026-01-31 13:32:57'),
+(265, 7, 'Booking Completed âœ…', 'Your booking #BK-0041 has been completed. Late fee: â‚±300.00', 'info', 'read', '2026-01-31 13:33:24'),
 (266, 5, 'Payment Released ðŸ’°', 'Your payout of â‚±27,405.00 is being processed.', 'info', 'unread', '2026-02-01 02:25:43'),
 (267, 1, 'Motorcycle Submitted ✅', 'Your motorcycle \'Honda Click 125i\' has been submitted for approval.', 'info', 'read', '2026-02-02 12:10:23'),
 (268, 13, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2026-02-04 09:14:51'),
@@ -1910,7 +1952,7 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (274, 16, 'New Booking 🚗', 'Booking #47 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-06 03:05:05'),
 (275, 15, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved.', 'booking_approved', 'unread', '2026-02-06 03:16:38'),
 (276, 16, 'You Approved a Booking', 'You approved booking #47 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-06 03:16:38'),
-(277, 7, 'Refund Approved ✓', 'Your booking #7 has been cancelled and refund of ₱256.20 has been approved. Reference: REF-20260206-8198', 'refund_approved', 'unread', '2026-02-06 07:28:51'),
+(277, 7, 'Refund Approved ✓', 'Your booking #7 has been cancelled and refund of ₱256.20 has been approved. Reference: REF-20260206-8198', 'refund_approved', 'read', '2026-02-06 07:28:51'),
 (278, 1, 'Booking Cancelled ⚠️', 'Booking #7 has been cancelled and refunded to renter. Reason: car_unavailable', 'booking_cancelled', 'read', '2026-02-06 07:28:51'),
 (279, 15, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 02:25:39'),
 (280, 16, 'New Booking 🚗', 'Booking #48 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 02:25:39'),
@@ -1928,10 +1970,24 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `read_
 (292, 15, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved. Your insurance policy is now active.', 'booking_approved', 'unread', '2026-02-07 07:49:53'),
 (293, 16, 'You Approved a Booking', 'You approved booking #51 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-07 07:49:53'),
 (294, 15, 'Trip Started! 🚗', 'Your rental for booking #51 has started. The owner has confirmed vehicle pickup. Enjoy your trip!', 'info', 'unread', '2026-02-07 07:50:25'),
-(295, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 14:09:05'),
+(295, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'read', '2026-02-07 14:09:05'),
 (296, 1, 'New Booking 🚗', 'Booking #46 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 14:09:05'),
-(297, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'unread', '2026-02-07 14:09:08'),
-(298, 1, 'New Booking 🚗', 'Booking #45 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 14:09:08');
+(297, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'read', '2026-02-07 14:09:08'),
+(298, 1, 'New Booking 🚗', 'Booking #45 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-07 14:09:08'),
+(299, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'read', '2026-02-09 12:05:12'),
+(300, 16, 'New Booking 🚗', 'Booking #54 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-09 12:05:12'),
+(301, 7, 'Booking Approved', 'Your booking for Honda Click 125i (Motorcycle) has been approved. Your insurance policy is now active.', 'booking_approved', 'read', '2026-02-09 12:05:21'),
+(302, 16, 'You Approved a Booking', 'You approved booking #54 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-09 12:05:21'),
+(303, 7, 'Trip Started! 🚗', 'Your rental for booking #54 has started. The owner has confirmed vehicle pickup. Enjoy your trip!', 'info', 'read', '2026-02-09 12:06:17'),
+(304, 7, 'Trip Completed ✓', 'Your rental for booking #54 has been completed. Thank you!', 'info', 'read', '2026-02-09 12:06:45'),
+(305, 16, 'Payout Completed 💸', 'Your payout of ₱945.00 for booking #BK-0054 has been transferred to your GCash account. Reference: 1234567890123', 'info', 'unread', '2026-02-09 12:08:01'),
+(306, 7, 'Payment Verified ✓', 'Your payment has been verified. Booking approved!', 'payment_verified', 'read', '2026-02-09 12:10:26'),
+(307, 16, 'New Booking 🚗', 'Booking #55 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-09 12:10:26'),
+(309, 16, 'You Approved a Booking', 'You approved booking #55 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-09 12:10:42'),
+(310, 15, 'Trip Completed ✓', 'Your rental for booking #51 has been completed. Late fee charged: ₱20,400.00 (returned 44 hours late).', 'info', 'unread', '2026-02-09 12:11:03'),
+(313, 16, 'New Booking 🚗', 'Booking #56 has been confirmed. Payment received.', 'booking_confirmed', 'unread', '2026-02-09 12:15:20'),
+(315, 16, 'You Approved a Booking', 'You approved booking #56 for Honda Click 125i (Motorcycle).', 'booking_update', 'unread', '2026-02-09 12:15:43'),
+(318, 19, 'Verification Approved ✓', 'Congratulations! Your identity verification has been approved. You now have full access to all features.', 'info', 'unread', '2026-02-10 05:49:17');
 
 -- --------------------------------------------------------
 
@@ -1996,7 +2052,32 @@ INSERT INTO `overdue_logs` (`id`, `booking_id`, `days_overdue`, `hours_overdue`,
 (38, 19, 16, 407, 51900.00, 1, 'notification', 'Automated detection', '2026-01-31 08:33:19'),
 (39, 23, 16, 407, 51900.00, 1, 'notification', 'Automated detection', '2026-01-31 08:33:19'),
 (40, 36, 8, 215, 35900.00, 1, 'notification', 'Automated detection', '2026-01-31 08:33:19'),
-(41, 41, 0, 3, 300.00, 1, 'notification', 'Automated detection', '2026-01-31 08:33:19');
+(41, 41, 0, 3, 300.00, 1, 'notification', 'Automated detection', '2026-01-31 08:33:19'),
+(42, 51, 1, 44, 20400.00, 0, 'resolved', 'Trip completed with late fee', '2026-02-09 12:11:03');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `code_hash` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Dumping data for table `password_resets`
+--
+
+INSERT INTO `password_resets` (`id`, `user_id`, `email`, `code_hash`, `expires_at`, `used`, `created_at`) VALUES
+(1, 19, 'caring@gmail.com', '$2y$10$jPTv3FRu1e8Vi.1KwKp0OuWBrgGSa3SYu6W.Rne.caV9Fg0xRjV1e', '2026-02-10 20:32:20', 0, '2026-02-10 12:17:20'),
+(2, 13, 'saberu1213@gmail.com', '$2y$10$No02yShnIParCRH1Heda2eI5vjZEOcqR4LoLrN0Zw2N1uAOJJxh3K', '2026-02-10 20:54:38', 1, '2026-02-10 12:39:38');
 
 -- --------------------------------------------------------
 
@@ -2051,7 +2132,13 @@ INSERT INTO `payments` (`id`, `booking_id`, `user_id`, `amount`, `payment_method
 (97, 48, 15, 1050.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 02:25:39', '2026-02-07 02:25:04', '2026-02-07 02:25:39', NULL),
 (99, 49, 15, 1050.00, 'gcash', '1212121212121', 'rejected', 'Payment verification failed', 1, '2026-02-07 07:38:03', '2026-02-07 07:09:17', '2026-02-07 07:38:03', NULL),
 (101, 50, 15, 1050.00, 'gcash', '1212121212121', 'rejected', 'Payment verification failed', 1, '2026-02-07 07:45:49', '2026-02-07 07:40:29', '2026-02-07 07:45:49', NULL),
-(103, 51, 15, 1050.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 07:48:48', '2026-02-07 07:48:31', '2026-02-07 07:48:48', NULL);
+(103, 51, 15, 1050.00, 'gcash', '1212121212121', 'verified', NULL, 1, '2026-02-07 07:48:48', '2026-02-07 07:48:31', '2026-02-07 07:48:48', NULL),
+(104, 52, 7, 3150.00, 'gcash', NULL, 'pending', NULL, NULL, NULL, '2026-02-09 11:29:11', '2026-02-09 11:29:11', NULL),
+(106, 53, 7, 3150.00, 'gcash', '1234567890123', 'pending', NULL, NULL, NULL, '2026-02-09 11:32:25', '2026-02-09 11:32:25', NULL),
+(108, 54, 7, 1050.00, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-02-09 12:05:12', '2026-02-09 12:04:41', '2026-02-09 12:05:12', NULL),
+(110, 55, 7, 1050.00, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-02-09 12:10:26', '2026-02-09 12:10:00', '2026-02-09 12:10:26', NULL),
+(112, 56, 7, 1050.00, 'gcash', '1234567890123', 'verified', NULL, 1, '2026-02-09 12:15:20', '2026-02-09 12:14:49', '2026-02-09 12:15:20', NULL),
+(114, 57, 15, 3150.00, 'gcash', '1212121212121', 'pending', NULL, NULL, NULL, '2026-02-10 01:48:38', '2026-02-10 01:48:38', NULL);
 
 --
 -- Triggers `payments`
@@ -2206,7 +2293,11 @@ INSERT INTO `payment_transactions` (`id`, `booking_id`, `transaction_type`, `amo
 (73, 50, 'payment', 1050.00, 'Payment rejected: Payment verification failed', NULL, '{\"payment_id\":101,\"reason\":\"Payment verification failed\"}', 1, '2026-02-07 07:45:49'),
 (74, 51, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":103,\"escrow_id\":34,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-07 07:48:48'),
 (75, 46, 'payment', 3150.00, 'Payment verified via gcash', NULL, '{\"payment_id\":93,\"escrow_id\":35,\"platform_fee\":315,\"owner_payout\":2835}', 1, '2026-02-07 14:09:05'),
-(76, 45, 'payment', 3150.00, 'Payment verified via gcash', NULL, '{\"payment_id\":91,\"escrow_id\":36,\"platform_fee\":315,\"owner_payout\":2835}', 1, '2026-02-07 14:09:08');
+(76, 45, 'payment', 3150.00, 'Payment verified via gcash', NULL, '{\"payment_id\":91,\"escrow_id\":36,\"platform_fee\":315,\"owner_payout\":2835}', 1, '2026-02-07 14:09:08'),
+(77, 54, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":108,\"escrow_id\":37,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-09 12:05:12'),
+(78, 54, 'payout', 945.00, 'Payout completed to Lex Istaint. GCash ref: 1234567890123', NULL, '{\"payout_id\":10,\"transfer_reference\":\"1234567890123\",\"gcash_number\":\"09451547348\",\"proof_path\":null}', 1, '2026-02-09 12:08:01'),
+(79, 55, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":110,\"escrow_id\":38,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-09 12:10:26'),
+(80, 56, 'payment', 1050.00, 'Payment verified via gcash', NULL, '{\"payment_id\":112,\"escrow_id\":39,\"platform_fee\":105,\"owner_payout\":945}', 1, '2026-02-09 12:15:20');
 
 -- --------------------------------------------------------
 
@@ -2261,7 +2352,8 @@ CREATE TABLE `payouts` (
 INSERT INTO `payouts` (`id`, `booking_id`, `owner_id`, `escrow_id`, `amount`, `platform_fee`, `net_amount`, `payout_method`, `payout_account`, `status`, `scheduled_at`, `processed_at`, `completion_reference`, `failure_reason`, `processed_by`, `created_at`, `updated_at`) VALUES
 (7, 39, 1, 17, 3150.00, 315.00, 2835.00, 'gcash', '09451547348', 'completed', '2026-01-30 19:29:59', '2026-01-30 21:42:31', '1234567890909', NULL, 1, '2026-01-30 11:29:59', '2026-01-30 13:42:31'),
 (8, 32, 5, 5, 2100.00, 210.00, 1890.00, 'gcash', 'Not Set', 'pending', '2026-01-30 19:30:02', NULL, NULL, NULL, NULL, '2026-01-30 11:30:02', '2026-01-30 11:30:02'),
-(9, 41, 5, 23, 30450.00, 3045.00, 27405.00, 'gcash', NULL, 'pending', '2026-02-01 10:25:43', NULL, NULL, NULL, 1, '2026-02-01 02:25:43', '2026-02-01 02:25:43');
+(9, 41, 5, 23, 30450.00, 3045.00, 27405.00, 'gcash', NULL, 'pending', '2026-02-01 10:25:43', NULL, NULL, NULL, 1, '2026-02-01 02:25:43', '2026-02-01 02:25:43'),
+(10, 54, 16, 37, 1050.00, 105.00, 945.00, 'gcash', '09451547348', 'completed', '2026-02-09 12:07:49', '2026-02-09 12:08:01', '1234567890123', NULL, 1, '2026-02-09 12:07:49', '2026-02-09 12:08:01');
 
 -- --------------------------------------------------------
 
@@ -2392,7 +2484,8 @@ INSERT INTO `refunds` (`id`, `refund_id`, `booking_id`, `payment_id`, `user_id`,
 (2, 'REF-20260121-6907', 38, 58, 7, 1, 3150.00, 3150.00, 'gcash', '09770433849', 'Cartney Dejolde', NULL, 'cancelled_by_user', NULL, 'gcash', '38', 'approved', 1, '2026-01-29 19:56:39', '2026-01-29 19:56:39', NULL, NULL, NULL, NULL, NULL, '2026-01-21 12:34:10', 0.00, NULL),
 (3, 'REF-20260129-FF9A', 43, 67, 7, 1, 256.20, 256.20, 'gcash', '09451547348', 'axc', NULL, 'cancelled_by_user', NULL, 'gcash', '43', 'completed', 1, '2026-01-29 20:26:23', '2026-01-29 20:26:12', '2026-01-29 20:26:23', '1212121212121', '1212121212121', NULL, NULL, '2026-01-29 20:25:54', 0.00, NULL),
 (4, 'REF-20260206-B5CA', 47, 95, 15, 16, 1443.75, 1443.75, 'gcash', '09451547348', 'ethan', NULL, 'cancelled_by_user', NULL, 'gcash', '47', 'completed', 1, '2026-02-06 07:02:31', '2026-02-06 06:41:14', '2026-02-06 07:02:31', '1212121212121', '1212121212121', NULL, NULL, '2026-02-06 05:15:17', 0.00, NULL),
-(5, 'REF-20260206-8198', 7, 4, 7, 1, 256.20, 256.20, 'gcash', 'N/A', 'ethan jr', NULL, 'car_unavailable', 'asdasd', 'gcash', '4', 'approved', 1, '2026-02-06 07:28:51', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-06 07:28:51', 0.00, NULL);
+(5, 'REF-20260206-8198', 7, 4, 7, 1, 256.20, 256.20, 'gcash', 'N/A', 'ethan jr', NULL, 'car_unavailable', 'asdasd', 'gcash', '4', 'approved', 1, '2026-02-06 07:28:51', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-06 07:28:51', 0.00, NULL),
+(6, 'REF-20260209-3001', 55, 110, 7, 16, 1050.00, 1050.00, 'gcash', '09770433849', 'Cartney Dejolde', NULL, 'other', 'dugay pa', 'gcash', '55', 'approved', 1, '2026-02-09 12:13:55', '2026-02-09 12:13:55', NULL, NULL, NULL, NULL, NULL, '2026-02-09 12:13:30', 0.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -2453,7 +2546,12 @@ INSERT INTO `reports` (`id`, `reporter_id`, `report_type`, `reported_id`, `reaso
 (8, 7, 'car', 35, 'Suspicious pricing', 'suspek okahshakakajhahahq', 'under_review', 'medium', 1, '', NULL, '2026-01-20 20:05:56', '2026-01-20 19:27:34', '2026-01-20 20:05:56', NULL),
 (9, 7, 'car', 37, 'Fake photos', 'fake srthuuhhhhhhhggh', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-01-20 20:25:17', '2026-01-20 20:25:17', NULL),
 (10, 7, 'car', 17, 'Fake photos', 'gggggggggggggggggggg', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-01-20 20:34:00', '2026-01-20 20:34:00', NULL),
-(11, 7, 'car', 3, 'Misleading information', 'gghjkkjhffhjkkkkjjhhjj', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-01-21 17:55:00', '2026-01-21 17:55:00', 'uploads/reports/report_6970a27414316.jpg');
+(11, 7, 'car', 3, 'Misleading information', 'gghjkkjhffhjkkkkjjhhjj', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-01-21 17:55:00', '2026-01-21 17:55:00', 'uploads/reports/report_6970a27414316.jpg'),
+(12, 7, 'car', 37, 'Vehicle not as described', 'blaaballaahajajakajajaj', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-02-09 12:24:09', '2026-02-09 12:24:09', 'uploads/reports/report_6989d1e900aa8.jpg'),
+(14, 1, 'car', 3, 'Misleading information', 'This is a test report submission to verify that the reporting system is working correctly. The details must be at least 20 characters long.', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-02-09 14:52:02', '2026-02-09 14:52:02', NULL),
+(15, 15, 'car', 37, 'Misleading information', 'hshshahahahahahhahahaha', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-02-10 01:53:12', '2026-02-10 01:53:12', 'uploads/reports/report_698a8f8872870.jpg'),
+(16, 7, 'car', 35, 'Misleading information', 'asdadasdasdsadasdasdasd', 'resolved', 'medium', 1, 'alright', NULL, '2026-02-10 05:53:40', '2026-02-10 03:08:49', '2026-02-10 05:53:40', NULL),
+(17, 19, 'car', 37, 'Misleading information', 'etjegjegksgkegkegkegjsg', 'pending', 'medium', NULL, NULL, NULL, NULL, '2026-02-10 05:50:06', '2026-02-10 05:50:06', 'uploads/reports/report_698ac70e328bc.jpg');
 
 -- --------------------------------------------------------
 
@@ -2480,7 +2578,14 @@ INSERT INTO `report_logs` (`id`, `report_id`, `action`, `performed_by`, `notes`,
 (3, 7, 'priority_changed', 1, 'Priority changed to high', '2026-01-20 20:07:29'),
 (4, 9, 'created', 7, 'Report submitted by user', '2026-01-20 20:25:17'),
 (5, 10, 'created', 7, 'Report submitted by user', '2026-01-20 20:34:00'),
-(6, 11, 'created', 7, 'Report submitted by user', '2026-01-21 17:55:00');
+(6, 11, 'created', 7, 'Report submitted by user', '2026-01-21 17:55:00'),
+(7, 12, 'created', 7, 'Report submitted by user', '2026-02-09 12:24:09'),
+(9, 14, 'created', 1, 'Report submitted by user', '2026-02-09 14:52:02'),
+(10, 15, 'created', 15, 'Report submitted by user', '2026-02-10 01:53:12'),
+(11, 16, 'created', 7, 'Report submitted by user', '2026-02-10 03:08:49'),
+(12, 16, 'status_changed_to_under_review', 1, '', '2026-02-10 03:50:27'),
+(13, 17, 'created', 19, 'Report submitted by user', '2026-02-10 05:50:06'),
+(14, 16, 'status_changed_to_resolved', 1, 'alright', '2026-02-10 05:53:40');
 
 -- --------------------------------------------------------
 
@@ -2508,7 +2613,9 @@ INSERT INTO `reviews` (`id`, `booking_id`, `car_id`, `renter_id`, `owner_id`, `r
 (1, 10, 31, 7, 1, 4.4, 'CAR REVIEW:\nExactly as described\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4.8,\"owner_rating\":4,\"car\":{\"Cleanliness\":4,\"Condition\":5,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":4,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-01-13 02:28:06'),
 (2, 10, 31, 7, 1, 4.9, 'CAR REVIEW:\nVery clean and well-maintained\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":5,\"owner_rating\":4.7,\"car\":{\"Cleanliness\":5,\"Condition\":5,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":4,\"Responsiveness\":5,\"Friendliness\":5}}', '2026-01-13 02:37:51'),
 (3, 11, 33, 7, 1, 4.4, 'CAR REVIEW:\nExactly as described\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4.5,\"owner_rating\":4.3,\"car\":{\"Cleanliness\":4,\"Condition\":4,\"Accuracy\":5,\"Value\":5},\"owner\":{\"Communication\":5,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-01-17 03:59:28'),
-(4, 41, 17, 7, 5, 3.6, 'CAR REVIEW:\nGreat car and excellent condition!\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":3.5,\"owner_rating\":3.7,\"car\":{\"Cleanliness\":4,\"Condition\":3,\"Accuracy\":4,\"Value\":3},\"owner\":{\"Communication\":3,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-02-08 02:22:12');
+(4, 41, 17, 7, 5, 3.6, 'CAR REVIEW:\nGreat car and excellent condition!\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":3.5,\"owner_rating\":3.7,\"car\":{\"Cleanliness\":4,\"Condition\":3,\"Accuracy\":4,\"Value\":3},\"owner\":{\"Communication\":3,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-02-08 02:22:12'),
+(5, 56, 6, 7, 16, 4.0, 'CAR REVIEW:\nGreat car and excellent condition!\n\nOWNER REVIEW:\nGreat communication', '{\"car_rating\":4,\"owner_rating\":4,\"car\":{\"Cleanliness\":4,\"Condition\":4,\"Accuracy\":4,\"Value\":4},\"owner\":{\"Communication\":4,\"Responsiveness\":4,\"Friendliness\":4}}', '2026-02-09 12:22:48'),
+(6, 51, 6, 15, 16, 3.3, 'CAR REVIEW:\nGreat car and excellent condition!\n\nOWNER REVIEW:\naccff', '{\"car_rating\":4.5,\"owner_rating\":2,\"car\":{\"Cleanliness\":5,\"Condition\":5,\"Accuracy\":5,\"Value\":3},\"owner\":{\"Communication\":2,\"Responsiveness\":2,\"Friendliness\":2}}', '2026-02-10 01:32:19');
 
 -- --------------------------------------------------------
 
@@ -2545,20 +2652,23 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `fullname`, `email`, `facebook_id`, `google_uid`, `auth_provider`, `password`, `role`, `municipality`, `address`, `phone`, `profile_image`, `created_at`, `last_login`, `fcm_token`, `gcash_number`, `gcash_name`, `report_count`, `api_token`, `is_online`, `last_seen`) VALUES
-(1, 'Cartney Dejolde jr', 'cart@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'Lapinigan SFADS', '09770433849', 'user_1_1768732059.jpg', '2025-11-12 11:38:49', '2026-02-07 03:02:15', NULL, NULL, NULL, 0, 'MXwxNzcwNDMzMzM1', 0, NULL),
+(1, 'Cartney Dejolde jr', 'cart@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'Lapinigan SFADS', '09770433849', 'user_1_1768732059.jpg', '2025-11-12 11:38:49', '2026-02-10 01:31:29', NULL, '09770433849', 'Cartney Dejolde', 0, 'MXwxNzcwNjg3MDg5', 0, NULL),
 (3, 'cartney dejolde', 'cartskie@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'lapinigan', '097712345', 'profile_3_1763342696.jpg', '2025-11-12 12:03:33', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
 (4, 'kristian', 'kristian@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Pasta SFADS', '09770433849', 'user_4_1765375801.jpg', '2025-11-13 06:58:26', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
 (5, 'ethan', 'ethan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', 'san Francisco ADS', '0123456789', 'user_5_1769045131.jpg', '2025-11-13 23:47:33', NULL, NULL, NULL, NULL, 0, 'NXwxNzY5NzcyMzA5', 0, NULL),
 (6, 'Johan Malanog', 'johan@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-16 03:29:43', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
-(7, 'ethan jr', 'renter@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Lapinigan SFADS', '09123456789', 'user_7_1765092355.jpg', '2025-11-18 09:27:46', '2026-02-08 03:05:57', 'eJ43yxPqQImQcFlosByZl1:APA91bGtY5AXvrwaG8LH3WHDIsqRbZztVFvXwBcI2qjebCGfvw0ZHEZkOizgwpoi6Ox4B8EAbpi_7zvIpJOxyx9vSfPs09bpNqORtJtU0tVDZS5nXs57GYo', NULL, NULL, 0, 'N3wxNzcwNTE5OTU3', 0, NULL),
+(7, 'ethan jr', 'renter@gmail.com', NULL, NULL, 'email', '12345', 'Renter', '', 'Lapinigan SFADS', '09123456789', 'user_7_1765092355.jpg', '2025-11-18 09:27:46', '2026-02-10 12:41:30', 'eJ43yxPqQImQcFlosByZl1:APA91bGtY5AXvrwaG8LH3WHDIsqRbZztVFvXwBcI2qjebCGfvw0ZHEZkOizgwpoi6Ox4B8EAbpi_7zvIpJOxyx9vSfPs09bpNqORtJtU0tVDZS5nXs57GYo', NULL, NULL, 0, 'N3wxNzcwNzI3Mjkw', 0, NULL),
 (8, 'migs', 'migs@gmail.com', NULL, NULL, 'email', '12345', 'Owner', '', '', NULL, NULL, '2025-11-19 06:09:08', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
 (9, 'mikko johan', 'johanmalanog@gmail.com', NULL, NULL, 'email', '12345', 'Renter', 'San Francisco', '', NULL, NULL, '2025-11-25 08:49:12', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
 (10, 'cart ney', 'owner@gmail.com', NULL, NULL, 'email', '12345', 'Owner', 'San Francisco', '', NULL, NULL, '2025-11-29 11:49:29', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL),
 (12, 'itanjimss', 'itan@gmail.com', NULL, NULL, 'email', '123456', 'Renter', 'San Luis', '', NULL, NULL, '2026-02-03 14:20:55', '2026-02-03 14:21:14', NULL, NULL, NULL, 0, 'MTJ8MTc3MDEyODQ3NA==', 0, NULL),
-(13, 'Ethan James Estino', 'saberu1213@gmail.com', NULL, 'bXHVrLwdsrgg2ttjs8tz3622YOJ2', 'google', '$2y$10$RuP8Qbx/LP3EaScwuGhj2OSnKtYylaCADHGU1jSXyTXVsG/vaPg/u', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocIwTNMSY5xrLV8w1nekg42FN98V28h3KSefSWr5MynFKPreEKIr=s96-c', '2026-02-03 14:23:44', '2026-02-06 03:17:33', NULL, NULL, NULL, 0, NULL, 0, NULL),
+(13, 'Ethan James Estino', 'saberu1213@gmail.com', NULL, 'bXHVrLwdsrgg2ttjs8tz3622YOJ2', 'google', '$2y$10$CnUzQrte6fIGGGcW1vQZe.W9JVX6KbNpdtiApOdyZF0WIEFBEAI1m', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocIwTNMSY5xrLV8w1nekg42FN98V28h3KSefSWr5MynFKPreEKIr=s96-c', '2026-02-03 14:23:44', '2026-02-10 02:29:06', 'dswk_--CTnKnJZ4raC0DGK:APA91bHp96nBiaQVfxUsjClCBD1afpNTV0gVTUgFyUrm0ZZyHDOq_o-vy-_hCEMdFs-H_qqLQF50S98FbEeKFlQwuR3Q4MTc-tmztV-UQQcALnHyyLdC4Hw', NULL, NULL, 0, NULL, 0, NULL),
 (14, 'Cartney Dejolde', 'malanogmelchie@gmail.com', NULL, '2d1x4iVWLJPtqb29XrXKYlXUxWd2', 'google', '$2y$10$lXb9os7H0FKDn8OoLVGA2ev1uc5qsw7QVtaYKK1ceO23aF/Z7XZCW', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocI4JoHeIlLjAnXQJKqMGY_u1il6g8yPY8TzBfibbS-aWoi5dXQu=s96-c', '2026-02-03 15:07:22', '2026-02-03 22:54:38', NULL, NULL, NULL, 0, NULL, 0, NULL),
-(15, 'Ethan james Estino', 'ethanjamesestino@gmail.com', NULL, 'o0jZ9sVm7RduVnlUTpYOyqT7iBb2', 'google', '$2y$10$XqFj.LpnUumNPkZ8SFDRNenJ103kIBlPROE.QZ6bd9MXjJSv3k.nW', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocJGkqZQBE_xRfqA2BSHR9X1L5UjsbZivxFDRllD5YQXHeCBcQI=s96-c', '2026-02-06 01:11:23', '2026-02-07 07:50:57', NULL, NULL, NULL, 0, NULL, 0, NULL),
-(16, 'Lex Istaint', 'lexistaint@gmail.com', NULL, 'u9qE7PvwZXNUzTXdbD5xpSLSJiE3', 'google', '$2y$10$SFzM00Qq4U95SKVTAFLkQOtx.2YYF8WgZ7Fq4iV6IKf.Jm5IF8Jqy', 'Owner', 'San Francisco', '', '09451547348', 'https://lh3.googleusercontent.com/a/ACg8ocJdI-XfoLuAI3vg9HUZ6pq1YuG-1922m1kny8JNZHkZtaZ59Q=s96-c', '2026-02-06 01:37:53', '2026-02-07 14:53:27', NULL, '09451547348', 'Ethan James', 0, NULL, 0, NULL);
+(15, 'Ethan james Estino', 'ethanjamesestino@gmail.com', NULL, 'o0jZ9sVm7RduVnlUTpYOyqT7iBb2', 'google', '$2y$10$XqFj.LpnUumNPkZ8SFDRNenJ103kIBlPROE.QZ6bd9MXjJSv3k.nW', 'Renter', 'San Francisco', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocJGkqZQBE_xRfqA2BSHR9X1L5UjsbZivxFDRllD5YQXHeCBcQI=s96-c', '2026-02-06 01:11:23', '2026-02-10 01:29:10', 'dswk_--CTnKnJZ4raC0DGK:APA91bHp96nBiaQVfxUsjClCBD1afpNTV0gVTUgFyUrm0ZZyHDOq_o-vy-_hCEMdFs-H_qqLQF50S98FbEeKFlQwuR3Q4MTc-tmztV-UQQcALnHyyLdC4Hw', NULL, NULL, 0, NULL, 0, NULL),
+(16, 'Lex Istaint', 'lexistaint@gmail.com', NULL, 'u9qE7PvwZXNUzTXdbD5xpSLSJiE3', 'google', '$2y$10$SFzM00Qq4U95SKVTAFLkQOtx.2YYF8WgZ7Fq4iV6IKf.Jm5IF8Jqy', 'Owner', 'San Francisco', '', '09451547348', 'https://lh3.googleusercontent.com/a/ACg8ocJdI-XfoLuAI3vg9HUZ6pq1YuG-1922m1kny8JNZHkZtaZ59Q=s96-c', '2026-02-06 01:37:53', '2026-02-09 12:03:51', NULL, '09451547348', 'Ethan James', 0, NULL, 0, NULL),
+(17, 'Boss Billy Herman', 'eljanjosol@gmail.com', NULL, 'TbTkblJUe9VtMViJQxpKpnGvSnu1', 'google', '$2y$10$PzpG2g4TlZy.osllJEppauYCMNuHXB8g94OR5YPS7Wh8PUlUok.oi', 'Owner', 'Bayugan', 'Purok 2 Cagbas, Bayugan City, Agusan del Sur', '09123456789', 'user_17_1770699709228.jpg', '2026-02-10 04:57:15', '2026-02-10 04:57:15', NULL, '09123456789', 'Royeth Dorias', 0, NULL, 0, NULL),
+(18, 'Janloyd Andig', 'janloydandig20@gmail.com', NULL, 'uPr2Heb67ZfN3iiU0lFNMSiEuvi1', 'google', '$2y$10$hnlouuWa5HUcDAPI2K1KNuWqiD8MVYmF6Eihmcf3yzl.VSvkzd952', 'Renter', 'La Paz', '', '', 'https://lh3.googleusercontent.com/a/ACg8ocLbZfOowgex4aauSTqWY75MnjuvTZz17Fb0capQWQB1Udq_LsE=s96-c', '2026-02-10 04:58:25', '2026-02-10 04:58:25', 'faHFMv4CTS2w9lygolEMDU:APA91bEzRV6e2VMc5dLIpj_H7YUyKmN1U0a8ibia6FgbJvEc2UIgOraAAU6wWxfNSkS3GkrBu4ec6FGqzmy_KkOQzb6ZW6wSZ6vE8baJBtPWKzAFb-tGMPs', NULL, NULL, 0, NULL, 0, NULL),
+(19, 'caring', 'caring@gmail.com', NULL, NULL, 'email', '123456', 'Renter', 'Rosario', '', '09128515463', NULL, '2026-02-10 05:11:58', '2026-02-10 05:21:20', 'erxh8-qBQ5q63sn-dXj2pB:APA91bGFZdtV65bgYiPDUzErp-LzoivBbgv79xWCxIONG8X8y1KUi1x7JZaF0kNqmWjby4RqCjzno1tU02JrVaK9nYC2nBG-3l-dw4j1176dniTbxVDZIcg', NULL, NULL, 0, 'MTl8MTc3MDcwMDg4MA==', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -2601,7 +2711,8 @@ INSERT INTO `user_verifications` (`id`, `user_id`, `first_name`, `last_name`, `e
 (4, 5, 'Ethan', 'Owner', 'ethan@gmail.com', '0123456789', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'San Francisco ADS', '2000-01-01', 'drivers_license', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_front_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/id_back_u5_verified.jpg', 'C:\\xampp\\htdocs\\carGOAdmin\\api/../uploads/verifications/2025/12/selfie_u5_verified.jpg', 'approved', 'Manually verified via SQL', '2025-12-22 05:29:53', NULL, '2025-12-22 05:29:53'),
 (6, 13, 'ethan', 'estino', 'taning@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'Rosario', 'Bayugan 3', '2000-01-28', 'national_id', 'api/../uploads/verifications/2026/02/id_front_u13_1770196029_2c9ee6cd.jpg', 'api/../uploads/verifications/2026/02/id_back_u13_1770196029_5ede9da5.jpg', 'api/../uploads/verifications/2026/02/selfie_u13_1770196029_e6232073.jpg', 'approved', NULL, '2026-02-04 17:07:09', '2026-02-04 09:14:51', '2026-02-04 09:14:51'),
 (7, 15, 'Ethan', 'Estino', 'ethan@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Lapinigan', '2000-01-28', 'drivers_license', 'api/../uploads/verifications/2026/02/id_front_u15_1770341374_18692cbe.jpg', 'api/../uploads/verifications/2026/02/id_back_u15_1770341374_a0bbf84c.jpg', 'api/../uploads/verifications/2026/02/selfie_u15_1770341374_25e011b5.jpg', 'approved', NULL, '2026-02-06 09:29:34', '2026-02-06 01:36:45', '2026-02-06 01:36:45'),
-(8, 16, 'ethan', 'isko', 'itajims@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Oriente', '2000-01-08', 'passport', 'api/../uploads/verifications/2026/02/id_front_u16_1770343005_42c74088.jpg', 'api/../uploads/verifications/2026/02/id_back_u16_1770343005_8eb51cbf.jpg', 'api/../uploads/verifications/2026/02/selfie_u16_1770343005_b45a5e06.jpg', 'approved', NULL, '2026-02-06 09:56:45', '2026-02-06 01:58:01', '2026-02-06 01:58:01');
+(8, 16, 'ethan', 'isko', 'itajims@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'San Francisco', 'Oriente', '2000-01-08', 'passport', 'api/../uploads/verifications/2026/02/id_front_u16_1770343005_42c74088.jpg', 'api/../uploads/verifications/2026/02/id_back_u16_1770343005_8eb51cbf.jpg', 'api/../uploads/verifications/2026/02/selfie_u16_1770343005_b45a5e06.jpg', 'approved', NULL, '2026-02-06 09:56:45', '2026-02-06 01:58:01', '2026-02-06 01:58:01'),
+(9, 19, 'cwring', 'cating', 'caring@gmail.com', '09451547348', 'Male', 'Region XIII (Caraga)', 'Agusan del Sur', 'Bunawan', 'Poblacion', '2000-01-21', 'national_id', 'api/../uploads/verifications/2026/02/id_front_u19_1770702531_86664268.jpg', 'api/../uploads/verifications/2026/02/id_back_u19_1770702531_d3b24767.jpg', 'api/../uploads/verifications/2026/02/selfie_u19_1770702531_2f0e9dff.jpg', 'approved', NULL, '2026-02-10 13:48:51', '2026-02-10 05:49:17', '2026-02-10 05:49:17');
 
 --
 -- Triggers `user_verifications`
@@ -2945,6 +3056,16 @@ ALTER TABLE `escrow_transactions`
   ADD KEY `transaction_type` (`transaction_type`);
 
 --
+-- Indexes for table `favorites`
+--
+ALTER TABLE `favorites`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_favorite` (`user_id`,`vehicle_type`,`vehicle_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_vehicle_type` (`vehicle_type`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
 -- Indexes for table `gps_distance_tracking`
 --
 ALTER TABLE `gps_distance_tracking`
@@ -3060,6 +3181,15 @@ ALTER TABLE `overdue_logs`
   ADD KEY `idx_booking` (`booking_id`),
   ADD KEY `idx_action` (`action_taken`),
   ADD KEY `idx_created` (`created_at`);
+
+--
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `email` (`email`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `expires_at` (`expires_at`);
 
 --
 -- Indexes for table `payments`
@@ -3229,7 +3359,7 @@ ALTER TABLE `admin_action_logs`
 -- AUTO_INCREMENT for table `admin_notifications`
 --
 ALTER TABLE `admin_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `archived_notifications`
@@ -3241,7 +3371,7 @@ ALTER TABLE `archived_notifications`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `cars`
@@ -3271,19 +3401,25 @@ ALTER TABLE `car_rules`
 -- AUTO_INCREMENT for table `escrow`
 --
 ALTER TABLE `escrow`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `escrow_logs`
 --
 ALTER TABLE `escrow_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `escrow_transactions`
 --
 ALTER TABLE `escrow_transactions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `favorites`
+--
+ALTER TABLE `favorites`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `gps_distance_tracking`
@@ -3319,7 +3455,7 @@ ALTER TABLE `insurance_coverage_types`
 -- AUTO_INCREMENT for table `insurance_policies`
 --
 ALTER TABLE `insurance_policies`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `insurance_providers`
@@ -3355,19 +3491,25 @@ ALTER TABLE `motorcycles`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=299;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=319;
 
 --
 -- AUTO_INCREMENT for table `overdue_logs`
 --
 ALTER TABLE `overdue_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+
+--
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
 
 --
 -- AUTO_INCREMENT for table `payment_attempts`
@@ -3379,13 +3521,13 @@ ALTER TABLE `payment_attempts`
 -- AUTO_INCREMENT for table `payment_transactions`
 --
 ALTER TABLE `payment_transactions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `payouts`
 --
 ALTER TABLE `payouts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `payout_requests`
@@ -3403,7 +3545,7 @@ ALTER TABLE `platform_settings`
 -- AUTO_INCREMENT for table `refunds`
 --
 ALTER TABLE `refunds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `rental_extensions`
@@ -3415,31 +3557,31 @@ ALTER TABLE `rental_extensions`
 -- AUTO_INCREMENT for table `reports`
 --
 ALTER TABLE `reports`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `report_logs`
 --
 ALTER TABLE `report_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `user_verifications`
 --
 ALTER TABLE `user_verifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `vehicle_availability`

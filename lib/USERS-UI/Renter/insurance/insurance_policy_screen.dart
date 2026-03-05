@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../models/insurance_models.dart';
 import '../../services/insurance_service.dart';
 import 'file_claim_screen.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class InsurancePolicyScreen extends StatefulWidget {
   final int bookingId;
@@ -58,7 +59,7 @@ class _InsurancePolicyScreenState extends State<InsurancePolicyScreen> {
         backgroundColor: Colors.orange.shade700,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingScreen(message: 'Loading policy details...')
           : _error != null
               ? Center(
                   child: Column(

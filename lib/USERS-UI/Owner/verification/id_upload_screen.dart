@@ -3,8 +3,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter_application_1/USERS-UI/Owner/models/user_verification.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/verification/selfie_screen.dart';
+import 'dart:convert';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cargo/USERS-UI/Owner/models/user_verification.dart';
+import 'package:cargo/USERS-UI/Owner/verification/selfie_screen.dart';
 
 class IDUploadScreen extends StatefulWidget {
   final UserVerification verification;
@@ -40,71 +43,219 @@ class _IDUploadScreenState extends State<IDUploadScreen> {
     // Restore previously entered data if user navigates back
     _selectedIdType = widget.verification.idType;
     
-    if (widget.verification.idFrontPhoto != null) {
-  if (!kIsWeb) {
-    _frontImage = File(widget.verification.idFrontPhoto!);
+    if (widget.verification.idFrontPhoto != null && !kIsWeb) {
+      _frontImage = File(widget.verification.idFrontPhoto!);
+    }
+    
+    if (widget.verification.idBackPhoto != null && !kIsWeb) {
+      _backImage = File(widget.verification.idBackPhoto!);
+    }
+    
+    // ✅ Recover lost image if Android killed the app
+    _recoverLostImage();
+    
+    // ✅ Save current route to prevent navigation loss
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveCurrentRoute();
+    });
   }
-}
-if (widget.verification.idBackPhoto != null) {
-  if (!kIsWeb) {
-    _backImage = File(widget.verification.idBackPhoto!);
+  
+  Future<void> _saveCurrentRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_verification_route', 'id_upload_screen');
+      debugPrint('✅ Saved current route: id_upload_screen');
+    } catch (e) {
+      debugPrint('⚠️ Could not save route: $e');
+    }
   }
-}
+  
+  @override
+  void dispose() {
+    // Clear saved route when leaving normally
+    _clearSavedRoute();
+    super.dispose();
+  }
+  
+  Future<void> _clearSavedRoute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_verification_route');
+    } catch (e) {
+      debugPrint('⚠️ Could not clear route: $e');
+    }
+  }
+  
+  Future<void> _recoverLostImage() async {
+    if (kIsWeb) return;
+    
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      final XFile? file = response.file;
+      if (!mounted || file == null) return;
 
+      // Best-effort: assign to front if missing, otherwise back
+      setState(() {
+        if (_frontImage == null) {
+          _frontImage = File(file.path);
+          widget.verification.idFrontFile = File(file.path);
+          widget.verification.idFrontPhoto = file.path;
+        } else if (_backImage == null) {
+          _backImage = File(file.path);
+          widget.verification.idBackFile = File(file.path);
+          widget.verification.idBackPhoto = file.path;
+        }
+      });
+      
+      print("✅ Recovered lost ID image");
+    } catch (e) {
+      print("⚠️ Could not recover lost image: $e");
+    }
+  }
+
+  Future<File> _compressImageFile(File input) async {
+    final outPath = '${input.path}_cmp.jpg';
+    final outFile = File(outPath);
+
+    final result = await FlutterImageCompress.compressWithFile(
+      input.absolute.path,
+      quality: 70,
+      minWidth: 1280,
+      minHeight: 1280,
+      format: CompressFormat.jpeg,
+    );
+
+    if (result == null) return input;
+    await outFile.writeAsBytes(result, flush: true);
+    return outFile;
   }
 
   // Camera Take
   Future<void> _pickImage(bool isFront) async {
-  try {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
-    );
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled ID capture");
+        return;
+      }
+
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      // WEB: store base64
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        
+        // ✅ CRITICAL: Check mounted after async read
+        if (!mounted) return;
+        
+        setState(() {
+          if (isFront) {
+            widget.verification.idFrontPhoto = base64Encode(bytes);
+            widget.verification.idFrontFile = null;
+          } else {
+            widget.verification.idBackPhoto = base64Encode(bytes);
+            widget.verification.idBackFile = null;
+          }
+        });
+        return;
+      }
+
+      // MOBILE: compress and store file
+      var file = File(image.path);
+      file = await _compressImageFile(file);
+
+      // ✅ CRITICAL: Check mounted after compression
+      if (!mounted) return;
+
       setState(() {
         if (isFront) {
-          _frontImage = File(image.path);
-          widget.verification.idFrontFile = _frontImage;
-          widget.verification.idFrontPhoto = image.path;
-
+          _frontImage = file;
+          widget.verification.idFrontFile = file;
+          widget.verification.idFrontPhoto = file.path;
         } else {
-          _backImage = File(image.path);
-          widget.verification.idBackFile = _backImage;
-          widget.verification.idBackPhoto = image.path;
-
+          _backImage = file;
+          widget.verification.idBackFile = file;
+          widget.verification.idBackPhoto = file.path;
         }
       });
+    } catch (e, stackTrace) {
+      print("❌ ID capture error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        _showError("Failed to capture image");
+      }
     }
-  } catch (e) {
-    _showError("Failed to capture image");
   }
-}
 
 
   // Pick from Gallery
   Future<void> _pickFromGallery(bool isFront) async {
-  try {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled ID gallery selection");
+        return;
+      }
+
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      // WEB: store base64
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        
+        // ✅ CRITICAL: Check mounted after async read
+        if (!mounted) return;
+        
+        setState(() {
+          if (isFront) {
+            widget.verification.idFrontPhoto = base64Encode(bytes);
+            widget.verification.idFrontFile = null;
+          } else {
+            widget.verification.idBackPhoto = base64Encode(bytes);
+            widget.verification.idBackFile = null;
+          }
+        });
+        return;
+      }
+
+      // MOBILE: compress and store file
+      var file = File(image.path);
+      file = await _compressImageFile(file);
+
+      // ✅ CRITICAL: Check mounted after compression
+      if (!mounted) return;
+
       setState(() {
         if (isFront) {
-          _frontImage = File(image.path);
-          widget.verification.idFrontFile = _frontImage;
+          _frontImage = file;
+          widget.verification.idFrontFile = file;
+          widget.verification.idFrontPhoto = file.path;
         } else {
-          _backImage = File(image.path);
-          widget.verification.idBackFile = _backImage;
+          _backImage = file;
+          widget.verification.idBackFile = file;
+          widget.verification.idBackPhoto = file.path;
         }
       });
+    } catch (e, stackTrace) {
+      print("❌ ID gallery error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        _showError("Failed to pick from gallery");
+      }
     }
-  } catch (e) {
-    _showError("Failed to pick from gallery");
   }
-}
 
 
   // Bottom sheet selector
@@ -643,7 +794,9 @@ if (widget.verification.idBackPhoto != null) {
 
   Widget _buildUploadSection(String title, bool isFront) {
     final image = isFront ? _frontImage : _backImage;
-    final hasImage = image != null;
+    final hasImage = kIsWeb
+        ? (isFront ? widget.verification.idFrontPhoto != null : widget.verification.idBackPhoto != null)
+        : image != null;
 
 
     return Column(
@@ -676,12 +829,21 @@ if (widget.verification.idBackPhoto != null) {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          image,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                        child: kIsWeb
+                            ? Image.memory(
+                                base64Decode(isFront
+                                    ? widget.verification.idFrontPhoto!
+                                    : widget.verification.idBackPhoto!),
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.file(
+                                image!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
                       ),
 
                       Positioned(

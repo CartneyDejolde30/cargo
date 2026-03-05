@@ -5,6 +5,8 @@ import '../../services/renter_gps_service.dart';
 import '../../Owner/mycar/api_config.dart';
 import '../insurance/insurance_policy_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
+import 'package:cargo/USERS-UI/widgets/odometer_input_screen.dart';
 
 class RenterActiveBookingScreen extends StatefulWidget {
   final Map<String, dynamic> booking;
@@ -209,34 +211,14 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
             // Car Image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: imageUrl.trim().isEmpty
-                  ? Container(
-                      height: 220,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(Icons.directions_car, size: 60, color: Colors.grey.shade400),
-                    )
-                  : Image.network(
-                      imageUrl,
-                      height: 220,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 220,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
+              child: OptimizedNetworkImage(
+                imageUrl: imageUrl.trim().isEmpty ? 'https://via.placeholder.com/300' : imageUrl,
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(16),
+                errorIcon: Icons.directions_car,
+                errorIconSize: 80,
               ),
             ),
             
@@ -413,6 +395,11 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Odometer Tracking Section
+            _buildOdometerSection(),
 
             const SizedBox(height: 24),
 
@@ -595,6 +582,399 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildOdometerSection() {
+    final odometerStart = widget.booking['odometer_start'];
+    final odometerEnd = widget.booking['odometer_end'];
+    final startPhoto = widget.booking['odometer_start_photo'];
+    final endPhoto = widget.booking['odometer_end_photo'];
+    final tripStarted = widget.booking['trip_started'] == 1 || widget.booking['trip_started'] == '1';
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple.shade50, Colors.purple.shade100],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.purple.shade200,
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade700,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.speed,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Odometer Tracking',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Record mileage at pickup and return',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Start Odometer
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Starting Odometer',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (odometerStart != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Recorded',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        odometerStart != null ? '$odometerStart km' : 'Not recorded',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: odometerStart != null ? Colors.black : Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
+                    if (odometerStart == null && !tripStarted)
+                      ElevatedButton.icon(
+                        onPressed: _recordStartOdometer,
+                        icon: const Icon(Icons.camera_alt, size: 16),
+                        label: Text(
+                          'Record',
+                          style: GoogleFonts.inter(fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (startPhoto != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: OptimizedNetworkImage(
+                      imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/$startPhoto',
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // End Odometer
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Ending Odometer',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (odometerEnd != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Recorded',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        odometerEnd != null ? '$odometerEnd km' : 'Not recorded',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: odometerEnd != null ? Colors.black : Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
+                    if (odometerEnd == null && tripStarted && odometerStart != null)
+                      ElevatedButton.icon(
+                        onPressed: _recordEndOdometer,
+                        icon: const Icon(Icons.camera_alt, size: 16),
+                        label: Text(
+                          'Record',
+                          style: GoogleFonts.inter(fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (endPhoto != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: OptimizedNetworkImage(
+                      imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/$endPhoto',
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          
+          // Distance traveled
+          if (odometerStart != null && odometerEnd != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade700,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Distance',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    '${int.parse(odometerEnd.toString()) - int.parse(odometerStart.toString())} km',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _recordStartOdometer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User not logged in'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final bookingId = widget.booking['id'] ?? widget.booking['booking_id'];
+    final vehicleName = widget.booking['car_full_name'] ?? 
+                       widget.booking['car_name'] ?? 
+                       'Vehicle';
+    final vehicleImage = widget.booking['car_image'] ?? widget.booking['image'] ?? '';
+    
+    if (bookingId == null) return;
+
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OdometerInputScreen(
+          bookingId: int.parse(bookingId.toString()),
+          vehicleName: vehicleName,
+          vehicleImage: vehicleImage,
+          isStartOdometer: true,
+          userId: userId,
+          userType: 'renter',
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      // Refresh the screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Start odometer recorded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Trigger a refresh by popping and showing message to parent
+      Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> _recordEndOdometer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User not logged in'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final bookingId = widget.booking['id'] ?? widget.booking['booking_id'];
+    final vehicleName = widget.booking['car_full_name'] ?? 
+                       widget.booking['car_name'] ?? 
+                       'Vehicle';
+    final vehicleImage = widget.booking['car_image'] ?? widget.booking['image'] ?? '';
+    final startOdometer = int.tryParse(widget.booking['odometer_start']?.toString() ?? '0');
+    
+    if (bookingId == null || startOdometer == null) return;
+
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OdometerInputScreen(
+          bookingId: int.parse(bookingId.toString()),
+          vehicleName: vehicleName,
+          vehicleImage: vehicleImage,
+          isStartOdometer: false,
+          startOdometer: startOdometer,
+          userId: userId,
+          userType: 'renter',
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      // Refresh the screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End odometer recorded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Trigger a refresh by popping and showing message to parent
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> _viewInsurancePolicy() async {

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import '../models/favorite.dart';
 
 class FavoritesService {
@@ -32,7 +32,7 @@ class FavoritesService {
         };
       }
 
-      final url = Uri.parse('${GlobalApiConfig.baseUrl}/api/favorites/add_favorite.php');
+      final url = Uri.parse('${GlobalApiConfig.favoritesEndpoint}/add_favorite.php');
       final response = await http.post(url, body: {
         'user_id': userId.toString(),
         'vehicle_type': vehicleType,
@@ -73,7 +73,7 @@ class FavoritesService {
         };
       }
 
-      final url = Uri.parse('${GlobalApiConfig.baseUrl}/api/favorites/remove_favorite.php');
+      final url = Uri.parse('${GlobalApiConfig.favoritesEndpoint}/remove_favorite.php');
       final response = await http.post(url, body: {
         'user_id': userId.toString(),
         'vehicle_type': vehicleType,
@@ -92,7 +92,6 @@ class FavoritesService {
       } else {
         return {
           'status': 'error',
-          'message': 'Server error: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -119,7 +118,7 @@ class FavoritesService {
         return [];
       }
 
-      var url = '${GlobalApiConfig.baseUrl}/api/favorites/get_favorites.php?user_id=$userId';
+      var url = '${GlobalApiConfig.favoritesEndpoint}/get_favorites.php?user_id=$userId';
       if (vehicleType != null && vehicleType.isNotEmpty) {
         url += '&vehicle_type=$vehicleType';
       }
@@ -151,7 +150,7 @@ class FavoritesService {
       if (userId == null) return false;
 
       final url = Uri.parse(
-        '${GlobalApiConfig.baseUrl}/api/favorites/check_favorite.php?user_id=$userId&vehicle_type=$vehicleType&vehicle_id=$vehicleId'
+        '${GlobalApiConfig.favoritesEndpoint}/check_favorite.php?user_id=$userId&vehicle_type=$vehicleType&vehicle_id=$vehicleId'
       );
       
       final response = await http.get(url).timeout(const Duration(seconds: 10));

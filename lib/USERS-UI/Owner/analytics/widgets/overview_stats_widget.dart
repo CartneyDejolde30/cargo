@@ -46,7 +46,7 @@ class OverviewStatsWidget extends StatelessWidget {
             _buildStatCard(
               title: 'Total Revenue',
               value: _formatCurrency(overview.totalRevenue),
-              icon: Icons.attach_money,
+              icon: Icons.payments,
               color: Colors.green,
               subtitle: 'All time earnings',
             ),

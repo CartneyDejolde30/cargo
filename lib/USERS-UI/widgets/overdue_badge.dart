@@ -135,7 +135,7 @@ class OverdueWarningBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Late Fee Accumulated',
+                        lateFee > 0 ? 'Late Fee Accumulated' : 'Late Fee (pending calculation)',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.white.withValues(alpha: 0.9),

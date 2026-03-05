@@ -7,8 +7,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../widgets/bottom_nav_bar.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/chats/chat_detail_screen.dart';
-import 'package:flutter_application_1/widgets/online_status_indicator.dart';
+import 'package:cargo/USERS-UI/Renter/chats/chat_detail_screen.dart';
+import 'package:cargo/widgets/online_status_indicator.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -119,7 +119,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,        boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha :0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -268,7 +268,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha :0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -386,7 +386,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               color: Theme.of(context).colorScheme.surface,              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha :0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),

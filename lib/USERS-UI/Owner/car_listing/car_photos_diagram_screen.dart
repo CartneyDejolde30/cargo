@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/car_listing.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/models/submit_car_api.dart';
+import 'package:cargo/USERS-UI/Owner/models/car_listing.dart';
+import 'package:cargo/USERS-UI/Owner/models/submit_car_api.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class CarPhotosDiagramScreen extends StatefulWidget {
@@ -21,9 +21,36 @@ class CarPhotosDiagramScreen extends StatefulWidget {
 }
 
 class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
+  final ImagePicker _picker = ImagePicker();
   List<File> capturedPhotos = [];
   File? mainCarPhoto;
   bool _isSubmitting = false; // ✅ Prevent double submissions
+
+  @override
+  void initState() {
+    super.initState();
+    _recoverLostPhoto();
+  }
+
+  Future<void> _recoverLostPhoto() async {
+    // ✅ Skip on web
+    if (kIsWeb) return;
+    
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      final XFile? file = response.file;
+      if (!mounted || file == null) return;
+
+      // Best-effort: if we don't know which slot was being captured, set as main photo.
+      // This is still much better than losing the photo and restarting the flow.
+      setState(() {
+        mainCarPhoto = File(file.path);
+      });
+    } catch (e) {
+      print("⚠️ Could not recover lost photo: $e");
+      // Ignore: recovery is best-effort.
+    }
+  }
 
   @override
   void dispose() {
@@ -177,7 +204,22 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
                           );
                         },
                       )
-                    : Image.file(imageFile, fit: BoxFit.cover),
+                    : Image.file(
+                        imageFile, 
+                        fit: BoxFit.cover,
+                        // ✅ CRITICAL FIX: Reduce memory usage by downsampling during decode
+                        cacheWidth: 400, // Limit decoded width to 400px for thumbnails
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
               ),
       ),
     );
@@ -185,15 +227,20 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
 
   Future<void> _pickPhoto(bool isMain, int? index) async {
     try {
-      final picker = ImagePicker();
-      
-      // ✅ Show loading while camera opens
-      final XFile? img = await picker.pickImage(
+      // ✅ CRITICAL FIX: Use even lower quality and resolution to prevent Android from killing the app
+      final XFile? img = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 70, // ✅ Reduced from 85 to save memory
-        maxWidth: 1920,   // ✅ Limit resolution to prevent crashes
-        maxHeight: 1080,  // ✅ Limit resolution
+        imageQuality: 60, // ✅ Reduced from 70 to 60 to save more memory
+        maxWidth: 1600,   // ✅ Reduced from 1920 to 1600
+        maxHeight: 1200,  // ✅ Reduced from 1080 to 1200 (maintain 4:3 ratio)
+        preferredCameraDevice: CameraDevice.rear, // ✅ Explicitly use rear camera
       );
+
+      // ✅ CRITICAL: Check if widget is still mounted after camera closes
+      if (!mounted) {
+        print("⚠️ Widget disposed while capturing photo - app was likely killed by OS");
+        return;
+      }
 
       if (img == null) {
         print("📷 User cancelled photo capture");
@@ -225,7 +272,11 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
         imageFile = File(img.path);
       }
 
-      if (!mounted) return;
+      // ✅ CRITICAL: Double-check mounted before setState
+      if (!mounted) {
+        print("⚠️ Widget disposed after file conversion");
+        return;
+      }
 
       setState(() {
         if (isMain) {
@@ -246,6 +297,17 @@ class _CarPhotosDiagramScreenState extends State<CarPhotosDiagramScreen> {
           }
         }
       });
+      
+      // ✅ Show success feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("✅ Photo captured successfully"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
     } catch (e, stackTrace) {
       print("❌ Error picking photo: $e");
       print("Stack trace: $stackTrace");

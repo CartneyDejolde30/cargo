@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/insurance_models.dart';
 import '../../services/insurance_service.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 class InsuranceSelectionScreen extends StatefulWidget {
   final int bookingId;
@@ -63,7 +64,7 @@ class _InsuranceSelectionScreenState extends State<InsuranceSelectionScreen> {
         backgroundColor: Colors.orange.shade700,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingScreen(message: 'Loading insurance options...')
           : _error != null
               ? Center(
                   child: Column(
@@ -140,7 +141,7 @@ class _InsuranceSelectionScreenState extends State<InsuranceSelectionScreen> {
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha :0.1),
                             blurRadius: 8,
                             offset: const Offset(0, -2),
                           ),
@@ -243,15 +244,20 @@ class _InsuranceSelectionScreenState extends State<InsuranceSelectionScreen> {
                       ],
                     ),
                   ),
-                  Radio<String>(
-                    value: coverage.code,
-                    groupValue: _selectedCoverageCode,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCoverageCode = value;
-                      });
-                    },
-                    activeColor: Colors.orange.shade700,
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? Colors.orange.shade700 : Colors.grey.shade400,
+                        width: 2,
+                      ),
+                      color: isSelected ? Colors.orange.shade700 : Colors.transparent,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, size: 16, color: Colors.white)
+                        : null,
                   ),
                 ],
               ),

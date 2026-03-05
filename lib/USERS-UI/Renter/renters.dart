@@ -4,15 +4,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
-import 'package:flutter_application_1/USERS-UI/Owner/widgets/verify_popup.dart';
+import 'package:cargo/USERS-UI/Owner/widgets/verify_popup.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'car_list_screen.dart';
 import '../Renter/chats/chat_list_screen.dart';
 import 'car_detail_screen.dart';
 import 'widgets/favorite_button.dart';
 import 'widgets/notification_icon.dart';
+import '../../utils/image_helper.dart';
 
 import 'motorcycle_screen.dart';
 
@@ -43,8 +44,10 @@ Future<void> saveFcmToken() async {
 
   final url = Uri.parse(GlobalApiConfig.saveFcmTokenEndpoint);
 
+  // Backend expects `token` (some code may still send `fcm_token`), so we send both.
   await http.post(url, body: {
     "user_id": userId,
+    "token": token,
     "fcm_token": token,
   });
 
@@ -55,8 +58,10 @@ Future<void> saveFcmToken() async {
   @override
 void initState() {
   super.initState();
+  // ✅ Clear verification cache on app start to ensure fresh check
+  VerifyPopup.clearCache();
   fetchCars();
-  saveFcmToken();  // <-- ADD THIS
+  saveFcmToken();
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (mounted) VerifyPopup.showIfNotVerified(context);
@@ -65,14 +70,9 @@ void initState() {
 
   /// Synchronous formatter (keeps behavior for quick usage).
   /// Accepts nullable input and always returns a non-null URL string.
+  /// NOTE: This now uses the centralized ImageHelper for consistency
   String formatImage(String? rawPath) {
-    final path = rawPath?.toString().trim() ?? '';
-    if (path.isEmpty) return "https://via.placeholder.com/300";
-
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-
-    final cleanPath = path.replaceFirst("uploads/", "");
-    return GlobalApiConfig.getImageUrl(cleanPath);
+    return ImageHelper.formatImageUrl(rawPath);
   }
 
   Future<void> fetchCars() async {
@@ -88,6 +88,12 @@ void initState() {
           setState(() {
             _cars = List<Map<String, dynamic>>.from(decoded['cars']);
           });
+          
+          // Debug: Print first car's image URL
+          if (_cars.isNotEmpty) {
+            print('🚗 RAW from API: ${_cars[0]['image']}');
+            print('🚗 After formatImage: ${formatImage(_cars[0]['image'])}');
+          }
         }
       }
     } catch (e) {
@@ -290,9 +296,9 @@ void initState() {
 
                               return _buildCarCard(
                                 carId: int.tryParse(car['id'].toString()) ?? 0,
-                                image: formatImage(car['image'] ?? ''),
+                                image: car['image'] ?? '', // Pass raw URL, ImageHelper will format it
                                 name: "${car['brand']} ${car['model']}",
-                                rating: double.tryParse(car['rating'].toString()) ?? 5.0,
+                                rating: double.tryParse(car['rating'].toString()) ?? 0.0,
                                 location: locationText,
                                 seats: int.tryParse(car['seat'].toString()) ?? 4,
                                 price: car['price'].toString(),
@@ -350,7 +356,7 @@ void initState() {
 
                                 return _buildNewlyListedCard(
                                   carId: int.tryParse(car['id'].toString()) ?? 0,
-                                  image: formatImage(car['image'] ?? ''),
+                                  image: car['image'] ?? '', // Pass raw URL, ImageHelper will format it
                                   name: "${car['brand']} ${car['model']}",
                                   year: car['car_year'] ?? "",
                                   location: locationText,
@@ -469,7 +475,7 @@ void initState() {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha :0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -479,42 +485,27 @@ void initState() {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image with aspect ratio
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Stack(
-                children: [
-                  Image.network(
-                    image,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 120,
-                        color: Theme.of(context).dividerColor,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 120,
-                      color: Theme.of(context).dividerColor,
-                      child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
-                    ),
+            Stack(
+              children: [
+                ImageHelper.buildCarImage(
+                  imageUrl: image,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                // Favorite button
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: FavoriteButton(
+                    vehicleType: 'car',
+                    vehicleId: carId,
+                    size: 20,
                   ),
-                  // Favorite button
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: FavoriteButton(
-                      vehicleType: 'car',
-                      vehicleId: carId,
-                      size: 20,
-                    ),
-                  ),
-                  // Rating badge overlay
+                ),
+                // Rating badge overlay
+                if (rating > 0.0)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -541,8 +532,29 @@ void initState() {
                       ),
                     ),
                   ),
-                ],
-              ),
+                // Show "New" badge when no rating
+                if (rating == 0.0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "NEW",
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
 
             // Card content
@@ -660,7 +672,7 @@ void initState() {
               carName: name,
               carImage: image,
               price: price,
-              rating: 5.0,
+              rating: 0.0,
               location: location,
             ),
           ),
@@ -685,47 +697,14 @@ void initState() {
             // Image
             Stack(
               children: [
-                ClipRRect(
+                ImageHelper.buildCarImage(
+                  imageUrl: image,
+                  height: 160,
+                  width: 140,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
-                  ),
-                  child: Image.network(
-                    image,
-                    height: 160,
-                    width: 140,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 160,
-                        width: 140,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            height: 160,
-                            width: 140,
-                            color: Theme.of(context).dividerColor,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 160,
-                          width: 140,
-                          color: Theme.of(context).dividerColor,
-                          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                        ),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 160,
-                      width: 140,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
-                    ),
                   ),
                 ),
                 // "NEW" badge
@@ -764,7 +743,6 @@ void initState() {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-<<<<<<< HEAD
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -791,12 +769,11 @@ void initState() {
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-<<<<<<< HEAD
                     // Car name and year
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -804,9 +781,9 @@ void initState() {
                         Text(
                           name,
                           style: GoogleFonts.poppins(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            height: 1.2,
+                            height: 1.1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -815,29 +792,29 @@ void initState() {
                         Text(
                           year,
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     
                     // Location
                     Row(
                       children: [
                         Icon(
                           Icons.location_on,
-                          size: 14,
+                          size: 13,
                           color: Colors.grey.shade600,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             location,
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
@@ -846,36 +823,36 @@ void initState() {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     
                     // Seats and transmission
                     Row(
                       children: [
                         Icon(
                           Icons.event_seat,
-                          size: 14,
+                          size: 13,
                           color: Colors.grey.shade600,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Text(
                           "$seats",
                           style: GoogleFonts.poppins(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: Colors.grey.shade600,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Icon(
                           Icons.settings,
-                          size: 14,
+                          size: 13,
                           color: Colors.grey.shade600,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             transmission,
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
@@ -885,12 +862,12 @@ void initState() {
                       ],
                     ),
                     
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     
                     // Price
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor,
                         borderRadius: BorderRadius.circular(8),
@@ -899,7 +876,7 @@ void initState() {
                         "₱$price/day",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),

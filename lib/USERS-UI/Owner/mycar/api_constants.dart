@@ -1,4 +1,4 @@
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class ApiConstants {
   // ========================================

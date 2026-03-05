@@ -2,12 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
 import 'host_cars_screen.dart';
 import 'host_reviews_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';  
-import 'package:shared_preferences/shared_preferences.dart';  
+import 'package:cargo/USERS-UI/Reporting/report_screen.dart';
 
 class HostProfileScreen extends StatefulWidget {
   final String ownerId;
@@ -41,16 +40,22 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
   }
 
   String formatImage(String path) {
-  if (path.isEmpty) return "https://via.placeholder.com/150";
-  if (path.startsWith("http")) return path;
+    if (path.isEmpty) return "https://via.placeholder.com/150";
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      // Convert http to https for security
+      if (path.startsWith("http://")) {
+        return path.replaceFirst("http://", "https://");
+      }
+      return path;
+    }
 
-  if (!path.startsWith("uploads/profile image/")) {
-    path = "uploads/profile_images/$path";
+    // ✅ FIX: Correct path check with underscore (not space)
+    if (!path.startsWith("uploads/")) {
+      path = "uploads/profile_images/$path";
+    }
+
+    return "$baseUrl$path";
   }
-
-  // Encode space to %20 for browser compatibility
-  return Uri.encodeFull("$baseUrl$path");
-}
 
 
 
@@ -116,27 +121,6 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
     }
   }
 
-  // ⭐ NEW METHOD ADDED
-  Future<bool> _checkIfUserRentedFromHost(String userId) async {
-    try {
-      final response = await http.get(
-       Uri.parse(
-  "${baseUrl}api/check_user_host_rental.php?"
-  "user_id=$userId&car_id=${widget.ownerId}"
-)
-
-      );
-      
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        return result['has_rented'] == true;
-      }
-      return false;
-    } catch (e) {
-      print("❌ Error checking rental: $e");
-      return false;
-    }
-  }
 
   void _showReportBottomSheet(BuildContext context, String ownerName) {
     showModalBottomSheet(
@@ -214,8 +198,13 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
     }
 
     final profileImage = formatImage(ownerData?["profile_image"] ?? widget.ownerImage);
+    print("🖼️ HOST PROFILE IMAGE:");
+    print("   Raw from API: ${ownerData?["profile_image"]}");
+    print("   Fallback: ${widget.ownerImage}");
+    print("   Final URL: $profileImage");
+    
     final fullName = ownerData?["fullname"] ?? widget.ownerName;
-    final occupation = ownerData?["occupation"] ?? "";
+    final phoneNumber = ownerData?["contact_number"] ?? ownerData?["phone"] ?? ownerData?["phone_number"] ?? "";
     final joinedYear = ownerData?["created_at"] != null
         ? DateTime.parse(ownerData!["created_at"]).year.toString()
         : "2025";
@@ -302,14 +291,15 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.grey.shade300, width: 2),
                     ),
-                    child: CircleAvatar(
-                      radius: 65,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: NetworkImage(profileImage),
-                      onBackgroundImageError: (_, __) {},
-                      child: profileImage.contains("placeholder")
-                          ? const Icon(Icons.person, size: 65, color: Colors.white70)
-                          : null,
+                    child: ClipOval(
+                      child: OptimizedNetworkImage(
+                        imageUrl: profileImage,
+                        width: 130,
+                        height: 130,
+                        fit: BoxFit.cover,
+                        errorIcon: Icons.person,
+                        errorIconSize: 65,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -442,21 +432,32 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Occupation Field
+                    // Phone Number Field
                     Text(
-                      "Occupation",
+                      "Phone Number",
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      occupation.isEmpty ? "Not specified" : occupation,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: occupation.isEmpty ? Colors.grey.shade400 : Colors.black,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          size: 18,
+                          color: phoneNumber.isEmpty ? Colors.grey.shade400 : Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          phoneNumber.isEmpty ? "Not specified" : phoneNumber,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: phoneNumber.isEmpty ? Colors.grey.shade400 : Colors.black,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -509,97 +510,6 @@ class _HostProfileScreenState extends State<HostProfileScreen> {
                     ),
                   );
                 },
-              ),
-
-              const SizedBox(height: 16),
-
-              // ⭐ NEW: Rate Host Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: InkWell(
-                  onTap: () async {
-                    // Get user ID
-                    final prefs = await SharedPreferences.getInstance();
-                    final userId = prefs.getString('user_id');
-                    
-                    if (userId == null || userId.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please login to leave a review'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-                    
-                    // Check if user has rented from this host
-                    final hasRented = await _checkIfUserRentedFromHost(userId);
-                    
-                    if (!hasRented) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('You need to complete a rental from this host first'),
-                          backgroundColor: Colors.orange,
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      return;
-                    }
-                    
-                    // Navigate to review screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SubmitReviewScreen(
-                          bookingId: '', // Not tied to specific booking
-                          carId: '', // Not specific to one car
-                          carName: '$fullName\'s Service',
-                          carImage: widget.ownerImage,
-                          ownerId: widget.ownerId,
-                          ownerName: fullName,
-                          ownerImage: ownerData?["profile_image"] ?? widget.ownerImage,
-                        ),
-                      ),
-                    ).then((result) {
-                      if (result == true) {
-                        fetchOwnerProfile(); // Refresh profile data
-                      }
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blue.shade600, Colors.purple.shade600],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.star_rate, color: Colors.white, size: 24),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Rate This Host',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
 
               const SizedBox(height: 40),

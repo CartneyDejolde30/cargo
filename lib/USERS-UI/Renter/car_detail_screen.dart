@@ -4,16 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import 'chats/chat_detail_screen.dart';
 import 'review_screen.dart';
 import '../Reporting/submit_review_screen.dart';  // ⭐ ADDED
-import 'bookings/booking_screen.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/booking_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Renter/host/host_profile_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/verification/personal_info_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Reporting/report_screen.dart';
+import 'package:cargo/USERS-UI/Owner/verification/personal_info_screen.dart';
+import 'package:cargo/USERS-UI/Reporting/report_screen.dart';
 import 'widgets/renter_availability_calendar.dart'; // NEW: Renter calendar
+import '../../utils/image_helper.dart';
+import '../../widgets/optimized_network_image.dart';
 
 class CarDetailScreen extends StatefulWidget {
   final int carId;
@@ -69,20 +71,31 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   // Extra images
   final extra = carData?["extra_images"];
 
-  if (extra != null && extra.toString().isNotEmpty) {
-    try {
-      final decoded = jsonDecode(extra);
-
-      if (decoded is List) {
-        for (var img in decoded) {
-          images.add(formatImage(img.toString()));
+  // ✅ FIX: The PHP backend already decodes extra_images as a List
+  // No need to jsonDecode again - it's already a List!
+  if (extra != null) {
+    if (extra is List && extra.isNotEmpty) {
+      // Already a List from PHP json_decode
+      for (var img in extra) {
+        final imgStr = img.toString().trim();
+        if (imgStr.isNotEmpty && imgStr != "[]" && imgStr != "null") {
+          images.add(formatImage(imgStr));
         }
       }
-    } catch (e) {
-      // If it's comma-separated instead of JSON
-      final splitImages = extra.toString().split(",");
-      for (var img in splitImages) {
-        images.add(formatImage(img.trim()));
+    } else if (extra is String && extra.isNotEmpty && extra != "[]") {
+      // Fallback: if it's still a JSON string (shouldn't happen with new PHP)
+      try {
+        final decoded = jsonDecode(extra);
+        if (decoded is List && decoded.isNotEmpty) {
+          for (var img in decoded) {
+            final imgStr = img.toString().trim();
+            if (imgStr.isNotEmpty && imgStr != "[]" && imgStr != "null") {
+              images.add(formatImage(imgStr));
+            }
+          }
+        }
+      } catch (e) {
+        print("⚠️ Failed to decode extra_images: $e");
       }
     }
   }
@@ -92,25 +105,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
 
  String formatImage(String path) {
-  if (path.isEmpty || path == "null") {
-    return "https://via.placeholder.com/400x300";
-  }
-
-  // If API already returned full URL
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    // Fix double uploads issue
-    return path
-        .replaceAll("//uploads/uploads/", "/uploads/")
-        .replaceAll("/uploads/uploads/", "/uploads/");
-  }
-
-  // Clean filename paths
-  final cleanPath = path
-      .replaceAll("uploads/uploads/", "")
-      .replaceAll("uploads/", "");
-
-  // Extra images live in /uploads/
-  return "$baseUrl/uploads/$cleanPath";
+  return ImageHelper.formatImageUrl(path);
 }
 
 
@@ -130,7 +125,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     }
 
     try {
-      final url = Uri.parse("${baseUrl}api/check_user_verification.php?user_id=$userId");
+      final url = Uri.parse("${GlobalApiConfig.checkVerificationEndpoint}?user_id=$userId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -301,6 +296,13 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     final maxTripDuration = carData?["max_trip_duration"] ?? "7";
     final advanceNotice = carData?["advance_notice"] ?? "1 hour";
 
+    final double averageRating =
+        double.tryParse(carData?["average_rating"]?.toString() ?? "") ??
+            widget.rating;
+    final int reviewCount =
+        int.tryParse(carData?["review_count"]?.toString() ?? "") ??
+            reviews.length;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -338,7 +340,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
               bottomRight: Radius.circular(24),
             ),
             image: DecorationImage(
-              image: NetworkImage(imgUrl),
+              image: ImageHelper.getNetworkImage(imgUrl),
               fit: BoxFit.cover,
             ),
           ),
@@ -427,7 +429,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                             const Icon(Icons.star, color: Colors.amber, size: 20),
                             const SizedBox(width: 4),
                             Text(
-                              "${widget.rating}",
+                              averageRating.toStringAsFixed(1),
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -521,7 +523,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                     decoration: BoxDecoration(
                                       color: isDark ? colors.surface : Colors.white,                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Icon(Icons.attach_money, color: Colors.green.shade700, size: 24),
+                                    child: Icon(Icons.payments, color: Colors.green.shade700, size: 24),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -761,14 +763,19 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                             ),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: Colors.grey.shade300,
-                                  backgroundImage: NetworkImage(ownerImage),
-                                  onBackgroundImageError: (_, __) {},
-                                  child: ownerImage.contains("placeholder")
-                                      ? const Icon(Icons.person, color: Colors.white70)
-                                      : null,
+                                ClipOval(
+                                  child: SizedBox(
+                                    width: 56,
+                                    height: 56,
+                                    child: OptimizedNetworkImage(
+                                      imageUrl: ownerImage,
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.cover,
+                                      errorIcon: Icons.person,
+                                      errorIconSize: 28,
+                                    ),
+                                  ),
                                 ),
 
                                 const SizedBox(width: 12),
@@ -806,7 +813,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Reviews (${reviews.length})",
+                          "Reviews ($reviewCount)",
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -821,8 +828,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                   builder: (_) => ReviewsScreen(
                                     carId: widget.carId,
                                     carName: widget.carName,
-                                    totalReviews: reviews.length,
-                                    averageRating: widget.rating,
+                                    totalReviews: reviewCount,
+                                    averageRating: averageRating,
                                   ),
                                 ),
                               );
@@ -942,15 +949,23 @@ side: BorderSide(color: colors.outline, width: 1.5),
                       : Column(
                           children: reviews.take(3).map((review) {
                             return _buildReviewCard(
-                              name: review["fullname"] ?? "User",
+                              name: review["reviewer_name"] ??
+                                  review["name"] ??
+                                  review["fullname"] ??
+                                  "User",
+                              avatarUrl: review["reviewer_image"] ??
+                                  review["avatar"] ??
+                                  "",
                               rating: double.tryParse(review["rating"].toString()) ?? 5.0,
                               date: review["created_at"] ?? "",
-                              review: review["comment"] ?? "",
+                              review: review["review"] ??
+                                  review["comment"] ??
+                                  "",
                             );
                           }).toList(),
                         ),
 
-                  const SizedBox(height: 120),
+                  const SizedBox(height: 180), // ✅ Increased to prevent underlapping with bottom buttons
                 ],
               ),
             ),
@@ -1243,14 +1258,38 @@ Widget _buildInfoRow(IconData icon, String label, String value) {
 }
 
 
+  String _formatRelativeDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+
+      if (diff.inDays == 0) {
+        if (diff.inHours == 0) {
+          if (diff.inMinutes <= 1) return "Just now";
+          return "${diff.inMinutes} mins ago";
+        }
+        return "${diff.inHours} hours ago";
+      }
+      if (diff.inDays == 1) return "Yesterday";
+      if (diff.inDays < 7) return "${diff.inDays} days ago";
+      if (diff.inDays < 30) return "${(diff.inDays / 7).floor()} weeks ago";
+      return "${(diff.inDays / 30).floor()} months ago";
+    } catch (_) {
+      return dateString;
+    }
+  }
+
   Widget _buildReviewCard({
     required String name,
+    required String avatarUrl,
     required double rating,
     required String date,
     required String review,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-final colors = Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
       padding: const EdgeInsets.all(16),
@@ -1258,45 +1297,85 @@ final colors = Theme.of(context).colorScheme;
         color: isDark ? colors.surfaceContainerHighest : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-  color: isDark ? Colors.transparent : Colors.grey.shade200,
-),
+          color: isDark ? Colors.transparent : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage: avatarUrl.isNotEmpty
+                    ? ImageHelper.getNetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl.isEmpty
+                    ? const Icon(Icons.person, size: 18, color: Colors.white70)
+                    : null,
               ),
-              Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    rating.toString(),
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatRelativeDate(date),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: isDark
+                                ? colors.onSurfaceVariant
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             review,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: Colors.grey.shade700,
+              color: isDark ? colors.onSurfaceVariant : Colors.grey.shade700,
               height: 1.4,
             ),
+            maxLines: null, // ✅ Allow unlimited lines to show full review
+            overflow: TextOverflow.visible, // ✅ Don't truncate the text
           ),
         ],
       ),
@@ -1415,7 +1494,10 @@ class FullscreenImageViewer extends StatelessWidget {
       ),
       body: Center(
         child: InteractiveViewer(
-          child: Image.network(imageUrl),
+          child: ImageHelper.buildCarImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );

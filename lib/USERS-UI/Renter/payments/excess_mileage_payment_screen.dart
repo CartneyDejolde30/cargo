@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class ExcessMileagePaymentScreen extends StatefulWidget {
   final int bookingId;
@@ -277,13 +277,13 @@ class _ExcessMileagePaymentScreenState extends State<ExcessMileagePaymentScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Divider(color: Colors.white.withOpacity(0.3)),
+                  Divider(color: Colors.white.withValues(alpha :0.3)),
                   const SizedBox(height: 8),
                   _buildMileageRow('Starting Odometer:', '${widget.odometerStart} km'),
                   _buildMileageRow('Ending Odometer:', '${widget.odometerEnd} km'),
                   _buildMileageRow('Distance Driven:', '${widget.actualMileage} km', isBold: true),
                   const SizedBox(height: 8),
-                  Divider(color: Colors.white.withOpacity(0.3)),
+                  Divider(color: Colors.white.withValues(alpha :0.3)),
                   const SizedBox(height: 8),
                   _buildMileageRow('Allowed Mileage:', '${widget.allowedMileage} km'),
                   _buildMileageRow('Excess Mileage:', '${widget.excessMileage} km', color: Colors.yellow.shade300, isBold: true),
@@ -301,7 +301,7 @@ class _ExcessMileagePaymentScreenState extends State<ExcessMileagePaymentScreen>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha :0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -518,7 +518,7 @@ class _ExcessMileagePaymentScreenState extends State<ExcessMileagePaymentScreen>
             label,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: color ?? Colors.white.withOpacity(0.9),
+              color: color ?? Colors.white.withValues(alpha :0.9),
               fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
             ),
           ),

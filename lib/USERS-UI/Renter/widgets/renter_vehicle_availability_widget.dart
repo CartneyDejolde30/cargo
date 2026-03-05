@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../Owner/mycar/api_constants.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 /// Read-only availability calendar for renters
 /// Shows available, blocked, and booked dates for a vehicle
@@ -289,7 +290,7 @@ class _RenterVehicleAvailabilityWidgetState extends State<RenterVehicleAvailabil
   Widget _buildLoading() {
     return const Padding(
       padding: EdgeInsets.all(32),
-      child: Center(child: CircularProgressIndicator()),
+      child: LoadingIndicator(),
     );
   }
 

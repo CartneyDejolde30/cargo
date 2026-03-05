@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/refund_request_screen.dart';
+import 'package:cargo/USERS-UI/Renter/payments/refund_request_screen.dart';
 import 'booking_detail_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Reporting/submit_review_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/models/booking.dart';
+import 'package:cargo/USERS-UI/Reporting/submit_review_screen.dart';
+import 'package:cargo/USERS-UI/Renter/models/booking.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
 
 class BookingCardWidget extends StatelessWidget {
   final Booking booking;
@@ -22,7 +23,7 @@ class BookingCardWidget extends StatelessWidget {
     case 'approved':
       return 'Active';
     case 'pending':
-      return 'Pending Payment';
+      return 'Pending Approval';
     case 'completed':
       return 'Completed';
     case 'cancelled':
@@ -45,7 +46,7 @@ class BookingCardWidget extends StatelessWidget {
 
   boxShadow: [
     BoxShadow(
-      color: Theme.of(context).shadowColor.withOpacity(0.25),
+      color: Theme.of(context).shadowColor.withValues(alpha :0.25),
       blurRadius: 8,
       offset: const Offset(0, 4),
     ),
@@ -355,6 +356,33 @@ Widget _buildActionButton(BuildContext context) {
       );
 
     case 'completed':
+      // ✅ Check if already reviewed
+      if (booking.isReviewed) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
+              const SizedBox(width: 6),
+              Text(
+                'Reviewed',
+                style: GoogleFonts.poppins(
+                  color: Colors.green.shade700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      
       // ✅ Rate & Review button for completed bookings
       return ElevatedButton(
         onPressed: () {
@@ -368,7 +396,7 @@ Widget _buildActionButton(BuildContext context) {
                 carImage: booking.carImage,
                 ownerId: booking.ownerId.toString(),
                 ownerName: booking.ownerName,
-                ownerImage: '',
+                ownerImage: booking.ownerAvatar,
               ),
             ),
           ).then((result) {
@@ -406,6 +434,33 @@ Widget _buildActionButton(BuildContext context) {
       );
 
     case 'past':
+      // Check if already reviewed
+      if (booking.isReviewed) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
+              const SizedBox(width: 6),
+              Text(
+                'Reviewed',
+                style: GoogleFonts.poppins(
+                  color: Colors.green.shade700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      
       // Keep for backward compatibility
       return ElevatedButton(
         onPressed: () {
@@ -419,7 +474,7 @@ Widget _buildActionButton(BuildContext context) {
                 carImage: booking.carImage,
                 ownerId: booking.ownerId.toString(),
                 ownerName: booking.ownerName,
-                ownerImage: '',
+                ownerImage: booking.ownerAvatar,
               ),
             ),
           ).then((result) {
@@ -461,12 +516,11 @@ Widget _buildActionButton(BuildContext context) {
   }
 }
 
-
-// 🆕 ADD THIS NEW METHOD
-Widget _buildRefundButton(BuildContext context) {
+  // 🆕 ADD THIS NEW METHOD
+  Widget _buildRefundButton(BuildContext context) {
   // Check if refund is already completed or approved
-  final escrowStatus = widget.booking.escrowStatus?.toLowerCase();
-  final refundStatus = widget.booking.refundStatus?.toLowerCase();
+  final escrowStatus = booking.escrowStatus?.toLowerCase();
+  final refundStatus = booking.refundStatus?.toLowerCase();
   
   // Don't show button if escrow is already refunded or refund is completed/approved
   if (escrowStatus == 'refunded' || 
@@ -577,57 +631,14 @@ Widget _buildRefundButton(BuildContext context) {
   // =========================
   Widget _buildCarImage(String imagePath) {
     // Safe image loading - handle empty/invalid paths
-    if (imagePath.trim().isEmpty) {
-      return Container(
-        color: Colors.grey.shade300,
-        child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
-      );
-    }
+    final imageUrl = imagePath.trim().isEmpty ? 'https://via.placeholder.com/300' : imagePath;
     
-    // Full URL from API
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return Image.network(
-        imagePath,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: Colors.grey.shade200,
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                    : null,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) {
-          return Container(
-            color: Colors.grey.shade300,
-            child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
-          );
-        },
-      );
-    }
-    
-    // If not a URL, treat as asset (but validate first)
-    if (imagePath.startsWith('assets/')) {
-      return Image.asset(
-        imagePath,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          color: Colors.grey.shade300,
-          child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
-        ),
-      );
-    }
-    
-    // Unknown format - show placeholder
-    return Container(
-      color: Colors.grey.shade300,
-      child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade600),
+    return OptimizedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      borderRadius: BorderRadius.circular(12),
+      errorIcon: Icons.directions_car,
+      errorIconSize: 40,
     );
   }
 

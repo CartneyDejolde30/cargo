@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 
 // Configuration class for API
@@ -48,7 +48,7 @@ class _ReportScreenState extends State<ReportScreen> {
       ReportReason('Fake photos', Icons.image_not_supported),
       ReportReason('Vehicle not as described', Icons.directions_car),
       ReportReason('Safety concerns', Icons.warning),
-      ReportReason('Suspicious pricing', Icons.attach_money),
+      ReportReason('Suspicious pricing', Icons.payments),
       ReportReason('Unavailable vehicle', Icons.block),
       ReportReason('Other', Icons.more_horiz),
     ],
@@ -57,7 +57,7 @@ class _ReportScreenState extends State<ReportScreen> {
       ReportReason('Fake photos', Icons.image_not_supported),
       ReportReason('Vehicle not as described', Icons.two_wheeler),
       ReportReason('Safety concerns', Icons.warning),
-      ReportReason('Suspicious pricing', Icons.attach_money),
+      ReportReason('Suspicious pricing', Icons.payments),
       ReportReason('Unavailable vehicle', Icons.block),
       ReportReason('Other', Icons.more_horiz),
     ],
@@ -96,15 +96,43 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
 Future<void> _pickImage() async {
-  final XFile? pickedFile = await _picker.pickImage(
-    source: ImageSource.gallery,
-    imageQuality: 70, // compress
-  );
+  try {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70, // compress
+      maxWidth: 1920,
+      maxHeight: 1080,
+    );
 
-  if (pickedFile != null) {
+    // ✅ CRITICAL: Check if user cancelled
+    if (pickedFile == null) {
+      print("📷 User cancelled image selection");
+      return;
+    }
+
+    // ✅ CRITICAL: Check mounted before setState
+    if (!mounted) {
+      print("⚠️ Widget disposed while picking image");
+      return;
+    }
+
     setState(() {
       _selectedImage = File(pickedFile.path);
     });
+    
+    print("✅ Image selected successfully");
+  } catch (e, stackTrace) {
+    print("❌ Error picking image: $e");
+    print("Stack trace: $stackTrace");
+    
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to pick image: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }
 
@@ -166,7 +194,7 @@ final streamedResponse = await request.send().timeout(
 
 final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final result = jsonDecode(response.body);
 
         if (result['status'] == 'success') {
@@ -177,7 +205,16 @@ final response = await http.Response.fromStream(streamedResponse);
           throw Exception(result['message'] ?? 'Failed to submit report');
         }
       } else {
-        throw Exception("Server error (${response.statusCode}). Please try again later.");
+        // Parse error message from server
+        try {
+          final errorResult = jsonDecode(response.body);
+          throw Exception(errorResult['message'] ?? "Server error (${response.statusCode}). Please try again later.");
+        } catch (e) {
+          if (e is FormatException) {
+            throw Exception("Server error (${response.statusCode}). Please try again later.");
+          }
+          rethrow;
+        }
       }
     } catch (e) {
       if (mounted) {

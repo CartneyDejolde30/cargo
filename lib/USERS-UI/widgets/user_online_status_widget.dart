@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/widgets/online_status_indicator.dart';
+import 'package:cargo/widgets/online_status_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Example widget showing how to use OnlineStatusIndicator in different contexts

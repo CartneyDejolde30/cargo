@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 import '../Renter/motorcycle_filter_screen.dart';
 import '../Renter/widgets/bottom_nav_bar.dart';
 import 'motorcycle_detail_screen.dart';
@@ -11,6 +11,9 @@ import 'widgets/sort_bottom_sheet.dart';
 import 'widgets/favorite_button.dart';
 import 'widgets/notification_icon.dart';
 import 'motorcycles_map_view_screen.dart';
+import 'package:cargo/widgets/optimized_network_image.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
+import '../../utils/image_helper.dart';
 
 class MotorcycleListScreen extends StatefulWidget {
   final String title;
@@ -49,10 +52,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
   }
 
   String getImageUrl(String path) {
-    if (path.isEmpty) {
-      return "https://via.placeholder.com/300";
-    }
-    return GlobalApiConfig.getImageUrl(path.replaceFirst("uploads/", ""));
+    return ImageHelper.formatImageUrl(path);
   }
 
   Future<void> fetchMotorcycles() async {
@@ -313,19 +313,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  GestureDetector(
-                                    onTap: _showMapView,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.grey.shade300),
-                                      ),
-                                      child: Icon(Icons.map, size: 20, color: Colors.grey.shade700),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
+                                  // Sort button
                                   GestureDetector(
                                     onTap: _showSortOptions,
                                     child: Container(
@@ -346,6 +334,34 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
                                               color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Map button (now on the right)
+                                  GestureDetector(
+                                    onTap: _showMapView,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.map, size: 18, color: Theme.of(context).primaryColor),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Map',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(context).primaryColor,
                                             ),
                                           ),
                                         ],
@@ -455,7 +471,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
     );
   }
 
-  Widget _buildLoading() => const Center(child: CircularProgressIndicator());
+  Widget _buildLoading() => const LoadingScreen(message: 'Loading motorcycles...');
 
   Widget _buildSearchBar() {
     return GestureDetector(
@@ -662,7 +678,7 @@ class _MotorcycleListScreenState extends State<MotorcycleListScreen> {
             motorcycleId: int.tryParse(motorcycle['id'].toString()) ?? 0,
             name: "${motorcycle['brand']} ${motorcycle['model']}",
             year: motorcycle['motorcycle_year'] ?? "",
-            rating: double.tryParse(motorcycle['rating'].toString()) ?? 5.0,
+            rating: double.tryParse(motorcycle['rating'].toString()) ?? 0.0,
             location: (motorcycle['location'] ?? '').isEmpty ? "Unknown" : motorcycle['location'],
             price: motorcycle['price'].toString(),
             type: motorcycle['body_style'] ?? "Standard",
@@ -740,19 +756,14 @@ final colors = Theme.of(context).colorScheme;
           children: [
             Stack(
               children: [
-                ClipRRect(
+                OptimizedNetworkImage(
+                  imageUrl: image,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    image,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 140,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.two_wheeler, size: 60, color: Colors.grey),
-                    ),
-                  ),
+                  errorIcon: Icons.two_wheeler,
+                  errorIconSize: 60,
                 ),
                 // Favorite button
                 Positioned(

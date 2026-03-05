@@ -12,8 +12,8 @@ class AnalyticsService {
   Future<AnalyticsOverview?> getOverviewStats({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '$_baseUrl/api/analytics/get_analytics_data.php?type=overview&owner_id=$ownerId'
-          : '$_baseUrl/api/analytics/get_analytics_data.php?type=overview';
+          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=overview&owner_id=$ownerId'
+          : '${_baseUrl}api/analytics/get_analytics_data.php?type=overview';
 
       final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
 
@@ -33,8 +33,8 @@ class AnalyticsService {
   Future<List<BookingTrend>> getBookingTrends({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '$_baseUrl/api/analytics/get_analytics_data.php?type=booking_trends&owner_id=$ownerId'
-          : '$_baseUrl/api/analytics/get_analytics_data.php?type=booking_trends';
+          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=booking_trends&owner_id=$ownerId'
+          : '${_baseUrl}api/analytics/get_analytics_data.php?type=booking_trends';
 
       final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
 
@@ -56,8 +56,8 @@ class AnalyticsService {
   Future<RevenueBreakdown?> getRevenueBreakdown({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '$_baseUrl/api/analytics/get_analytics_data.php?type=revenue_breakdown&owner_id=$ownerId'
-          : '$_baseUrl/api/analytics/get_analytics_data.php?type=revenue_breakdown';
+          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=revenue_breakdown&owner_id=$ownerId'
+          : '${_baseUrl}api/analytics/get_analytics_data.php?type=revenue_breakdown';
 
       final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
 
@@ -77,8 +77,8 @@ class AnalyticsService {
   Future<PopularVehicles?> getPopularVehicles({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '$_baseUrl/api/analytics/get_analytics_data.php?type=popular_vehicles&owner_id=$ownerId'
-          : '$_baseUrl/api/analytics/get_analytics_data.php?type=popular_vehicles';
+          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=popular_vehicles&owner_id=$ownerId'
+          : '${_baseUrl}api/analytics/get_analytics_data.php?type=popular_vehicles';
 
       final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
 
@@ -98,8 +98,8 @@ class AnalyticsService {
   Future<PeakBookingData?> getPeakBookingHours({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '$_baseUrl/api/analytics/get_analytics_data.php?type=peak_hours&owner_id=$ownerId'
-          : '$_baseUrl/api/analytics/get_analytics_data.php?type=peak_hours';
+          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=peak_hours&owner_id=$ownerId'
+          : '${_baseUrl}api/analytics/get_analytics_data.php?type=peak_hours';
 
       final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
 

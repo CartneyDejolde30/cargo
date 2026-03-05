@@ -3,14 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/notification_icon.dart';
-import 'package:flutter_application_1/USERS-UI/change_password.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/edit_profile.dart';
-import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Renter/payments/payment_history_screen.dart';
+import 'package:cargo/USERS-UI/change_password.dart';
+import 'package:cargo/USERS-UI/Renter/edit_profile.dart';
+import 'package:cargo/USERS-UI/services/faqs_screen.dart';
+import 'package:cargo/USERS-UI/services/help_support_screen.dart';
+import 'package:cargo/USERS-UI/services/about_app_screen.dart';
+import 'package:cargo/USERS-UI/Renter/payments/payment_history_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_application_1/theme/theme_provider.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
-import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:cargo/theme/theme_provider.dart';
+import 'package:cargo/services/user_presence_service.dart';
+import 'package:cargo/services/persistent_auth_service.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String phone = "";
   String address = "";
   String profileImage = "";
+  bool isVerified = false;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -63,6 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       phone = prefs.getString("phone") ?? "";
       address = prefs.getString("address") ?? "";
       profileImage = prefs.getString("profile_image") ?? "";
+      isVerified = prefs.getString("is_verified") == "1";
       print("PROFILE IMAGE FROM PREFS → $profileImage");
     });
   }
@@ -373,29 +377,30 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
+                        if (isVerified)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
 
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.verified,
-                              color: Colors.green,
-                              size: 20,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.verified,
+                                color: Colors.green,
+                                size: 20,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -585,13 +590,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         icon: Icons.help_outline_rounded,
                         title: "Help & Support",
                         subtitle: "Get help and contact us",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                          );
+                        },
                       ),
                       _MenuItemData(
                         icon: Icons.info_outline_rounded,
                         title: "About App",
                         subtitle: "App version and info",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AboutAppScreen()),
+                          );
+                        },
                       ),
                       _MenuItemData(
                         icon: Icons.help_outline_rounded,

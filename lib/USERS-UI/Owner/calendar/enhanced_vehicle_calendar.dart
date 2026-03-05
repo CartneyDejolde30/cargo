@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'enhanced_calendar_service.dart';
+import 'package:cargo/widgets/loading_widgets.dart';
 
 /// Enhanced Vehicle Availability Calendar with advanced features
 class EnhancedVehicleCalendar extends StatefulWidget {
@@ -294,7 +295,7 @@ class _EnhancedVehicleCalendarState extends State<EnhancedVehicleCalendar> {
   }
 
   Widget _buildLoading() {
-    return const Center(child: CircularProgressIndicator());
+    return const LoadingScreen(message: 'Loading calendar...');
   }
 
   Widget _buildContent() {

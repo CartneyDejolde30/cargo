@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_application_1/USERS-UI/change_password.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/edit_profile_screen.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/transactions/owner_transaction_history.dart';
-import 'package:flutter_application_1/config/api_config.dart';
-import 'package:flutter_application_1/USERS-UI/Owner/insurance/owner_insurance_screen.dart';
-import 'package:flutter_application_1/USERS-UI/services/faqs_screen.dart';
+import 'package:cargo/USERS-UI/change_password.dart';
+import 'package:cargo/USERS-UI/Owner/edit_profile_screen.dart';
+import 'package:cargo/USERS-UI/Owner/transactions/owner_transaction_history.dart';
+import 'package:cargo/config/api_config.dart';
+import 'package:cargo/USERS-UI/Owner/insurance/owner_insurance_screen.dart';
+import 'package:cargo/USERS-UI/Owner/analytics/analytics_dashboard_screen.dart';
+import 'package:cargo/USERS-UI/services/faqs_screen.dart';
+import 'package:cargo/USERS-UI/services/help_support_screen.dart';
+import 'package:cargo/USERS-UI/services/about_app_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_application_1/theme/theme_provider.dart';
-import 'package:flutter_application_1/services/user_presence_service.dart';
-import 'package:flutter_application_1/services/persistent_auth_service.dart';
+import 'package:cargo/theme/theme_provider.dart';
+import 'package:cargo/services/user_presence_service.dart';
+import 'package:cargo/services/persistent_auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String profileImage = "";
   String gcashNumber = "";
   String gcashName = "";
+  bool isVerified = false;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -84,6 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       profileImage = profileImg;
       gcashNumber = prefs.getString("gcash_number") ?? "";
       gcashName = prefs.getString("gcash_name") ?? "";
+      isVerified = prefs.getString("is_verified") == "1";
     });
   }
 
@@ -379,28 +384,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.verified,
-                              color: Colors.green,
-                              size: 20,
+                        if (isVerified)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.verified,
+                                color: Colors.green,
+                                size: 20,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -506,6 +512,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     const SizedBox(height: 16),
 
                     _buildMenuCard([
+                      _MenuItemData(
+                        icon: Icons.analytics_outlined,
+                        title: "Analytics Dashboard",
+                        subtitle: "View performance insights & stats",
+                        onTap: () async {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          int ownerId = int.tryParse(prefs.getString("user_id") ?? "0") ?? 0;
+                          String ownerName = prefs.getString("fullname") ?? "User";
+                          
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AnalyticsDashboardScreen(
+                                ownerId: ownerId,
+                                ownerName: ownerName,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       _MenuItemData(
                         icon: Icons.lock_outline_rounded,
                         title: "Change Password",
@@ -796,13 +823,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         icon: Icons.help_outline_rounded,
                         title: "Help & Support",
                         subtitle: "Get help and contact us",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                          );
+                        },
                       ),
                       _MenuItemData(
                         icon: Icons.info_outline_rounded,
                         title: "About App",
                         subtitle: "App version and info",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AboutAppScreen()),
+                          );
+                        },
                       ),
                       _MenuItemData(
                         icon: Icons.help_outline_rounded,

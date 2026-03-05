@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
+import 'package:cargo/config/api_config.dart';
 
 class SubmitReviewScreen extends StatefulWidget {
   final String bookingId;
@@ -813,7 +813,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
       'Cleanliness': Icons.cleaning_services,
       'Condition': Icons.verified,
       'Accuracy': Icons.check_circle,
-      'Value': Icons.attach_money,
+      'Value': Icons.payments,
       'Communication': Icons.chat_bubble,
       'Responsiveness': Icons.flash_on,
       'Friendliness': Icons.mood,

@@ -7,7 +7,6 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Configuration constants
-define('DRIVER_FEE_PER_DAY', 600.00);
 define('INSURANCE_RATE', 0.12);
 define('DELIVERY_FEE_BASE', 300.00);
 define('DELIVERY_FEE_PER_KM', 15.00);
@@ -26,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Required parameters
     $pricePerDay = floatval($input['price_per_day'] ?? 0);
     $numberOfDays = intval($input['number_of_days'] ?? 0);
-    $withDriver = boolval($input['with_driver'] ?? false);
     $rentalPeriod = $input['rental_period'] ?? 'Day'; // 'Day', 'Weekly', 'Monthly'
     
     // Optional parameters
@@ -60,25 +58,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $discountedRental = $baseRental - $discount;
     
-    // 3. Driver fee
-    $driverFee = $withDriver ? (DRIVER_FEE_PER_DAY * $numberOfDays) : 0.0;
-    
-    // 4. Insurance fee
+    // 3. Insurance fee
     $insuranceFee = $includeInsurance ? ($discountedRental * INSURANCE_RATE) : 0.0;
     
-    // 5. Delivery fee
+    // 4. Delivery fee
     $deliveryFee = 0.0;
     if ($needsDelivery) {
         $deliveryFee = DELIVERY_FEE_BASE + ($deliveryDistance * DELIVERY_FEE_PER_KM);
     }
     
-    // 6. Calculate subtotal
-    $subtotal = $discountedRental + $driverFee + $insuranceFee + $deliveryFee;
+    // 5. Calculate subtotal
+    $subtotal = $discountedRental + $insuranceFee + $deliveryFee;
     
-    // 7. Service fee (platform fee)
+    // 6. Service fee (platform fee)
     $serviceFee = $subtotal * SERVICE_FEE_RATE;
     
-    // 8. Total amount
+    // 7. Total amount
     $totalAmount = $subtotal + $serviceFee;
     
     // Response
@@ -93,9 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'discount_type' => $discountType,
             'discount_percentage' => $discount > 0 ? round(($discount / $baseRental) * 100, 1) : 0,
             'discounted_rental' => round($discountedRental, 2),
-            
-            'driver_fee' => round($driverFee, 2),
-            'driver_fee_per_day' => DRIVER_FEE_PER_DAY,
             
             'insurance_fee' => round($insuranceFee, 2),
             'insurance_rate' => INSURANCE_RATE * 100 . '%',

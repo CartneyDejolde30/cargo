@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/config/api_config.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String api;
@@ -94,19 +93,47 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   Future pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Reduced from 85 to 70 for faster upload
+        maxWidth: 800,    // Reduced from 1920 to 800 for profile pictures
+        maxHeight: 800,   // Reduced from 1920 to 800 for profile pictures
+      );
 
-    if (picked == null) return;
+      // ✅ CRITICAL: Check if user cancelled
+      if (picked == null) {
+        print("📷 User cancelled image selection");
+        return;
+      }
 
-    if (kIsWeb) {
-      webImage = await picked.readAsBytes();
-    } else {
-      imageFile = File(picked.path);
+      // ✅ CRITICAL: Check mounted before async operations
+      if (!mounted) return;
+
+      if (kIsWeb) {
+        webImage = await picked.readAsBytes();
+      } else {
+        imageFile = File(picked.path);
+      }
+      
+      // ✅ CRITICAL: Check mounted again after async read
+      if (!mounted) return;
+      
+      setState(() => hasChanges = true);
+    } catch (e, stackTrace) {
+      print("❌ Error picking image: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to select image: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-    // ✅ CRASH FIX: Check mounted before setState
-    if (!mounted) return;
-    setState(() => hasChanges = true);
   }
 
   ImageProvider? avatarImage() {
@@ -128,31 +155,53 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
     setState(() => saving = true);
 
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString("user_id") ?? "";
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString("user_id") ?? "";
 
-    var req = http.MultipartRequest("POST", Uri.parse(widget.api));
-    req.fields["user_id"] = userId;
-    req.fields["fullname"] = nameController.text.trim();
-    req.fields["phone"] = phoneController.text.trim();
-    req.fields["address"] = addressController.text.trim();
-    req.fields["gcash_number"] = gcashNumberController.text.trim();
-    req.fields["gcash_name"] = gcashNameController.text.trim();
+      debugPrint("🚀 Starting profile update for user: $userId");
+      debugPrint("📝 Fields: fullname=${nameController.text.trim()}, phone=${phoneController.text.trim()}");
+      debugPrint("💰 GCash: number=${gcashNumberController.text.trim()}, name=${gcashNameController.text.trim()}");
+      debugPrint("🖼️ Image file: ${imageFile != null}, Web image: ${webImage != null}");
 
-    if (imageFile != null) {
-      req.files.add(await http.MultipartFile.fromPath("profile_image", imageFile!.path));
-    }
+      var req = http.MultipartRequest("POST", Uri.parse(widget.api));
+      req.fields["user_id"] = userId;
+      req.fields["fullname"] = nameController.text.trim();
+      req.fields["phone"] = phoneController.text.trim();
+      req.fields["address"] = addressController.text.trim();
+      req.fields["gcash_number"] = gcashNumberController.text.trim();
+      req.fields["gcash_name"] = gcashNameController.text.trim();
 
-    if (kIsWeb && webImage != null) {
-      req.files.add(http.MultipartFile.fromBytes(
-        "profile_image",
-        webImage!,
-        filename: "profile$userId.png",
-      ));
-    }
+      if (imageFile != null) {
+        debugPrint("📤 Adding image file: ${imageFile!.path}");
+        req.files.add(await http.MultipartFile.fromPath("profile_image", imageFile!.path));
+      }
 
-    final res = await req.send();
-    final json = jsonDecode(await res.stream.bytesToString());
+      if (kIsWeb && webImage != null) {
+        debugPrint("📤 Adding web image (${webImage!.length} bytes)");
+        req.files.add(http.MultipartFile.fromBytes(
+          "profile_image",
+          webImage!,
+          filename: "profile$userId.png",
+        ));
+      }
+
+      debugPrint("⏱️ Sending request with 30 second timeout...");
+      final res = await req.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timed out after 30 seconds. Please check your internet connection.');
+        },
+      );
+      
+      debugPrint("✅ Response received in: ${DateTime.now()}");
+      final responseBody = await res.stream.bytesToString();
+    
+    // Debug logging
+    debugPrint("📤 Update Profile Response Status: ${res.statusCode}");
+    debugPrint("📤 Update Profile Response Body: $responseBody");
+    
+    final json = jsonDecode(responseBody);
 
     if (json["success"] == true) {
       await prefs.setString("fullname", json["user"]["fullname"]);
@@ -165,19 +214,26 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       String profileImagePath = json["user"]["profile_image"] ?? "";
       String profileImageUrl = "";
       
-      if (profileImagePath.isNotEmpty) {
+      debugPrint("🖼️ Profile image path from server: $profileImagePath");
+      
+      if (profileImagePath.isNotEmpty && profileImagePath != "null") {
         // If it's already a full URL (Google, Facebook, etc.), use it as-is
         if (profileImagePath.startsWith('http://') || profileImagePath.startsWith('https://')) {
           profileImageUrl = profileImagePath;
+          debugPrint("✅ Using full URL: $profileImageUrl");
         } else {
-          // Otherwise, prepend the uploads URL
-          String baseURL = GlobalApiConfig.uploadsUrl + "/";
-          profileImageUrl = baseURL + profileImagePath;
+          // Otherwise, prepend the uploads URL (it already contains /profile_images/)
+          profileImageUrl = profileImagePath;
+          debugPrint("✅ Using server-provided path: $profileImageUrl");
         }
       }
       
       await prefs.setString("profile_image", profileImageUrl);
-
+      
+      // Update the UI immediately
+      storedProfile = profileImageUrl;
+      imageFile = null;
+      webImage = null;
 
       if (!mounted) return;
 
@@ -186,11 +242,34 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       );
 
       Navigator.pop(context, true);
+    } else {
+      // Show error message from server
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(json["message"] ?? "Failed to update profile"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
 
-    // ✅ CRASH FIX: Check mounted before setState
-    if (!mounted) return;
-    setState(() => saving = false);
+    } catch (e) {
+      debugPrint("❌ Error saving profile: $e");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      // ✅ CRASH FIX: Check mounted before setState
+      if (!mounted) return;
+      setState(() => saving = false);
+    }
   }
 
   @override

@@ -8,6 +8,8 @@ class Booking {
 
   final String carImage;
   final String location;
+  final double? latitude;
+  final double? longitude;
   final String pickupDate;
   final String pickupTime;
   final String returnDate;
@@ -17,6 +19,7 @@ class Booking {
   final String ownerName;
   final String? refundStatus; // Added for refund tracking
   final String? escrowStatus; // Added for escrow tracking
+  final bool isReviewed; // Added for review tracking
 
   Booking({
     required this.bookingId,
@@ -27,6 +30,8 @@ class Booking {
     required this.ownerPhone,
     required this.carImage,
     required this.location,
+    this.latitude,
+    this.longitude,
     required this.pickupDate,
     required this.pickupTime,
     required this.returnDate,
@@ -36,6 +41,7 @@ class Booking {
     required this.ownerName,
     this.refundStatus, // Added for refund tracking
     this.escrowStatus, // Added for escrow tracking
+    this.isReviewed = false, // Added for review tracking
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -52,6 +58,8 @@ class Booking {
     carName: json['carName'] ?? '',
     carImage: rawCarImage.trim(), // Trim whitespace
     location: json['location'] ?? '',
+    latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+    longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     pickupDate: json['pickupDate'] ?? '',
     pickupTime: json['pickupTime'] ?? '',
     returnDate: json['returnDate'] ?? '',
@@ -67,6 +75,7 @@ class Booking {
     ownerName: json['ownerName'] ?? '',
     refundStatus: json['refundStatus']?.toString(), // Added for refund tracking
     escrowStatus: json['escrowStatus']?.toString(), // Added for escrow tracking
+    isReviewed: json['isReviewed'] == 1 || json['isReviewed'] == true, // Added for review tracking
   );
 }
 

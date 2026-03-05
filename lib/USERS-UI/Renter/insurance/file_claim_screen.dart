@@ -54,17 +54,38 @@ class _FileClaimScreenState extends State<FileClaimScreen> {
       return;
     }
 
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 85,
-    );
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled gallery selection");
+        return;
+      }
+
+      // ✅ CRITICAL: Check mounted before setState
+      if (!mounted) return;
+
       setState(() {
         _evidencePhotos.add(File(image.path));
       });
+    } catch (e, stackTrace) {
+      print("❌ Error picking image: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -76,17 +97,38 @@ class _FileClaimScreenState extends State<FileClaimScreen> {
       return;
     }
 
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 85,
-    );
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
+      // ✅ CRITICAL: Check if user cancelled
+      if (image == null) {
+        print("📷 User cancelled camera capture");
+        return;
+      }
+
+      // ✅ CRITICAL: Check mounted before setState
+      if (!mounted) return;
+
       setState(() {
         _evidencePhotos.add(File(image.path));
       });
+    } catch (e, stackTrace) {
+      print("❌ Error taking picture: $e");
+      print("Stack trace: $stackTrace");
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to take picture: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -312,7 +354,7 @@ class _FileClaimScreenState extends State<FileClaimScreen> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   hintText: '0.00',
-                  prefixIcon: const Icon(Icons.attach_money),
+                  prefixIcon: const Icon(Icons.payments),
                   prefixText: '₱',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

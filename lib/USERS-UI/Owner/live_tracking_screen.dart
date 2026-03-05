@@ -4,9 +4,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'services/gps_tracking_service.dart';
-import 'package:flutter_application_1/config/maptiler_config.dart';
-import 'package:flutter_application_1/widgets/map_controls.dart';
-import 'package:flutter_application_1/widgets/map_style_switcher.dart';
+import 'package:cargo/config/maptiler_config.dart';
+import 'package:cargo/widgets/map_controls.dart';
+import 'package:cargo/widgets/map_style_switcher.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
   final String bookingId;

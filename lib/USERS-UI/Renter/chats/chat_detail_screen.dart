@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:animate_do/animate_do.dart';
-import 'package:http/http.dart' as http;
 import '../../../config/cache_config.dart';
-import 'package:flutter_application_1/widgets/online_status_indicator.dart';
+import '../../../services/imgbb_upload_service.dart';
+import 'package:cargo/widgets/online_status_indicator.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -194,75 +193,116 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     }
   }
 
-  Future<void> _preloadImage(String imageUrl) async {
-    try {
-      print('🔄 Preloading image: $imageUrl');
-      await ChatImageCacheManager.instance.getSingleFile(imageUrl);
-      print('✓ Image preloaded successfully');
-    } catch (e) {
-      print('⚠️ Preload failed (will load on demand): $e');
-    }
-  }
 
   Future<void> _uploadImage() async {
-    if (selectedImage == null) return;
-
-    try {
     if (selectedImage == null) {
       print('❌ No image selected!');
       return;
     }
 
-    print('🚀 Starting image upload...');
+    print('🚀 Starting ImgBB image upload...');
     print('📁 Image path: ${selectedImage!.path}');
 
     try {
       if (!mounted) return;
       setState(() => isUploading = true);
 
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-      final ref = FirebaseStorage.instance.ref("chat_images/$fileName");
+      // Upload to ImgBB
+      print('📤 Uploading to ImgBB...');
+      final result = await ImgBBUploadService.uploadImage(
+        selectedImage!,
+        name: 'chat_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}',
+      );
 
-      await ref.putFile(selectedImage!);
-      final url = await ref.getDownloadURL();
+      print('✅ Upload completed!');
+      print('🔗 Image URL: ${result.displayUrl}');
+      print('📊 Image size: ${result.width}x${result.height}');
+      print('💾 File size: ${(result.size / 1024).toStringAsFixed(2)} KB');
 
-      // ✅ CRASH FIX: Check mounted before setState
+      // ✅ Check mounted before setState
       if (!mounted) return;
       setState(() => isUploading = false);
 
-      await _sendMessage(imageUrl: url);
+      // Send message with ImgBB URL
+      await _sendMessage(imageUrl: result.displayUrl);
+      
+      print('✅ Image sent successfully!');
     } catch (e) {
-      // ✅ CRASH FIX: Check mounted before setState
+      print('❌ Upload error: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      
+      // ✅ Check mounted before setState
       if (!mounted) return;
       setState(() => isUploading = false);
       
       if (mounted) {
         String errorMessage = 'Failed to upload image';
-        if (e.toString().contains('SocketException') || e.toString().contains('NetworkException')) {
-          errorMessage = 'No internet connection. Please check your network.';
-        } else if (e.toString().contains('TimeoutException') || e.toString().contains('timeout')) {
-          errorMessage = 'Upload timed out. Please try again.';
-        } else if (e.toString().contains('FileSystemException')) {
-          errorMessage = 'Cannot read image file. Please try a different image.';
+        String errorDetails = '';
+        
+        final errorString = e.toString();
+        
+        if (errorString.contains('No internet connection') || 
+            errorString.contains('SocketException')) {
+          errorMessage = 'No internet connection';
+          errorDetails = 'Please check your network and try again';
+        } else if (errorString.contains('timeout') || 
+                   errorString.contains('Upload timeout')) {
+          errorMessage = 'Upload timed out';
+          errorDetails = 'Slow connection. Please try again';
+        } else if (errorString.contains('File too large')) {
+          errorMessage = 'Image too large';
+          errorDetails = 'Maximum file size is 32MB';
+        } else if (errorString.contains('does not exist')) {
+          errorMessage = 'Image file not found';
+          errorDetails = 'Please select the image again';
+        } else if (errorString.contains('ImgBB Error:')) {
+          errorMessage = 'ImgBB API Error';
+          errorDetails = errorString.replaceAll('Exception: ImgBB Error: ', '');
+        } else if (errorString.contains('Network error')) {
+          errorMessage = 'Network error';
+          errorDetails = 'Could not connect to image server';
         } else {
-          errorMessage = 'Upload failed: ${e.toString()}';
+          errorMessage = 'Upload failed';
+          errorDetails = errorString.replaceAll('Exception: ', '');
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(errorMessage, style: GoogleFonts.inter()),
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        errorMessage, 
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                if (errorDetails.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    errorDetails, 
+                    style: GoogleFonts.inter(
+                      fontSize: 12, 
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
               ],
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Retry',
               textColor: Colors.white,
@@ -554,7 +594,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 color: Theme.of(context).colorScheme.surface,                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha :0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -588,7 +628,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             color: Theme.of(context)
     .colorScheme
     .outline
-    .withOpacity(value),
+    .withValues(alpha :value),
             shape: BoxShape.circle,
           ),
         );
@@ -658,7 +698,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha :0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -683,7 +723,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha :0.6),
                   shape: BoxShape.circle,
                 ),
                 child:  Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 20),
@@ -1019,7 +1059,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isMe
-                                  ? Colors.white.withOpacity(0.2)
+                                  ? Colors.white.withValues(alpha :0.2)
                                   : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
@@ -1038,7 +1078,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                 color: isMe
-                                    ? Colors.white.withOpacity(0.7)
+                                    ? Colors.white.withValues(alpha :0.7)
                                     : Colors.grey.shade600,
                                 fontSize: 12,
                               ),
