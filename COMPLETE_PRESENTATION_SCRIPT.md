@@ -1,4 +1,4 @@
-# 🎓 CarGO: Complete Slide-by-Slide Presentation Script
+﻿# 🎓 CarGO: Complete Slide-by-Slide Presentation Script
 
 **Duration:** 20-25 minutes  
 **Target Audience:** Thesis Defense Panel / Stakeholders  
@@ -132,7 +132,7 @@
 
 ### **Platform Features:**
 *"Behind the scenes, we've built:"*
-- 🔐 **Authentication** - Email/Password and Google sign-in
+- 🔐 **Multi-factor Authentication** - Email, Google, Facebook sign-in
 - 🏦 **Escrow Payment System** - Secure fund holding
 - 📍 **Real-time GPS Tracking** - Live location monitoring
 - 🔔 **Push Notifications** - Instant booking updates
@@ -179,10 +179,11 @@ Flutter Framework (Dart)
 ```
 PHP RESTful API
 ├── CORS-enabled endpoints
-├── Token-based Authentication
+├── JWT Authentication
 ├── Role-based Access Control (RBAC)
 ├── Input Validation & Sanitization
-└── Error Handling & Logging
+├── Error Handling & Logging
+└── Rate Limiting
 ```
 
 *"Our backend API handles:"*
@@ -209,7 +210,7 @@ MySQL Database (Hosted on Hostinger)
 - 🖼️ **ImgBB API** - Cloud image storage
 - 📧 **SMTP Email Service** - Transactional emails
 - 🔔 **Firebase Cloud Messaging** - Push notifications
-- 🔐 **Google OAuth** - Social authentication
+- 🔐 **Google/Facebook OAuth** - Social authentication
 
 *"This architecture ensures reliability, security, and scalability as our user base grows."*
 
@@ -625,6 +626,7 @@ TOTAL DUE                          ₱10,865
 
 ### **[Show payment methods]**
 ```
+💳 Credit/Debit Card (Visa, Mastercard)
 🏦 GCash (E-wallet)
 🏦 PayMaya (E-wallet)
 🏦 Bank Transfer (Manual verification)
@@ -845,6 +847,8 @@ Luggage Space: 4 large bags
 **Step 4: Pricing & Availability**
 ```
 Daily Rate: ₱3,500
+Weekly Discount: 10% off (₱3,150/day)
+Monthly Discount: 20% off (₱2,800/day)
 
 Mileage Limit: 200 km/day
 Excess Fee: ₱15/km
@@ -1126,6 +1130,12 @@ BOOKING LIFECYCLE WITH ESCROW
 - ✅ **Server-side Validation** - Strict input checks on all endpoints
 - 🧾 **Admin Verification** - Reference-based payment verification
 - � **No Card Storage** - No direct card processing in current release
+- 🔐 **PCI-DSS Compliance** - Industry-standard card security
+- 🔒 **SSL Encryption** - All payment data encrypted
+- 🚫 **No card storage** - We don't store full card numbers
+- 🎫 **Tokenization** - Payment tokens for recurring transactions
+- 📊 **Fraud detection** - Unusual transaction monitoring
+- 💳 **3D Secure** - Additional authentication for cards
 
 ### **Refund Policy:**
 
@@ -1203,8 +1213,27 @@ Owner cancellation:
 - 📊 **Route history** - See where the vehicle has been
 - ⏱️ **Timestamp** - Know exactly when last updated
 
-#### **2. Odometer Tracking**
-*"We track mileage manually with verified photos:"*
+#### **2. Geofencing Alerts**
+*"Owners can set virtual boundaries:"*
+
+```
+GEOFENCE SETTINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Allowed Radius: 50 km from Butuan City
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ ALERT CONDITIONS:
+✅ Vehicle leaves allowed area
+✅ Vehicle exceeds speed limit (120 km/h)
+✅ Vehicle inactive for 12+ hours
+✅ Unexpected movement (after return)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Notification Method:
+☑️ Push Notification
+☑️ Email Alert
+☑️ SMS (Premium)
+```
 
 #### **3. Odometer Tracking**
 *"We track mileage automatically and manually:"*
@@ -1239,7 +1268,7 @@ Excess Charge: ₱0
 
 *"Photo verification prevents odometer tampering and ensures accurate mileage billing."*
 
-#### **3. Emergency Features**
+#### **4. Emergency Features**
 *"Safety-first approach:"*
 
 ```
@@ -1253,6 +1282,7 @@ Excess Charge: ₱0
 [🚔 Report Theft]
    → Flags vehicle as stolen
    → Notifies owner and admin support
+   → Alerts authorities
    → Tracks last known location
 
 [🛠️ Request Roadside Assistance]
@@ -1260,7 +1290,7 @@ Excess Charge: ₱0
    → Shares live location
 ```
 
-#### **4. Privacy Controls**
+#### **5. Privacy Controls**
 *"Balancing safety with privacy:"*
 
 ```

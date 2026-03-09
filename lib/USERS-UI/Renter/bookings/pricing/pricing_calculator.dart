@@ -46,7 +46,7 @@ class PricingCalculator {
     
     double discountedRental = baseRental - discount;
     
-    // 3. Insurance fee (now passed directly)
+    // 3. Insurance fee (passed directly)
     
     // 4. Delivery fee
     double deliveryFee = 0.0;

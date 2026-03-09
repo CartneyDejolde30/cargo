@@ -252,7 +252,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         if (isRead == false) return true;
         // Locally marked as read, so it's not unread
         if (isRead == true) return false;
-        
+
         // Otherwise, defer to backend status
         return status != 'read';
       }).toList();

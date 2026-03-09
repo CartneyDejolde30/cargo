@@ -125,13 +125,13 @@ class _BookingScreenState extends State<BookingScreen> {
   void _calculatePrice() {
     setState(() {
       priceBreakdown = PricingCalculator.calculatePrice(
-      pricePerDay: basePrice,
-      numberOfDays: numberOfDays,
-      rentalPeriod: rentalPeriod,
-      needsDelivery: needsDelivery,
-      deliveryDistance: 5.0,
-      insuranceFee: insurancePremium,
-    );
+        pricePerDay: basePrice,
+        numberOfDays: numberOfDays,
+        rentalPeriod: rentalPeriod,
+        needsDelivery: needsDelivery,
+        deliveryDistance: 5.0,
+        insuranceFee: insurancePremium,
+      );
     });
   }
 
