@@ -8,7 +8,11 @@
       "Bash(where.exe mutool)",
       "Bash(where.exe gswin64c)",
       "Bash(where.exe java)",
-      "Bash(pdftotext \"c:/xampp/htdocs/cargo/docs/Cargo_CHAPTI-II \\(1\\).pdf\" -)"
+      "Bash(pdftotext \"c:/xampp/htdocs/cargo/docs/Cargo_CHAPTI-II \\(1\\).pdf\" -)",
+      "Bash(git pull origin main --no-rebase --allow-unrelated-histories)",
+      "Bash(git stash)",
+      "Bash(git restore --staged lib/USERS-UI/Owner/cancelled_bookings_page.dart lib/USERS-UI/Owner/dashboard.dart lib/USERS-UI/Owner/message_page.dart lib/USERS-UI/Owner/notification_page.dart)",
+      "Bash(git checkout HEAD -- lib/USERS-UI/Owner/cancelled_bookings_page.dart lib/USERS-UI/Owner/dashboard.dart lib/USERS-UI/Owner/message_page.dart lib/USERS-UI/Owner/notification_page.dart)"
     ]
   }
 }
