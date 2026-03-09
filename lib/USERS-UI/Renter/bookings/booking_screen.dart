@@ -60,7 +60,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   int currentStep = 0;
   bool needsDelivery = false;
-  String selectedPeriod = 'Day';
 
   // Controllers
   final TextEditingController fullNameController = TextEditingController();
@@ -81,6 +80,16 @@ class _BookingScreenState extends State<BookingScreen> {
     if (pickupDate == null || returnDate == null) return 1;
     return returnDate!.difference(pickupDate!).inDays + 1;
   }
+
+  /// Auto-detected rental period based on selected date range.
+  String get rentalPeriod =>
+      numberOfDays >= 30 ? 'Monthly' : numberOfDays >= 7 ? 'Weekly' : 'Day';
+
+  double get totalWithInsurance =>
+      (priceBreakdown?.totalAmount ?? 0) + insurancePremium;
+
+  double get bookingGrandTotal =>
+      totalWithInsurance + (priceBreakdown?.securityDeposit ?? 0);
 
   // Insurance state
   String? selectedInsuranceCoverage;
@@ -118,7 +127,7 @@ class _BookingScreenState extends State<BookingScreen> {
       priceBreakdown = PricingCalculator.calculatePrice(
       pricePerDay: basePrice,
       numberOfDays: numberOfDays,
-      rentalPeriod: selectedPeriod,
+      rentalPeriod: rentalPeriod,
       needsDelivery: needsDelivery,
       deliveryDistance: 5.0,
       insuranceFee: insurancePremium,
@@ -587,16 +596,6 @@ class _BookingScreenState extends State<BookingScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 SizedBox(height: 24),
-                Text(
-                  'Rental Period',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 12),
-                _buildPeriodSelector(),
-                SizedBox(height: 20),
                 _buildAvailabilityCalendarButton(),
                 SizedBox(height: 16),
                 Row(
@@ -815,18 +814,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildPeriodSelector() {
-    return Row(
-      children: [
-        _buildPeriodOption('Day'),
-        SizedBox(width: 12),
-        _buildPeriodOption('Weekly'),
-        SizedBox(width: 12),
-        _buildPeriodOption('Monthly'),
-      ],
-    );
-  }
-
   Widget _buildAvailabilityCalendarButton() {
     return GestureDetector(
       onTap: _openAvailabilityCalendar,
@@ -894,94 +881,61 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             if (pickupDate != null && returnDate != null) ...[
               SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green.shade700,
-                      size: 16,
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                  if (rentalPeriod != 'Day') ...[
                     SizedBox(width: 8),
-                    Text(
-                      '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'} rental',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green.shade700,
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.local_offer, color: Colors.blue.shade700, size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            '$rentalPeriod rate · ${rentalPeriod == 'Weekly' ? '${(PricingCalculator.weeklyDiscountRate * 100).toStringAsFixed(0)}' : '${(PricingCalculator.monthlyDiscountRate * 100).toStringAsFixed(0)}'}% off',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPeriodOption(String period) {
-    bool isSelected = selectedPeriod == period;
-    String discountText = '';
-
-    if (period == 'Weekly') {
-      discountText =
-          ' (${(PricingCalculator.weeklyDiscountRate * 100).toStringAsFixed(0)}% off)';
-    } else if (period == 'Monthly') {
-      discountText =
-          ' (${(PricingCalculator.monthlyDiscountRate * 100).toStringAsFixed(0)}% off)';
-    }
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selectedPeriod = period;
-            _calculatePrice();
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? Colors.black : Colors.grey.shade300,
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                period,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-              if (discountText.isNotEmpty)
-                Text(
-                  discountText,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    color:
-                        isSelected
-                            ? Colors.green.shade300
-                            : Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-            ],
-          ),
         ),
       ),
     );
@@ -1202,15 +1156,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildPriceBreakdown() {
     if (priceBreakdown == null) return SizedBox();
 
-    // Calculate total with insurance
-    final double totalWithInsurance =
-        priceBreakdown!.totalAmount + insurancePremium;
-    
-    // Calculate security deposit
     final double securityDeposit = priceBreakdown!.securityDeposit;
-    
-    // Grand total including deposit
-    final double grandTotal = totalWithInsurance + securityDeposit;
 
     return Container(
       padding: EdgeInsets.all(20),
@@ -1240,7 +1186,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
           if (priceBreakdown!.discount > 0)
             _buildBreakdownRow(
-              '${selectedPeriod} Discount',
+              '${rentalPeriod} Discount',
               '-${PricingCalculator.formatCurrency(priceBreakdown!.discount)}',
               isDiscount: true,
               subtitle:
@@ -1253,20 +1199,6 @@ class _BookingScreenState extends State<BookingScreen> {
               PricingCalculator.formatCurrency(priceBreakdown!.deliveryFee),
             ),
 
-          
-          // Insurance Premium
-          if (insurancePremium > 0)
-            _buildBreakdownRow(
-              'Insurance Premium',
-              InsuranceService.formatCurrency(insurancePremium),
-              subtitle:
-                  selectedInsuranceCoverage != null
-                      ? '${selectedInsuranceCoverage!.toUpperCase()} coverage'
-                      : null,
-            ),
-
-          
-          // Insurance Premium
           if (insurancePremium > 0)
             _buildBreakdownRow(
               'Insurance Premium',
@@ -1389,7 +1321,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ],
               ),
               Text(
-                PricingCalculator.formatCurrency(grandTotal),
+                PricingCalculator.formatCurrency(bookingGrandTotal),
                 style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -1497,11 +1429,7 @@ class _BookingScreenState extends State<BookingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                priceBreakdown != null
-                    ? PricingCalculator.formatCurrency(
-                      priceBreakdown!.grandTotal,
-                    )
-                    : '₱0.00',
+                PricingCalculator.formatCurrency(bookingGrandTotal),
                 style: GoogleFonts.poppins(
                   color: Theme.of(context).colorScheme.surface,
 
@@ -1622,7 +1550,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildSummaryRow('Car', widget.carName),
-                    _buildSummaryRow('Rental Period', selectedPeriod),
+                    _buildSummaryRow('Rental Period', rentalPeriod),
                     _buildSummaryRow(
                       'Duration',
                       '$numberOfDays day${numberOfDays > 1 ? "s" : ""}',
@@ -1653,9 +1581,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         ),
                         Text(
-                          PricingCalculator.formatCurrency(
-                            priceBreakdown!.grandTotal,
-                          ),
+                          PricingCalculator.formatCurrency(bookingGrandTotal),
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -1838,7 +1764,7 @@ class _BookingScreenState extends State<BookingScreen> {
         "return_date": DateFormat('yyyy-MM-dd').format(returnDate!),
         "pickup_time": pickupTime.format(context),
         "return_time": returnTime.format(context),
-        "rental_period": selectedPeriod,
+        "rental_period": rentalPeriod,
         "needs_delivery": needsDelivery ? "1" : "0",
         "total_amount": priceBreakdown!.totalAmount.toStringAsFixed(2),
       };
@@ -1913,7 +1839,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     returnDate: DateFormat('yyyy-MM-dd').format(returnDate!),
                     pickupTime: pickupTime.format(context),
                     returnTime: returnTime.format(context),
-                    rentalPeriod: selectedPeriod,
+                    rentalPeriod: rentalPeriod,
                     needsDelivery: needsDelivery,
                     totalAmount: totalAmount,
                     securityDeposit: securityDeposit is double ? securityDeposit : double.tryParse(securityDeposit.toString()) ?? 0.0,

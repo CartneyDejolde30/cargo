@@ -63,21 +63,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // ✅ FIX: Clean up malformed profile image URLs
-    String profileImg = prefs.getString("profile_image") ?? "";
-    // Check if URL is malformed (has double http:// or https://)
-    if ((profileImg.contains('http://') && profileImg.indexOf('http://') != profileImg.lastIndexOf('http://')) ||
-        (profileImg.contains('https://') && profileImg.indexOf('https://') != profileImg.lastIndexOf('https://'))) {
-      // Extract the actual Google/Facebook URL from the malformed path
-      int lastHttpsIndex = profileImg.lastIndexOf('https://');
-      int lastHttpIndex = profileImg.lastIndexOf('http://');
-      int lastIndex = lastHttpsIndex > lastHttpIndex ? lastHttpsIndex : lastHttpIndex;
-      
-      if (lastIndex > 0) {
-        profileImg = profileImg.substring(lastIndex);
-        // Save the corrected URL back to preferences
-        await prefs.setString("profile_image", profileImg);
-      }
+    final profileImg = _normalizeProfileImageUrl(prefs.getString("profile_image") ?? "");
+    // Persist corrected URL so it's clean on next load
+    if (profileImg != (prefs.getString("profile_image") ?? "")) {
+      await prefs.setString("profile_image", profileImg);
     }
 
     setState(() {
@@ -90,6 +79,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       gcashName = prefs.getString("gcash_name") ?? "";
       isVerified = prefs.getString("is_verified") == "1";
     });
+  }
+
+  /// Normalizes a stored profile image value to a valid https:// URL or empty string.
+  String _normalizeProfileImageUrl(String raw) {
+    if (raw.isEmpty || raw == "null" || raw == "NULL" || raw == "None") return "";
+
+    // Fix double-embedded URL (e.g. "https://host/uploads/https://google.com/photo")
+    final lastHttps = raw.lastIndexOf('https://');
+    final lastHttp  = raw.lastIndexOf('http://');
+    final lastIdx   = lastHttps > lastHttp ? lastHttps : lastHttp;
+    if (lastIdx > 0) raw = raw.substring(lastIdx);
+
+    // Upgrade http -> https on production
+    if (raw.startsWith('http://') && !GlobalApiConfig.isDevelopment) {
+      raw = raw.replaceFirst('http://', 'https://');
+    }
+
+    // Bare filename — build full URL into the profile_images folder
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = '${GlobalApiConfig.uploadsUrl}/profile_images/$raw';
+    }
+
+    return raw;
   }
 
   ImageProvider? _getProfileImage() {
@@ -464,7 +476,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => EditProfileScreen(
-                            api: GlobalApiConfig.baseUrl + '/api/update_profile.php',
+                            api: GlobalApiConfig.ownerUpdateProfileEndpoint,
                           )),
                         );
                         loadUserData();
@@ -743,7 +755,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => EditProfileScreen(
-                                  api: GlobalApiConfig.baseUrl + '/api/update_profile.php',
+                                  api: GlobalApiConfig.ownerUpdateProfileEndpoint,
                                 )),
                               );
                               loadUserData();

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cargo/config/api_config.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String api;
@@ -139,15 +140,28 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   ImageProvider? avatarImage() {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
-    // Safe check for network image - avoid empty strings
-    if (storedProfile.isNotEmpty && 
-        storedProfile != "null" && 
-        storedProfile != "NULL" &&
-        storedProfile.trim().isNotEmpty &&
+    if (storedProfile.isNotEmpty &&
         (storedProfile.startsWith('http://') || storedProfile.startsWith('https://'))) {
       return NetworkImage(storedProfile);
     }
     return null;
+  }
+
+  /// Normalizes a profile image value returned by the server to a valid https:// URL or empty string.
+  String _normalizeServerImageUrl(String raw) {
+    if (raw.isEmpty || raw == "null" || raw == "NULL") return "";
+
+    // Upgrade http -> https on production
+    if (raw.startsWith('http://') && !GlobalApiConfig.isDevelopment) {
+      raw = raw.replaceFirst('http://', 'https://');
+    }
+
+    // Bare filename — build full URL into the profile_images folder
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = '${GlobalApiConfig.uploadsUrl}/profile_images/$raw';
+    }
+
+    return raw;
   }
 
   Future<void> save() async {
@@ -210,24 +224,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       await prefs.setString("gcash_number", json["user"]["gcash_number"] ?? "");
       await prefs.setString("gcash_name", json["user"]["gcash_name"] ?? "");
       
-      // Handle profile image URL correctly
-      String profileImagePath = json["user"]["profile_image"] ?? "";
-      String profileImageUrl = "";
-      
-      debugPrint("🖼️ Profile image path from server: $profileImagePath");
-      
-      if (profileImagePath.isNotEmpty && profileImagePath != "null") {
-        // If it's already a full URL (Google, Facebook, etc.), use it as-is
-        if (profileImagePath.startsWith('http://') || profileImagePath.startsWith('https://')) {
-          profileImageUrl = profileImagePath;
-          debugPrint("✅ Using full URL: $profileImageUrl");
-        } else {
-          // Otherwise, prepend the uploads URL (it already contains /profile_images/)
-          profileImageUrl = profileImagePath;
-          debugPrint("✅ Using server-provided path: $profileImageUrl");
-        }
-      }
-      
+      // Normalize profile image URL from server response
+      final profileImageUrl = _normalizeServerImageUrl(json["user"]["profile_image"] ?? "");
+      debugPrint("🖼️ Profile image URL (normalized): $profileImageUrl");
       await prefs.setString("profile_image", profileImageUrl);
       
       // Update the UI immediately

@@ -42,7 +42,8 @@ class GlobalApiConfig {
   static String get resetPasswordEndpoint => '$apiUrl/security/reset_password.php';
   
   // User Profile
-  static String get updateProfileEndpoint => '$baseUrl/update.php';
+  static String get updateProfileEndpoint => '$baseUrl/update.php';          // Renter (no GCash fields)
+  static String get ownerUpdateProfileEndpoint => '$apiUrl/update_profile.php'; // Owner (includes GCash fields)
   static String get getProfileEndpoint => '$baseUrl/get_profile.php';
   
   // Verification (Updated to use the correct endpoint)

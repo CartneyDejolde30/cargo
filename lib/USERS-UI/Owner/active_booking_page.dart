@@ -621,7 +621,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
 
 Widget _buildModernBookingCard(Map<String, dynamic> booking) {
   final daysRemaining = int.tryParse(booking['days_remaining']?.toString() ?? '0') ?? 0;
-  final progress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0;
   
   // Safe image URL handling - ensure we never pass empty string to Image.network
   final carImage = booking['car_image'];
@@ -841,29 +840,17 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                             ),
                           ),
                           Text(
-                            '${progress.toStringAsFixed(0)}%',
-                            style: GoogleFonts.outfit(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                            _getTripStageLabel(booking),
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.shade700,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          height: 6,
-                          child: LinearProgressIndicator(
-                            value: progress / 100,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              progress < 33 ? Colors.green :
-                              progress < 66 ? Colors.orange : Colors.red
-                            ),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
+                      _buildCompactMilestoneStepper(booking),
                     ],
                   ),
                 ),
@@ -940,6 +927,104 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
     ),
   );
 }
+
+  String _getTripStageLabel(Map<String, dynamic> booking) {
+    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final odometerStart = booking['odometer_start'];
+    final odometerEnd = booking['odometer_end'];
+    final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
+    if (isCompleted || odometerEnd != null) return 'Completed';
+    if (tripStarted || odometerStart != null) return 'In Progress';
+    return 'Approved';
+  }
+
+  Widget _buildCompactMilestoneStepper(Map<String, dynamic> booking) {
+    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final odometerStart = booking['odometer_start'];
+    final odometerEnd = booking['odometer_end'];
+    final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
+
+    // activeStep: steps before it are done (green), it is current, steps after are pending
+    // Note: status is always 'active' for this endpoint; 'completed' only via odometerEnd
+    final int activeStep;
+    if (isCompleted || odometerEnd != null) {
+      activeStep = 4; // all steps green
+    } else if (tripStarted || odometerStart != null) {
+      activeStep = 2; // In Progress is current
+    } else {
+      activeStep = 1; // Trip Started is current (Approved done)
+    }
+
+    const stepIcons = [
+      Icons.check_circle_outline,
+      Icons.directions_car,
+      Icons.route,
+      Icons.flag,
+    ];
+    const stepLabels = ['Approved', 'Started', 'In Progress', 'Done'];
+    const stepColors = [Colors.green, Colors.blue, Colors.orange, Colors.purple];
+
+    final result = <Widget>[];
+    for (int i = 0; i < 4; i++) {
+      final isDone = i < activeStep;
+      final isCurrent = i == activeStep;
+      result.add(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone
+                    ? Colors.green
+                    : isCurrent
+                        ? stepColors[i]
+                        : Colors.grey.shade200,
+              ),
+              child: Icon(
+                isDone ? Icons.check : stepIcons[i],
+                size: 13,
+                color: isDone || isCurrent ? Colors.white : Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              stepLabels[i],
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontWeight: isCurrent || isDone ? FontWeight.w600 : FontWeight.w400,
+                color: isDone
+                    ? Colors.green.shade700
+                    : isCurrent
+                        ? stepColors[i]
+                        : Colors.grey.shade400,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (i < 3) {
+        result.add(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 13, bottom: 17),
+              child: Container(
+                height: 2,
+                color: i < activeStep ? Colors.green : Colors.grey.shade200,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: result,
+    );
+  }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
@@ -1171,7 +1256,6 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = double.tryParse(widget.booking['trip_progress']?.toString() ?? '0') ?? 0;
     final daysRemaining = int.tryParse(widget.booking['days_remaining']?.toString() ?? '0') ?? 0;
     
     // Safe image URL handling
@@ -1252,111 +1336,26 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Trip Progress',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${progress.toStringAsFixed(0)}%',
-                        style: GoogleFonts.outfit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Trip Timeline
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.play_circle, size: 16, color: Colors.green.shade700),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Start',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.booking['pickup_time_display'] ?? widget.booking['pickup_time'] ?? 'N/A',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'End',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(Icons.stop_circle, size: 16, color: Colors.red.shade700),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.booking['return_time_display'] ?? widget.booking['return_time'] ?? 'N/A',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      height: 8,
-                      child: LinearProgressIndicator(
-                        value: progress / 100,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          progress < 33 ? Colors.green :
-                          progress < 66 ? Colors.orange : Colors.red
-                        ),
-                      ),
+                  Text(
+                    'Trip Progress',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.booking['pickup_date'] ?? ''} → ${widget.booking['return_date'] ?? ''}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildOwnerMilestoneStepper(widget.booking),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -1487,6 +1486,105 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOwnerMilestoneStepper(Map<String, dynamic> booking) {
+    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final odometerStart = booking['odometer_start'];
+    final odometerEnd = booking['odometer_end'];
+    final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
+
+    // activeStep: steps before it are done (green check), it is current (blue), after it are pending (grey)
+    // Steps: 0=Approved, 1=Trip Started, 2=In Progress, 3=Completed
+    // Note: status is hardcoded 'active' by the API for active bookings;
+    // "all done" is signalled by odometerEnd != null (owner recorded end reading).
+    final int activeStep;
+    if (isCompleted || odometerEnd != null) {
+      activeStep = 4; // all steps green
+    } else if (tripStarted || odometerStart != null) {
+      activeStep = 2; // In Progress is current
+    } else {
+      activeStep = 1; // Trip Started is current (Approved done)
+    }
+
+    final steps = [
+      _OwnerMilestone('Approved', Icons.check_circle_outline, Colors.green),
+      _OwnerMilestone('Trip Started', Icons.directions_car, Colors.blue),
+      _OwnerMilestone('In Progress', Icons.route, Colors.orange),
+      _OwnerMilestone('Completed', Icons.flag, Colors.purple),
+    ];
+
+    final result = <Widget>[];
+    for (int i = 0; i < steps.length; i++) {
+      final isDone = i < activeStep;
+      final isCurrent = i == activeStep;
+      final step = steps[i];
+      result.add(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone
+                    ? Colors.green
+                    : isCurrent
+                        ? step.color
+                        : Colors.grey.shade200,
+                boxShadow: isCurrent
+                    ? [BoxShadow(color: step.color.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 2))]
+                    : null,
+              ),
+              child: Icon(
+                isDone ? Icons.check : step.icon,
+                size: 16,
+                color: isDone || isCurrent ? Colors.white : Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 64,
+              child: Text(
+                step.label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: isCurrent || isDone ? FontWeight.w600 : FontWeight.w400,
+                  color: isDone
+                      ? Colors.green.shade700
+                      : isCurrent
+                          ? step.color
+                          : Colors.grey.shade400,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (i < steps.length - 1) {
+        result.add(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 22),
+              child: Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(1),
+                  color: i < activeStep ? Colors.green : Colors.grey.shade200,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: result,
     );
   }
 
@@ -1854,4 +1952,11 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
       ),
     );
   }
+}
+
+class _OwnerMilestone {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _OwnerMilestone(this.label, this.icon, this.color);
 }

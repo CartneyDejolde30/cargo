@@ -255,14 +255,28 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
   ImageProvider? getImage() {
     if (imageFile != null) return FileImage(imageFile!);
     if (webImage != null) return MemoryImage(webImage!);
-    // Safe check for network image - avoid empty strings
-    if (storedImage.trim().isNotEmpty &&
-        storedImage != "null" &&
-        storedImage != "NULL" &&
+    if (storedImage.isNotEmpty &&
         (storedImage.startsWith('http://') || storedImage.startsWith('https://'))) {
       return NetworkImage(storedImage);
     }
     return null;
+  }
+
+  /// Normalizes a profile image value returned by the server to a valid https:// URL or empty string.
+  String _normalizeServerImageUrl(String raw) {
+    if (raw.isEmpty || raw == "null" || raw == "NULL") return "";
+
+    // Upgrade http -> https on production
+    if (raw.startsWith('http://') && !GlobalApiConfig.isDevelopment) {
+      raw = raw.replaceFirst('http://', 'https://');
+    }
+
+    // Bare filename — build full URL into the profile_images folder
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = '${GlobalApiConfig.uploadsUrl}/profile_images/$raw';
+    }
+
+    return raw;
   }
 
   Future<void> save() async {
@@ -307,14 +321,8 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
         await prefs.setString("fullname", updated["fullname"]);
         await prefs.setString("phone", updated["phone"] ?? "");
         await prefs.setString("address", updated["address"] ?? "");
-        String baseURL = GlobalApiConfig.uploadsUrl + "/";
-        String img = updated["profile_image"] ?? "";
-
-
-
-        String finalURL = img.startsWith("http") ? img : baseURL + img;
-
-await prefs.setString("profile_image", finalURL);
+        final finalURL = _normalizeServerImageUrl(updated["profile_image"] ?? "");
+        await prefs.setString("profile_image", finalURL);
 
 
 

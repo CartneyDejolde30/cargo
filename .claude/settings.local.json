@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(cmd /c \"strings \"\"c:\\\\xampp\\\\htdocs\\\\cargo\\\\docs\\\\Cargo_CHAPTI-II \\(1\\).pdf\"\" 2>nul | head -300\")",
+      "Bash(node -e \":*)",
+      "Bash(where.exe pdftotext)",
+      "Bash(where.exe mutool)",
+      "Bash(where.exe gswin64c)",
+      "Bash(where.exe java)",
+      "Bash(pdftotext \"c:/xampp/htdocs/cargo/docs/Cargo_CHAPTI-II \\(1\\).pdf\" -)"
+    ]
+  }
+}

@@ -8,6 +8,7 @@ import 'package:cargo/USERS-UI/Renter/edit_profile.dart';
 import 'package:cargo/USERS-UI/services/faqs_screen.dart';
 import 'package:cargo/USERS-UI/services/help_support_screen.dart';
 import 'package:cargo/USERS-UI/services/about_app_screen.dart';
+import 'package:cargo/config/api_config.dart';
 import 'package:cargo/USERS-UI/Renter/payments/payment_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cargo/theme/theme_provider.dart';
@@ -60,31 +61,48 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
+    final profileImg = _normalizeProfileImageUrl(prefs.getString("profile_image") ?? "");
+    // Persist corrected URL so it's clean on next load
+    if (profileImg != (prefs.getString("profile_image") ?? "")) {
+      await prefs.setString("profile_image", profileImg);
+    }
+
     setState(() {
       userName = prefs.getString("fullname") ?? "User";
       userEmail = prefs.getString("email") ?? "No Email";
       phone = prefs.getString("phone") ?? "";
       address = prefs.getString("address") ?? "";
-      profileImage = prefs.getString("profile_image") ?? "";
+      profileImage = profileImg;
       isVerified = prefs.getString("is_verified") == "1";
-      print("PROFILE IMAGE FROM PREFS → $profileImage");
     });
+  }
+
+  /// Normalizes a stored profile image value to a valid https:// URL or empty string.
+  String _normalizeProfileImageUrl(String raw) {
+    if (raw.isEmpty || raw == "null" || raw == "NULL") return "";
+
+    // Fix double-embedded URL (e.g. "https://host/uploads/https://google.com/photo")
+    final lastHttps = raw.lastIndexOf('https://');
+    final lastHttp  = raw.lastIndexOf('http://');
+    final lastIdx   = lastHttps > lastHttp ? lastHttps : lastHttp;
+    if (lastIdx > 0) raw = raw.substring(lastIdx);
+
+    // Upgrade http -> https on production
+    if (raw.startsWith('http://') && !GlobalApiConfig.isDevelopment) {
+      raw = raw.replaceFirst('http://', 'https://');
+    }
+
+    // Bare filename — build full URL into the profile_images folder
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = '${GlobalApiConfig.uploadsUrl}/profile_images/$raw';
+    }
+
+    return raw;
   }
 
   ImageProvider? _getProfileImage() {
     if (profileImage.isEmpty) return null;
-
-    // Clean URL
-    final url = profileImage.trim();
-
-    print("FINAL PROFILE URL → $url");
-
-    // URL must begin with http or https
-    if (!url.startsWith("http")) {
-      return null;
-    }
-
-    return NetworkImage(url);
+    return NetworkImage(profileImage);
   }
 
   Future<void> logout() async {

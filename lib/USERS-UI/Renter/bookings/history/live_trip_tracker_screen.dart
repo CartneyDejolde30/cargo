@@ -147,14 +147,8 @@ final colors = Theme.of(context).colorScheme;
 
   // Trip Status Card
   Widget _buildTripStatusCard() {
-    final DateTime pickupDate = _parseDate(widget.booking.pickupDate) ?? DateTime.now();
     final DateTime returnDate = _parseDate(widget.booking.returnDate) ?? DateTime.now();
     final DateTime now = DateTime.now();
-    
-    final int totalDuration = returnDate.difference(pickupDate).inHours;
-    final int elapsedDuration = now.difference(pickupDate).inHours;
-    
-    final double progress = totalDuration > 0 ? elapsedDuration / totalDuration : 0;
     
     final int daysRemaining = returnDate.difference(now).inDays;
     final int hoursRemaining = returnDate.difference(now).inHours % 24;
@@ -222,72 +216,42 @@ final colors = Theme.of(context).colorScheme;
         ),
         const SizedBox(height: 20),
 
-        // Progress Bar
-        Column(
+        // Date row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Pickup',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.white60),
                 ),
-                Text(
-                  'Return',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Stack(
-              children: [
-                Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3), // light track
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: progress.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // ✅ bright progress line
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
                 Text(
                   widget.booking.pickupDate,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.white70,
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Return',
+                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.white60),
                 ),
                 Text(
                   widget.booking.returnDate,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.white70,
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ],
         ),
+        const SizedBox(height: 20),
+
+        // Milestone Stepper
+        _buildRenterMilestoneStepper(),
       ],
     ),
   ),
@@ -819,6 +783,102 @@ final colors = Theme.of(context).colorScheme;
     );
   }
 
+  // Milestone Stepper
+  Widget _buildRenterMilestoneStepper() {
+    final pickupDateTime = _parseDate(widget.booking.pickupDate);
+    final now = DateTime.now();
+    final isAfterPickup = pickupDateTime != null && now.isAfter(pickupDateTime);
+    final isCompleted = widget.booking.status == 'completed';
+
+    // activeStep: index of the step currently in progress (steps before it are done)
+    // 0=Confirmed, 1=Picked Up, 2=In Progress, 3=Completed
+    final int activeStep;
+    if (isCompleted) {
+      activeStep = 4; // all done
+    } else if (isAfterPickup) {
+      activeStep = 2; // In Progress is current
+    } else {
+      activeStep = 1; // Picked Up is current, Confirmed done
+    }
+
+    final steps = [
+      _TripMilestone('Confirmed', Icons.check_circle_outline),
+      _TripMilestone('Picked Up', Icons.directions_car),
+      _TripMilestone('In Progress', Icons.route),
+      _TripMilestone('Completed', Icons.flag),
+    ];
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _buildStepperChildren(steps, activeStep),
+    );
+  }
+
+  List<Widget> _buildStepperChildren(List<_TripMilestone> steps, int activeStep) {
+    final result = <Widget>[];
+    for (int i = 0; i < steps.length; i++) {
+      final isDone = i < activeStep;
+      final isCurrent = i == activeStep;
+      result.add(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone
+                    ? Colors.green
+                    : isCurrent
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.25),
+                border: isCurrent
+                    ? Border.all(color: Colors.white, width: 2)
+                    : null,
+              ),
+              child: Icon(
+                isDone ? Icons.check : steps[i].icon,
+                size: 14,
+                color: isDone
+                    ? Colors.white
+                    : isCurrent
+                        ? Colors.blue.shade700
+                        : Colors.white.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              steps[i].label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 9,
+                fontWeight: isCurrent || isDone ? FontWeight.w600 : FontWeight.w400,
+                color: isDone || isCurrent ? Colors.white : Colors.white60,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (i < steps.length - 1) {
+        result.add(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 14, bottom: 19),
+              child: Container(
+                height: 2,
+                color: i < activeStep
+                    ? Colors.green
+                    : Colors.white.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return result;
+  }
+
   // Helper Methods
   DateTime? _parseDate(String dateStr) {
     try {
@@ -1005,4 +1065,10 @@ final colors = Theme.of(context).colorScheme;
       ),
     );
   }
+}
+
+class _TripMilestone {
+  final String label;
+  final IconData icon;
+  const _TripMilestone(this.label, this.icon);
 }
