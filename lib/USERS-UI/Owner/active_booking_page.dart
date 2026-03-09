@@ -1257,7 +1257,10 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final daysRemaining = int.tryParse(widget.booking['days_remaining']?.toString() ?? '0') ?? 0;
-    
+    final totalDays = int.tryParse(widget.booking['rental_period']?.toString() ?? '1') ?? 1;
+    final daysElapsed = int.tryParse(widget.booking['days_elapsed']?.toString() ?? '0') ?? 0;
+    final progress = ((daysElapsed / (totalDays > 0 ? totalDays : 1)) * 100).clamp(0.0, 100.0);
+
     // Safe image URL handling
     final carImage = widget.booking['car_image'];
     final imageUrl = (carImage == null || carImage.toString().trim().isEmpty) 
