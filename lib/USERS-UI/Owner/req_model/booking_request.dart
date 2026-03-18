@@ -12,6 +12,15 @@ class BookingRequest {
   final String location;
   final String seats;
   final String transmission;
+  // Price breakdown fields
+  final double pricePerDay;
+  final double baseRental;
+  final double discount;
+  final double insurancePremium;
+  final double serviceFee;
+  final double securityDeposit;
+  final double grandTotal;
+  final int rentalDays;
 
   BookingRequest({
     required this.bookingId,
@@ -27,6 +36,14 @@ class BookingRequest {
     required this.location,
     required this.seats,
     required this.transmission,
+    this.pricePerDay = 0,
+    this.baseRental = 0,
+    this.discount = 0,
+    this.insurancePremium = 0,
+    this.serviceFee = 0,
+    this.securityDeposit = 0,
+    this.grandTotal = 0,
+    this.rentalDays = 1,
   });
 
   factory BookingRequest.fromJson(Map<String, dynamic> json) {
@@ -44,6 +61,14 @@ class BookingRequest {
       location: json['location'] ?? 'N/A',
       seats: json['seats'] ?? 'N/A',
       transmission: json['transmission'] ?? 'N/A',
+      pricePerDay:      (json['price_per_day'] as num?)?.toDouble() ?? 0,
+      baseRental:       (json['base_rental'] as num?)?.toDouble() ?? 0,
+      discount:         (json['discount'] as num?)?.toDouble() ?? 0,
+      insurancePremium: (json['insurance_premium'] as num?)?.toDouble() ?? 0,
+      serviceFee:       (json['service_fee'] as num?)?.toDouble() ?? 0,
+      securityDeposit:  (json['security_deposit'] as num?)?.toDouble() ?? 0,
+      grandTotal:       (json['grand_total'] as num?)?.toDouble() ?? 0,
+      rentalDays:       (json['rental_days'] as num?)?.toInt() ?? 1,
     );
   }
 

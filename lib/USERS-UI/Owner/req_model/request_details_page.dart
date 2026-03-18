@@ -286,9 +286,39 @@ class RequestDetailsPage extends StatelessWidget {
         _buildDetailRow('Return Date', request.returnDate),
         const SizedBox(height: 12),
         _buildDetailRow('Duration', request.rentalPeriod),
-        const SizedBox(height: 12),
-        _buildDetailRow('Total Amount', '₱${request.totalAmount}',
-            valueColor: Colors.black, isBold: true),
+        if (request.rentalDays > 0) ...[
+          const SizedBox(height: 12),
+          _buildDetailRow('Rental Days', '${request.rentalDays} day${request.rentalDays != 1 ? 's' : ''}'),
+        ],
+        const Divider(height: 24),
+        if (request.baseRental > 0) ...[
+          _buildDetailRow('Base Rental', '₱${request.baseRental.toStringAsFixed(2)}'),
+          const SizedBox(height: 8),
+        ],
+        if (request.discount > 0) ...[
+          _buildDetailRow('Discount', '-₱${request.discount.toStringAsFixed(2)}', valueColor: Colors.green),
+          const SizedBox(height: 8),
+        ],
+        if (request.insurancePremium > 0) ...[
+          _buildDetailRow('Insurance Premium', '₱${request.insurancePremium.toStringAsFixed(2)}'),
+          const SizedBox(height: 8),
+        ],
+        if (request.serviceFee > 0) ...[
+          _buildDetailRow('Service Fee (5%)', '₱${request.serviceFee.toStringAsFixed(2)}'),
+          const SizedBox(height: 8),
+        ],
+        _buildDetailRow('Total Amount', '₱${request.totalAmount}', isBold: true),
+        if (request.securityDeposit > 0) ...[
+          const SizedBox(height: 8),
+          _buildDetailRow('Security Deposit (20%)', '₱${request.securityDeposit.toStringAsFixed(2)}', valueColor: Colors.orange.shade700),
+        ],
+        const Divider(height: 16),
+        _buildDetailRow(
+          'Grand Total',
+          '₱${request.grandTotal > 0 ? request.grandTotal.toStringAsFixed(2) : request.totalAmount}',
+          valueColor: Colors.green.shade700,
+          isBold: true,
+        ),
       ],
     );
   }

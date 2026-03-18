@@ -51,32 +51,52 @@ class OverdueService {
     }
   }
 
+  /// Parses a return date + time string into a DateTime.
+  /// Handles both 24-hour ("08:50:00") and 12-hour ("08:50 AM") formats.
+  DateTime? _parseReturnDateTime(String returnDate, String returnTime) {
+    final date = returnDate.trim();
+    final time = returnTime.trim();
+    // Try ISO / 24-hour format first
+    final direct = DateTime.tryParse('$date $time') ?? DateTime.tryParse('${date}T$time');
+    if (direct != null) return direct;
+    // Handle 12-hour AM/PM format (e.g. "08:50 AM")
+    final amPmMatch = RegExp(r'^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$', caseSensitive: false).firstMatch(time);
+    if (amPmMatch != null) {
+      int hour = int.parse(amPmMatch.group(1)!);
+      final minute = int.parse(amPmMatch.group(2)!);
+      final second = int.tryParse(amPmMatch.group(3) ?? '') ?? 0;
+      final isPm = amPmMatch.group(4)!.toUpperCase() == 'PM';
+      if (hour == 12) hour = isPm ? 12 : 0;
+      else if (isPm) hour += 12;
+      final dateParts = date.split('-');
+      if (dateParts.length == 3) {
+        return DateTime(int.parse(dateParts[0]), int.parse(dateParts[1]),
+            int.parse(dateParts[2]), hour, minute, second);
+      }
+    }
+    return null;
+  }
+
   /// Check if booking is overdue based on return date/time (client-side calculation)
   /// This is a fallback when API is unavailable
   bool isBookingOverdueLocal(String returnDate, String returnTime) {
-    try {
-      final returnDateTime = DateTime.parse('$returnDate $returnTime');
-      final now = DateTime.now();
-      return now.isAfter(returnDateTime);
-    } catch (e) {
-      print('Error parsing return date/time: $e');
+    final returnDateTime = _parseReturnDateTime(returnDate, returnTime);
+    if (returnDateTime == null) {
+      print('Error parsing return date/time: $returnDate $returnTime');
       return false;
     }
+    return DateTime.now().isAfter(returnDateTime);
   }
 
   /// Calculate hours overdue (client-side)
   int calculateHoursOverdue(String returnDate, String returnTime) {
-    try {
-      final returnDateTime = DateTime.parse('$returnDate $returnTime');
-      final now = DateTime.now();
-      if (now.isAfter(returnDateTime)) {
-        return now.difference(returnDateTime).inHours;
-      }
-      return 0;
-    } catch (e) {
-      print('Error calculating hours overdue: $e');
+    final returnDateTime = _parseReturnDateTime(returnDate, returnTime);
+    if (returnDateTime == null) {
+      print('Error calculating hours overdue: $returnDate $returnTime');
       return 0;
     }
+    final now = DateTime.now();
+    return now.isAfter(returnDateTime) ? now.difference(returnDateTime).inHours : 0;
   }
 
   /// Request a rental extension

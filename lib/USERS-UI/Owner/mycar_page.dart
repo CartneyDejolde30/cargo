@@ -473,7 +473,7 @@ class _MyCarPageState extends State<MyCarPage> {
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        childAspectRatio: .65,
+        childAspectRatio: 0.82,
       ),
       itemBuilder: (_, index) {
         final car = filteredCars[index];
@@ -489,7 +489,10 @@ class _MyCarPageState extends State<MyCarPage> {
                   builder: (_) => CarDetailPage(
                     car: car,
                     ownerId: widget.ownerId, // Pass ownerId as fallback
-                    onDelete: () => deleteVehicle(car),
+                    onDelete: () {
+                      cars.removeWhere((c) => c['id'].toString() == car['id'].toString());
+                      applyFilters();
+                    },
                   ),
                 ),
               );

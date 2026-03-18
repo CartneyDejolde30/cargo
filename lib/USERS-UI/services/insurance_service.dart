@@ -314,7 +314,7 @@ class InsuranceService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse('$baseUrl/admin/get_owner_policies.php')
+      final uri = Uri.parse(GlobalApiConfig.ownerInsurancePoliciesEndpoint)
           .replace(queryParameters: queryParams);
 
       final response = await http.get(uri);

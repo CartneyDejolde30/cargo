@@ -12,7 +12,8 @@ class EnhancedNotificationService {
   Future<Map<String, dynamic>> fetchNotifications({
     required int userId,
     String? type,
-    String? status, // 'read', 'unread', 'all'
+    String? status, // 'read', 'unread'
+    String? sort,   // 'DESC' (newest) or 'ASC' (oldest)
     int? limit,
     int? offset,
   }) async {
@@ -21,6 +22,7 @@ class EnhancedNotificationService {
         'user_id': userId.toString(),
         if (type != null) 'type': type,
         if (status != null) 'status': status,
+        if (sort != null) 'sort': sort,
         if (limit != null) 'limit': limit.toString(),
         if (offset != null) 'offset': offset.toString(),
       };

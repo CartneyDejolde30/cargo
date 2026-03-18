@@ -147,11 +147,29 @@ final colors = Theme.of(context).colorScheme;
 
   // Trip Status Card
   Widget _buildTripStatusCard() {
-    final DateTime returnDate = _parseDate(widget.booking.returnDate) ?? DateTime.now();
+    // Parse full return datetime (date + time) to avoid midnight-only parsing bug
+    final DateTime returnDate = _parseDateTimeStr(
+      widget.booking.returnDate,
+      widget.booking.returnTime,
+    ) ?? DateTime.now();
     final DateTime now = DateTime.now();
-    
-    final int daysRemaining = returnDate.difference(now).inDays;
-    final int hoursRemaining = returnDate.difference(now).inHours % 24;
+
+    final Duration timeLeft = returnDate.difference(now);
+    final bool isOverdue = timeLeft.isNegative;
+    final int daysRemaining = isOverdue ? 0 : timeLeft.inDays;
+    final int hoursRemaining = isOverdue ? 0 : timeLeft.inHours % 24;
+    final int minutesRemaining = isOverdue ? 0 : timeLeft.inMinutes % 60;
+
+    String timeLabel;
+    if (isOverdue) {
+      timeLabel = 'Overdue';
+    } else if (daysRemaining > 0) {
+      timeLabel = '$daysRemaining days $hoursRemaining hrs left';
+    } else if (hoursRemaining > 0) {
+      timeLabel = '$hoursRemaining hrs $minutesRemaining min left';
+    } else {
+      timeLabel = '$minutesRemaining min left';
+    }
 
     return Padding(
   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -189,13 +207,11 @@ final colors = Theme.of(context).colorScheme;
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  daysRemaining > 0
-                      ? '$daysRemaining days $hoursRemaining hrs left'
-                      : '$hoursRemaining hours left',
+                  timeLabel,
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white, // ✅ always light
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -785,17 +801,18 @@ final colors = Theme.of(context).colorScheme;
 
   // Milestone Stepper
   Widget _buildRenterMilestoneStepper() {
-    final pickupDateTime = _parseDate(widget.booking.pickupDate);
-    final now = DateTime.now();
-    final isAfterPickup = pickupDateTime != null && now.isAfter(pickupDateTime);
     final isCompleted = widget.booking.status == 'completed';
+    final isOngoing = widget.booking.status == 'ongoing';
+    final tripStarted = isOngoing || widget.booking.tripStarted;
+    final odometerStart = widget.booking.odometerStart;
 
     // activeStep: index of the step currently in progress (steps before it are done)
     // 0=Confirmed, 1=Picked Up, 2=In Progress, 3=Completed
+    // Action-based: advances when owner starts the trip (status=ongoing or trip_started flag)
     final int activeStep;
     if (isCompleted) {
       activeStep = 4; // all done
-    } else if (isAfterPickup) {
+    } else if (tripStarted || odometerStart != null) {
       activeStep = 2; // In Progress is current
     } else {
       activeStep = 1; // Picked Up is current, Confirmed done
@@ -885,6 +902,18 @@ final colors = Theme.of(context).colorScheme;
       return DateTime.parse(dateStr.replaceFirst(' ', 'T'));
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Parses a date string + time string into a full DateTime.
+  /// Avoids the midnight-only bug when time is stored in a separate field.
+  DateTime? _parseDateTimeStr(String dateStr, String timeStr) {
+    try {
+      final d = dateStr.trim();
+      final t = timeStr.trim().isNotEmpty ? timeStr.trim() : '00:00:00';
+      return DateTime.parse('${d}T$t');
+    } catch (_) {
+      return _parseDate(dateStr);
     }
   }
 

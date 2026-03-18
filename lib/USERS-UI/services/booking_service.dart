@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:cargo/config/api_config.dart';
 import 'package:cargo/USERS-UI/Renter/models/booking.dart';
@@ -15,7 +16,7 @@ class BookingService {
     ),
   );
 
-  print('RAW RESPONSE: ${response.body}');
+  debugPrint('RAW RESPONSE: ${response.body}');
 
   if (response.statusCode == 200) {
     final Map<String, dynamic> jsonData = jsonDecode(response.body);
@@ -27,8 +28,10 @@ class BookingService {
     final List list = jsonData['bookings'];
 
     return list.map((e) => Booking.fromJson(e)).toList();
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    throw Exception('Session expired. Please log in again.');
   } else {
-    throw Exception('Failed to load bookings');
+    throw Exception('Failed to load bookings (HTTP ${response.statusCode})');
   }
 }
 

@@ -1,4 +1,5 @@
 // lib/USERS-UI/Owner/active_booking_page.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import 'mycar/api_config.dart';
 import 'live_tracking_screen.dart'; // Import the new tracking screen
 import 'package:cargo/widgets/optimized_network_image.dart';
 import 'package:cargo/USERS-UI/widgets/odometer_input_screen.dart'; // Odometer tracking
+import 'package:cargo/USERS-UI/Owner/damage_report_screen.dart';
 
 class ActiveBookingsPage extends StatefulWidget {
   const ActiveBookingsPage({super.key});
@@ -17,6 +19,7 @@ class ActiveBookingsPage extends StatefulWidget {
 
 class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   final BookingService _bookingService = BookingService();
+  Timer? _autoStartTimer;
 
   DateTime? _tryParseScheduledPickup(String? pickupDateRaw, String? pickupTimeRaw) {
     if (pickupDateRaw == null || pickupDateRaw.trim().isEmpty) return null;
@@ -31,6 +34,19 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
     final iso = '${pickupDateRaw.trim()}T$time';
     return DateTime.tryParse(iso);
   }
+
+  /// Returns true when the scheduled return datetime has passed for an active booking.
+  bool _isReturnOverdue(Map<String, dynamic> booking) {
+    final returnDateRaw = booking['return_date_raw']?.toString();
+    final returnTimeRaw = (booking['return_time'] ?? booking['return_time_display'])?.toString();
+    if (returnDateRaw == null || returnDateRaw.trim().isEmpty) return false;
+    String time = (returnTimeRaw ?? '').trim();
+    if (time.isEmpty) time = '23:59:59';
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(time)) time = '$time:00';
+    final returnDt = DateTime.tryParse('${returnDateRaw.trim()}T$time');
+    if (returnDt == null) return false;
+    return DateTime.now().isAfter(returnDt);
+  }
   
   String? _ownerId;
   bool _isLoading = true;
@@ -41,6 +57,61 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   void initState() {
     super.initState();
     _loadOwnerIdAndFetchBookings();
+    // Check every minute for bookings whose pickup time has arrived
+    _autoStartTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _checkAndAutoStartBookings();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoStartTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Automatically starts/completes bookings based on scheduled times.
+  Future<void> _checkAndAutoStartBookings() async {
+    if (_ownerId == null || _activeBookings.isEmpty) return;
+    final now = DateTime.now();
+    bool needsRefresh = false;
+
+    for (final booking in List<Map<String, dynamic>>.from(_activeBookings)) {
+      final tripStatus = booking['trip_status'] ?? '';
+
+      // ── Auto-start at pickup time ──
+      if (tripStatus == 'upcoming') {
+        final scheduled = _tryParseScheduledPickup(
+          booking['pickup_date_raw']?.toString(),
+          booking['pickup_time_raw']?.toString(),
+        );
+        if (scheduled == null || now.isBefore(scheduled)) continue;
+        debugPrint('⏰ Auto-starting trip for booking ${booking['booking_id']}');
+        final result = await _bookingService.startTrip(
+          booking['booking_id'].toString(),
+          _ownerId!,
+        );
+        if (mounted && result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.play_circle_outline, color: Colors.white, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text('Rental for ${booking['car_full_name'] ?? 'vehicle'} has started automatically.')),
+                ],
+              ),
+              backgroundColor: Colors.green.shade700,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          needsRefresh = true;
+        }
+        continue;
+      }
+
+    }
+
+    if (needsRefresh) await _fetchActiveBookings();
   }
 
   Future<void> _loadOwnerIdAndFetchBookings() async {
@@ -77,13 +148,15 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
   Future<void> _fetchActiveBookings() async {
     try {
       final bookings = await _bookingService.fetchActiveBookings(_ownerId!);
-      
+
       if (mounted) {
         setState(() {
           _activeBookings = bookings;
           _isLoading = false;
           _errorMessage = null;
         });
+        // Run scheduled-action check immediately after each fetch
+        _checkAndAutoStartBookings();
       }
     } catch (e) {
       debugPrint('❌ Error fetching active bookings: $e');
@@ -118,300 +191,6 @@ class _ActiveBookingsPageState extends State<ActiveBookingsPage> {
 
   Future<void> _handleRefresh() async {
     await _fetchActiveBookings();
-  }
-
-  Future<void> _handleStartTrip(Map<String, dynamic> booking) async {
-    final isUnlimited = (booking['has_unlimited_mileage'] == 1) || (booking['has_unlimited_mileage'] == true);
-    if (isUnlimited) {
-      final result = await _bookingService.startTrip(
-        booking['booking_id'].toString(),
-        _ownerId!,
-      );
-      if (!mounted) return;
-      if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Trip started'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        await _handleRefresh();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Failed to start trip'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-    // Navigate to odometer input screen for START reading (limited mileage)
-    final odometerResult = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OdometerInputScreen(
-          bookingId: int.tryParse(booking['booking_id'].toString()) ?? 0,
-          vehicleName: booking['car_full_name'] ?? 'Vehicle',
-          vehicleImage: booking['car_image'] ?? '',
-          isStartOdometer: true,
-          userId: int.tryParse(_ownerId ?? '0') ?? 0,
-          userType: 'owner',
-        ),
-      ),
-    );
-
-    // If user cancelled odometer input, don't proceed
-    if (odometerResult == null || !mounted) return;
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.play_circle_outline, color: Colors.green.shade600, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Start Rental?',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Confirm that ${booking['renter_name']} has picked up the vehicle:',
-              style: GoogleFonts.inter(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    booking['car_full_name'] ?? 'Vehicle',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pickup: ${booking['pickup_date']}',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '✓ This will mark the rental as started\n✓ Renter will be notified\n✓ Trip tracking will begin',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(color: Colors.grey.shade600),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.check_circle, size: 18),
-            label: const Text('Confirm Pickup'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    // ✅ Client-side guard (UX): block starting before scheduled pickup datetime.
-    // Server will also enforce this, but we avoid an unnecessary API call.
-    final String? pickupDateRaw = booking['pickup_date_raw']?.toString();
-    final String? pickupTimeRaw = booking['pickup_time_raw']?.toString();
-    final DateTime? scheduledPickup = _tryParseScheduledPickup(pickupDateRaw, pickupTimeRaw);
-    if (scheduledPickup != null && DateTime.now().isBefore(scheduledPickup)) {
-      final pretty = "${booking['pickup_date'] ?? pickupDateRaw ?? ''} ${booking['pickup_time'] ?? ''}".trim();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.schedule, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'You can only start pickup at the scheduled time: $pretty',
-                  style: GoogleFonts.inter(),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      return;
-    }
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 40),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: CircularProgressIndicator(
-                  color: Colors.green.shade600,
-                  strokeWidth: 3,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Starting Rental',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please wait...',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final result = await _bookingService.startTrip(
-        booking['booking_id'].toString(),
-        _ownerId!,
-      );
-
-      if (!mounted) return;
-
-      // Close loading dialog
-      Navigator.pop(context);
-
-      if (result['success'] == true) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    result['message'] ?? 'Rental started successfully!',
-                    style: GoogleFonts.inter(),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        // Refresh the list
-        await _handleRefresh();
-      } else {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    result['message'] ?? 'Failed to start rental',
-                    style: GoogleFonts.inter(),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      
-      // Close loading dialog
-      Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Network error. Please check your connection.',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
   }
 
   @override
@@ -858,66 +637,132 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
                 // Action Buttons (Start Rent or Live Tracking)
                 const SizedBox(height: 16),
                 if (isUpcoming)
-                  // Start Rent Button for upcoming bookings
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _handleStartTrip(booking),
-                      icon: const Icon(Icons.play_circle_outline, size: 22),
-                      label: Text(
-                        'Start Rent / Picked Up',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  // Auto-start info banner — not clickable
+                  Builder(builder: (context) {
+                    final pickupDisplay =
+                        '${booking['pickup_date'] ?? booking['pickup_date_raw'] ?? ''} ${booking['pickup_time_display'] ?? booking['pickup_time'] ?? ''}'.trim();
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade300, width: 1.5),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 2,
-                        shadowColor: Colors.green.withValues(alpha: 0.4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  // Live Tracking Button for active bookings
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LiveTrackingScreen(
-                              bookingId: booking['booking_id'].toString(),
-                              carName: booking['car_full_name'] ?? 'Car',
-                              renterName: booking['renter_name'] ?? 'Unknown',
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, color: Colors.orange.shade700, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Rental starts automatically at pickup time',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.orange.shade800,
+                                  ),
+                                ),
+                                if (pickupDisplay.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Scheduled: $pickupDisplay',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.map, size: 20),
-                      label: Text(
-                        'Track Car Location',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        ],
+                      ),
+                    );
+                  })
+                else
+                  Column(
+                    children: [
+                      // Live Tracking Button for active bookings
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LiveTrackingScreen(
+                                  bookingId: booking['booking_id'].toString(),
+                                  carName: booking['car_full_name'] ?? 'Car',
+                                  renterName: booking['renter_name'] ?? 'Unknown',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.map, size: 20),
+                          label: Text(
+                            'Track Car Location',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      // Return overdue warning
+                      if (_isReturnOverdue(booking)) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.red.shade300, width: 1.5),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 22),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Return time has passed!',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.red.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Scheduled return: ${booking['return_date'] ?? ''} at ${booking['return_time_display'] ?? booking['return_time'] ?? ''}'.trim(),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
+                      ],
+                    ],
                   ),
               ],
             ),
@@ -928,8 +773,20 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
   );
 }
 
+  // Returns true if the trip has been started by the owner.
+  // Uses trip_started_at (set by start_trip.php) or trip_started flag.
+  // NOTE: this API hardcodes status='active', so we cannot rely on status=='ongoing'.
+  bool _isTripStarted(Map<String, dynamic> booking) {
+    return booking['trip_started_at'] != null ||
+        booking['trip_started'] == 1 ||
+        booking['trip_started'] == '1' ||
+        booking['trip_status'] == 'in_progress' ||
+        booking['trip_status'] == 'overdue' ||
+        booking['trip_status'] == 'past';
+  }
+
   String _getTripStageLabel(Map<String, dynamic> booking) {
-    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final tripStarted = _isTripStarted(booking);
     final odometerStart = booking['odometer_start'];
     final odometerEnd = booking['odometer_end'];
     final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
@@ -939,15 +796,14 @@ Widget _buildModernBookingCard(Map<String, dynamic> booking) {
   }
 
   Widget _buildCompactMilestoneStepper(Map<String, dynamic> booking) {
-    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final tripStarted = _isTripStarted(booking);
     final odometerStart = booking['odometer_start'];
     final odometerEnd = booking['odometer_end'];
     final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
+    final tripProgress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0.0;
 
-    // activeStep: steps before it are done (green), it is current, steps after are pending
-    // Note: status is always 'active' for this endpoint; 'completed' only via odometerEnd
     final int activeStep;
-    if (isCompleted || odometerEnd != null) {
+    if (isCompleted || odometerEnd != null || tripProgress >= 99.5) {
       activeStep = 4; // all steps green
     } else if (tripStarted || odometerStart != null) {
       activeStep = 2; // In Progress is current
@@ -1076,9 +932,59 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   final BookingService _bookingService = BookingService();
   bool _isEnding = false;
 
+  Future<void> _showPostTripDialog() async {
+    if (!mounted) return;
+    final reportDamage = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Trip Ended', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(
+          'Was there any damage to the vehicle? You can file a damage report to deduct from the security deposit.',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No Damage'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.car_crash, size: 18),
+            label: const Text('Report Damage'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (reportDamage == true) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DamageReportScreen(
+            bookingId: int.tryParse(widget.booking['booking_id'].toString()) ?? 0,
+            ownerId: widget.ownerId,
+            vehicleName: widget.booking['car_full_name'] ?? 'Vehicle',
+            renterName: widget.booking['renter_name'] ?? 'Renter',
+          ),
+        ),
+      );
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
   Future<void> _handleEndTrip() async {
     final isUnlimited = (widget.booking['has_unlimited_mileage'] == 1) || (widget.booking['has_unlimited_mileage'] == true);
-    if (isUnlimited) {
+    final tripStatus = widget.booking['trip_status']?.toString() ?? '';
+    final isOverdueOrPast = tripStatus == 'overdue' || tripStatus == 'past';
+    final odometerStart = widget.booking['odometer_start'];
+    // Treat as unlimited if: unlimited mileage OR booking is past/overdue without odometer start recorded
+    if (isUnlimited || (isOverdueOrPast && odometerStart == null)) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -1120,7 +1026,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context);
+          await _showPostTripDialog();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1221,7 +1127,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
           ),
         );
 
-        Navigator.pop(context);
+        await _showPostTripDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1257,9 +1163,14 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final daysRemaining = int.tryParse(widget.booking['days_remaining']?.toString() ?? '0') ?? 0;
-    final totalDays = int.tryParse(widget.booking['rental_period']?.toString() ?? '1') ?? 1;
-    final daysElapsed = int.tryParse(widget.booking['days_elapsed']?.toString() ?? '0') ?? 0;
-    final progress = ((daysElapsed / (totalDays > 0 ? totalDays : 1)) * 100).clamp(0.0, 100.0);
+    // Use raw date fields (yyyy-MM-dd) so DateTime.tryParse works correctly
+    final pickupDateParsed = DateTime.tryParse(widget.booking['pickup_date_raw']?.toString() ?? '');
+    final returnDateParsed = DateTime.tryParse(widget.booking['return_date_raw']?.toString() ?? '');
+    final totalDays = (pickupDateParsed != null && returnDateParsed != null)
+        ? (returnDateParsed.difference(pickupDateParsed).inDays + 1)
+        : 1;
+    // Use backend-calculated trip_progress (time-accurate, works for sub-day trips)
+    final progress = (double.tryParse(widget.booking['trip_progress']?.toString() ?? '0') ?? 0.0).clamp(0.0, 100.0);
 
     // Safe image URL handling
     final carImage = widget.booking['car_image'];
@@ -1390,7 +1301,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStat('Days Left', '$daysRemaining'),
-                      _buildStat('Total Days', widget.booking['rental_period'] ?? ''),
+                      _buildStat('Total Days', '$totalDays'),
                       _buildStat('Days Elapsed', '${widget.booking['days_elapsed'] ?? '0'}'),
                     ],
                   ),
@@ -1424,10 +1335,17 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
             const SizedBox(height: 30),
             
             // Show End Trip button:
-            // - Limited mileage: require start recorded and end not recorded
             // - Unlimited mileage: show always
-            if (((widget.booking['has_unlimited_mileage'] == 1) || (widget.booking['has_unlimited_mileage'] == true)) ||
-                (widget.booking['odometer_start'] != null && widget.booking['odometer_end'] == null))
+            // - Limited mileage: odometer start recorded, end not yet
+            // - Overdue/past (missed start): show always so owner can close stuck bookings
+            if (widget.booking['odometer_end'] == null &&
+                (
+                  (widget.booking['has_unlimited_mileage'] == 1) ||
+                  (widget.booking['has_unlimited_mileage'] == true) ||
+                  (widget.booking['odometer_start'] != null) ||
+                  (widget.booking['trip_status'] == 'overdue') ||
+                  (widget.booking['trip_status'] == 'past')
+                ))
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -1460,31 +1378,65 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                 ),
               )
             else if (widget.booking['odometer_end'] != null)
-              // Show completion message if trip is already ended
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Trip completed - Odometer readings recorded',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green.shade700,
+              // Show completion message + damage report button
+              Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Trip completed - Odometer readings recorded',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DamageReportScreen(
+                              bookingId: int.tryParse(widget.booking['booking_id'].toString()) ?? 0,
+                              ownerId: widget.ownerId,
+                              vehicleName: widget.booking['car_full_name'] ?? 'Vehicle',
+                              renterName: widget.booking['renter_name'] ?? 'Renter',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.car_crash, size: 20),
+                      label: Text(
+                        'File Damage Report',
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade300, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               )
             else
               // Show message that start odometer needs to be recorded first
@@ -1520,7 +1472,12 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
   }
 
   Widget _buildOwnerMilestoneStepper(Map<String, dynamic> booking) {
-    final tripStarted = booking['trip_started'] == 1 || booking['trip_started'] == '1';
+    final tripStarted = booking['trip_started_at'] != null ||
+        booking['trip_started'] == 1 ||
+        booking['trip_started'] == '1' ||
+        booking['trip_status'] == 'in_progress' ||
+        booking['trip_status'] == 'overdue' ||
+        booking['trip_status'] == 'past';
     final odometerStart = booking['odometer_start'];
     final odometerEnd = booking['odometer_end'];
     final isCompleted = booking['status']?.toString().toLowerCase() == 'completed';
@@ -1528,9 +1485,10 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
     // activeStep: steps before it are done (green check), it is current (blue), after it are pending (grey)
     // Steps: 0=Approved, 1=Trip Started, 2=In Progress, 3=Completed
     // Note: status is hardcoded 'active' by the API for active bookings;
-    // "all done" is signalled by odometerEnd != null (owner recorded end reading).
+    // "all done" is signalled by odometerEnd != null OR trip_progress >= 100.
+    final tripProgress = double.tryParse(booking['trip_progress']?.toString() ?? '0') ?? 0.0;
     final int activeStep;
-    if (isCompleted || odometerEnd != null) {
+    if (isCompleted || odometerEnd != null || tripProgress >= 99.5) {
       activeStep = 4; // all steps green
     } else if (tripStarted || odometerStart != null) {
       activeStep = 2; // In Progress is current
@@ -1779,7 +1737,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: OptimizedNetworkImage(
-                                imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/${startPhoto.toString().trim()}',
+                                imageUrl: '${ApiConfig.uploadsUrl}/odometer/${startPhoto.toString().trim()}',
                                 width: 70,
                                 height: 70,
                                 fit: BoxFit.cover,
@@ -1863,7 +1821,7 @@ class _ActiveBookingDetailsPageState extends State<ActiveBookingDetailsPage> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: OptimizedNetworkImage(
-                                imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/${endPhoto.toString().trim()}',
+                                imageUrl: '${ApiConfig.uploadsUrl}/odometer/${endPhoto.toString().trim()}',
                                 width: 70,
                                 height: 70,
                                 fit: BoxFit.cover,

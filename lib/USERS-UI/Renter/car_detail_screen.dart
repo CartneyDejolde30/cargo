@@ -287,10 +287,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
         ? List<String>.from(jsonDecode(carData!["rules"]))
         : <String>[];
     final seats = carData?["seat"] ?? 4;
-    final deliveryTypes = carData?["delivery_types"] != null
-        ? List<String>.from(jsonDecode(carData!["delivery_types"]))
-        : <String>[];
-    final transmission = carData?["transmission"] ?? "Automatic";
+final transmission = carData?["transmission"] ?? "Automatic";
     final fuelType = carData?["fuel_type"] ?? "Gasoline";
     final minTripDuration = carData?["min_trip_duration"] ?? "1";
     final maxTripDuration = carData?["max_trip_duration"] ?? "7";
@@ -644,42 +641,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               );
                             }).toList(),
                           ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  // Delivery Options
-                  if (deliveryTypes.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Delivery Options",
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ...deliveryTypes.map((type) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.local_shipping, size: 20, color: Colors.grey.shade700),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    type,
-                                    style: GoogleFonts.poppins(fontSize: 14),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
                         ],
                       ),
                     ),

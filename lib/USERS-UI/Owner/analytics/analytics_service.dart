@@ -1,21 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import '../mycar/api_constants.dart';
+import 'package:cargo/config/api_config.dart';
 import 'analytics_models.dart';
 
 /// Enhanced Analytics Service
 class AnalyticsService {
-  static String get _baseUrl => ApiConstants.baseUrl;
 
   /// Get overview statistics
   Future<AnalyticsOverview?> getOverviewStats({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=overview&owner_id=$ownerId'
-          : '${_baseUrl}api/analytics/get_analytics_data.php?type=overview';
+          ? '${GlobalApiConfig.analyticsDataEndpoint}?type=overview&owner_id=$ownerId'
+          : '${GlobalApiConfig.analyticsDataEndpoint}?type=overview';
 
-      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+      final response = await http.get(Uri.parse(url)).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -33,10 +32,10 @@ class AnalyticsService {
   Future<List<BookingTrend>> getBookingTrends({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=booking_trends&owner_id=$ownerId'
-          : '${_baseUrl}api/analytics/get_analytics_data.php?type=booking_trends';
+          ? '${GlobalApiConfig.analyticsDataEndpoint}?type=booking_trends&owner_id=$ownerId'
+          : '${GlobalApiConfig.analyticsDataEndpoint}?type=booking_trends';
 
-      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+      final response = await http.get(Uri.parse(url)).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -56,10 +55,10 @@ class AnalyticsService {
   Future<RevenueBreakdown?> getRevenueBreakdown({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=revenue_breakdown&owner_id=$ownerId'
-          : '${_baseUrl}api/analytics/get_analytics_data.php?type=revenue_breakdown';
+          ? '${GlobalApiConfig.analyticsDataEndpoint}?type=revenue_breakdown&owner_id=$ownerId'
+          : '${GlobalApiConfig.analyticsDataEndpoint}?type=revenue_breakdown';
 
-      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+      final response = await http.get(Uri.parse(url)).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -77,10 +76,10 @@ class AnalyticsService {
   Future<PopularVehicles?> getPopularVehicles({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=popular_vehicles&owner_id=$ownerId'
-          : '${_baseUrl}api/analytics/get_analytics_data.php?type=popular_vehicles';
+          ? '${GlobalApiConfig.analyticsDataEndpoint}?type=popular_vehicles&owner_id=$ownerId'
+          : '${GlobalApiConfig.analyticsDataEndpoint}?type=popular_vehicles';
 
-      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+      final response = await http.get(Uri.parse(url)).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -98,10 +97,10 @@ class AnalyticsService {
   Future<PeakBookingData?> getPeakBookingHours({int? ownerId}) async {
     try {
       final url = ownerId != null
-          ? '${_baseUrl}api/analytics/get_analytics_data.php?type=peak_hours&owner_id=$ownerId'
-          : '${_baseUrl}api/analytics/get_analytics_data.php?type=peak_hours';
+          ? '${GlobalApiConfig.analyticsDataEndpoint}?type=peak_hours&owner_id=$ownerId'
+          : '${GlobalApiConfig.analyticsDataEndpoint}?type=peak_hours';
 
-      final response = await http.get(Uri.parse(url)).timeout(ApiConstants.apiTimeout);
+      final response = await http.get(Uri.parse(url)).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

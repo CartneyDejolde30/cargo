@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CarGO — Database Schema</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --teal:        #0d9488;
+      --teal-dark:   #0f766e;
+      --teal-light:  #ccfbf1;
+      --teal-pale:   #f0fdfa;
+      --black:       #0a0f0f;
+      --ink:         #134e4a;
+      --text:        #1c1c1c;
+      --muted:       #6b7280;
+      --border:      #d1fae5;
+      --bg:          #f8fffe;
+      --card:        #ffffff;
+      --sidebar-w:   255px;
+
+      --pk-color:    #0d9488;  --pk-bg:   #ccfbf1;
+      --fk-color:    #0369a1;  --fk-bg:   #e0f2fe;
+      --uq-color:    #7c3aed;  --uq-bg:   #f5f3ff;
+      --idx-color:   #059669;  --idx-bg:  #dcfce7;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--black);
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1a2f2f;
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #1f3a3a; border-radius: 2px; }
+
+    .sidebar-brand {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid #1a2f2f;
+      flex-shrink: 0;
+    }
+    .brand-logo { font-size: 1.55rem; font-weight: 900; letter-spacing: -1px; color: #fff; }
+    .brand-logo span { color: var(--teal); }
+    .brand-sub { font-size: .65rem; color: #4b7272; margin-top: 2px; text-transform: uppercase; letter-spacing: .8px; }
+
+    .sb-group { padding: 14px 10px 2px; }
+    .sb-group-label {
+      font-size: .62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #2d5c5c; padding: 0 8px; margin-bottom: 2px;
+    }
+    .sb-link {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 10px; border-radius: 7px;
+      text-decoration: none; color: #7aaaa8;
+      font-size: .77rem; font-weight: 500;
+      transition: all .12s;
+    }
+    .sb-link:hover { background: #0d2020; color: #a8d8d4; }
+    .sb-link.active { background: #0a2525; color: var(--teal); }
+    .sb-link .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--teal); opacity: .4; flex-shrink: 0;
+    }
+    .sb-link.active .dot { opacity: 1; }
+    .sb-link .cnt {
+      margin-left: auto; font-size: .62rem; background: #0d2020;
+      padding: 1px 7px; border-radius: 999px; color: #4b7272;
+    }
+    .sb-group:last-child { margin-bottom: 20px; }
+
+    /* ═══════════════════════════════
+       MAIN
+    ═══════════════════════════════ */
+    .main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; }
+
+    /* ── HEADER ── */
+    .top-header {
+      background: var(--black);
+      padding: 44px 48px 38px;
+      position: relative; overflow: hidden;
+    }
+    .top-header::before {
+      content: '';
+      position: absolute; right: -60px; top: -60px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(13,148,136,.25) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .top-header::after {
+      content: '';
+      position: absolute; left: 30%; bottom: -50px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(13,148,136,.1) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .header-inner { position: relative; z-index: 1; }
+    .header-title { font-size: 2.3rem; font-weight: 900; color: #fff; letter-spacing: -1px; }
+    .header-title span { color: var(--teal); }
+    .header-sub { color: #4b7272; margin-top: 6px; font-size: .9rem; }
+    .header-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .hpill {
+      background: rgba(13,148,136,.12);
+      border: 1px solid rgba(13,148,136,.3);
+      border-radius: 999px; padding: 5px 14px;
+      color: #5eead4; font-size: .75rem; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .hpill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+
+    /* ── CONTAINER ── */
+    .container { padding: 36px 40px 64px; }
+
+    /* ═══════════════════════════════
+       ERD — HTML/CSS DIAGRAM
+    ═══════════════════════════════ */
+    .erd-wrap {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      margin-bottom: 40px;
+      box-shadow: 0 1px 4px rgba(13,148,136,.06);
+    }
+    .erd-heading {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--teal); margin-bottom: 24px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .erd-heading::before {
+      content: ''; display: block; width: 20px; height: 2px;
+      background: var(--teal); border-radius: 1px;
+    }
+
+    /* ERD grid layout */
+    .erd-grid {
+      display: grid;
+      grid-template-columns: 180px 1fr 180px;
+      grid-template-rows: auto auto auto auto auto;
+      gap: 0;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .erd-node {
+      background: var(--black);
+      color: #5eead4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #1a3a3a;
+      white-space: nowrap;
+      z-index: 2;
+    }
+    .erd-node.center {
+      background: var(--teal-dark);
+      color: #fff;
+      font-size: .85rem;
+      padding: 10px 20px;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(13,148,136,.2);
+    }
+    .erd-node.secondary {
+      background: #f0fdfa;
+      color: var(--teal-dark);
+      border-color: #99f6e4;
+      font-size: .72rem;
+    }
+    .erd-node.gray {
+      background: #f8fafc;
+      color: #475569;
+      border-color: #e2e8f0;
+      font-size: .72rem;
+    }
+
+    /* connector lines using CSS borders */
+    .erd-line-v {
+      width: 2px; background: #99f6e4; border-radius: 1px;
+      align-self: stretch; justify-self: center;
+    }
+    .erd-line-h {
+      height: 2px; background: #99f6e4; border-radius: 1px;
+      width: 100%;
+    }
+    .erd-arrow {
+      font-size: .9rem; color: #2dd4bf; line-height: 1;
+    }
+
+    /* The main ERD uses flex-based layout for clarity */
+    .erd-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Row layouts inside ERD */
+    .erd-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    /* Central hub block */
+    .erd-hub-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .erd-hub-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1;
+    }
+    .erd-hub-col.right { align-items: flex-end; }
+
+    .erd-block {
+      background: var(--black);
+      color: #5eead4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; font-weight: 600;
+      padding: 9px 18px;
+      border-radius: 10px;
+      border: 1px solid #1a3a3a;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .erd-block.main-node {
+      background: var(--teal-dark);
+      color: #fff;
+      font-size: .9rem;
+      padding: 11px 22px;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(13,148,136,.15);
+    }
+    .erd-block.users-node {
+      background: #0a2525;
+      color: #2dd4bf;
+      font-size: .88rem;
+      padding: 11px 22px;
+      border-color: var(--teal);
+    }
+    .erd-block.child {
+      background: #f0fdfa;
+      color: var(--teal-dark);
+      border-color: #99f6e4;
+      font-size: .72rem;
+      padding: 6px 13px;
+    }
+    .erd-block.standalone {
+      background: #f8fafc;
+      color: #475569;
+      border-color: #e2e8f0;
+      font-size: .7rem;
+      padding: 5px 12px;
+    }
+
+    /* arrow glyph */
+    .arr { color: #2dd4bf; margin: 0 4px; font-size: .8rem; }
+
+    /* Full ERD using CSS table-like structure */
+    .erd-table { width: 100%; }
+
+    /* Clean ERD using nested boxes */
+    .erd-container {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    .erd-center-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      flex: 1;
+    }
+    .erd-side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 56px;
+      min-width: 160px;
+    }
+
+    /* connection lines in ERD */
+    .erd-vline {
+      width: 2px; background: #5eead4; border-radius: 1px;
+      min-height: 20px; align-self: center;
+    }
+    .erd-branch {
+      display: flex; align-items: center; gap: 0;
+      align-self: stretch;
+    }
+    .erd-branch-line-v {
+      width: 2px; background: #99f6e4;
+      align-self: stretch; flex-shrink: 0;
+    }
+    .erd-branch-line-h {
+      height: 2px; background: #99f6e4;
+      width: 24px; flex-shrink: 0;
+    }
+    .erd-branch-node {
+      flex: 1;
+    }
+
+    /* ── NEW CLEAN ERD ── */
+    .erd-clean {
+      display: grid;
+      grid-template-columns: 1fr 220px 1fr;
+      gap: 16px 0;
+      align-items: start;
+    }
+    .erd-center-stack {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0;
+    }
+    .erd-left-stack, .erd-right-stack {
+      display: flex; flex-direction: column;
+      gap: 8px; padding-top: 12px;
+    }
+    .erd-left-stack { align-items: flex-end; padding-right: 16px; }
+    .erd-right-stack { align-items: flex-start; padding-left: 16px; }
+
+    .en { /* erd node */
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem; font-weight: 600;
+      padding: 7px 14px; border-radius: 8px;
+      white-space: nowrap;
+    }
+    .en-main { background: var(--teal-dark); color: #fff; border: 1px solid var(--teal); padding: 10px 20px; font-size: .88rem; box-shadow: 0 0 0 3px rgba(13,148,136,.18); }
+    .en-users { background: #0a2525; color: #2dd4bf; border: 1px solid #1a4040; padding: 9px 18px; font-size: .84rem; }
+    .en-child { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; font-size: .72rem; padding: 6px 12px; }
+    .en-gray  { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-size: .7rem; padding: 5px 11px; }
+
+    .erd-vconn { width: 2px; background: #5eead4; min-height: 18px; border-radius: 1px; }
+    .erd-hconn {
+      height: 2px; background: #99f6e4;
+      align-self: center; flex: 1;
+    }
+    .erd-row-conn {
+      display: flex; align-items: center;
+      width: 100%;
+    }
+
+    /* Each child row in center stack */
+    .erd-children {
+      display: flex; flex-direction: column;
+      align-items: flex-start;
+      border-left: 2px solid #99f6e4;
+      margin-left: 110px;
+      padding: 8px 0 8px 0;
+      gap: 6px;
+    }
+    .erd-child-row {
+      display: flex; align-items: center; gap: 0;
+    }
+    .erd-child-bar {
+      width: 24px; height: 2px; background: #99f6e4; flex-shrink: 0;
+    }
+    .erd-child-note {
+      font-size: .68rem; color: var(--muted);
+      margin-left: 8px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* standalone row */
+    .erd-standalone {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 16px 0 0;
+      border-top: 1px dashed #99f6e4;
+      margin-top: 8px;
+    }
+
+    /* ═══════════════════════════════
+       SECTION
+    ═══════════════════════════════ */
+    .section { margin-bottom: 52px; scroll-margin-top: 20px; }
+
+    .sec-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 18px;
+      padding: 13px 20px;
+      background: #fff;
+      border-radius: 12px;
+      border-left: 4px solid var(--teal);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      box-shadow: 0 1px 3px rgba(13,148,136,.06);
+    }
+    .sec-header .icon { font-size: 1.3rem; }
+    .sec-header h2 { font-size: 1rem; font-weight: 800; color: var(--ink); }
+    .sec-header .badge {
+      margin-left: auto; background: var(--teal-pale);
+      border: 1px solid var(--teal-light); border-radius: 999px;
+      padding: 3px 12px; font-size: .7rem; font-weight: 600; color: var(--teal-dark);
+    }
+
+    /* ═══════════════════════════════
+       TABLE CARDS
+    ═══════════════════════════════ */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; }
+    .cards.single { grid-template-columns: 1fr; }
+
+    .tcard {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(13,148,136,.04);
+      transition: box-shadow .18s, transform .18s;
+    }
+    .tcard:hover { box-shadow: 0 6px 24px rgba(13,148,136,.12); transform: translateY(-2px); }
+
+    .tcard-head {
+      display: flex; align-items: center; gap: 11px;
+      padding: 13px 16px;
+      background: linear-gradient(to right, var(--teal-pale), #fff);
+      border-bottom: 1px solid var(--border);
+    }
+    .tcard-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--teal-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; flex-shrink: 0;
+    }
+    .tcard-info { flex: 1; min-width: 0; }
+    .tcard-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .9rem; font-weight: 700; color: var(--teal-dark);
+    }
+    .tcard-desc { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+    .tcard-cols {
+      flex-shrink: 0;
+      font-size: .65rem; font-weight: 600; color: var(--teal);
+      background: var(--teal-pale); border: 1px solid var(--teal-light);
+      border-radius: 999px; padding: 2px 10px;
+    }
+
+    /* schema table inside card */
+    .stbl { width: 100%; border-collapse: collapse; font-size: .79rem; }
+    .stbl thead tr { background: #f8fffe; }
+    .stbl th {
+      padding: 7px 14px; text-align: left;
+      font-size: .62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: #94a3b8;
+      border-bottom: 1px solid var(--border);
+    }
+    .stbl td {
+      padding: 8px 14px; border-bottom: 1px solid #f0fdfa;
+      vertical-align: top; line-height: 1.55;
+    }
+    .stbl tr:last-child td { border-bottom: none; }
+    .stbl tr:hover td { background: #f9fffe; }
+
+    /* divider row inside table */
+    .drow td {
+      background: var(--teal-pale) !important;
+      font-size: .63rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--teal-dark);
+      padding: 5px 14px !important;
+      border-top: 1px solid var(--teal-light) !important;
+    }
+
+    /* col name / type */
+    .cn { font-family: 'JetBrains Mono', monospace; font-size: .76rem; font-weight: 600; color: #0a0f0f; white-space: nowrap; }
+    .ct { font-family: 'JetBrains Mono', monospace; font-size: .71rem; color: var(--teal-dark); white-space: nowrap; }
+    .note { font-size: .72rem; color: var(--muted); }
+
+    /* ── TAGS ── */
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 5px;
+      font-size: .63rem; font-weight: 700;
+      white-space: nowrap; border: 1px solid;
+    }
+    .pk { background: var(--pk-bg); color: var(--pk-color); border-color: #6ee7b7; }
+    .fk { background: var(--fk-bg); color: var(--fk-color); border-color: #bae6fd; }
+    .uq { background: var(--uq-bg); color: var(--uq-color); border-color: #ddd6fe; }
+    .idx{ background: var(--idx-bg);color: var(--idx-color);border-color: #bbf7d0; }
+
+    /* ── ENUM CHIPS ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+    .chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .62rem; font-weight: 500;
+      background: var(--teal-pale); color: var(--teal-dark);
+      border: 1px solid var(--teal-light);
+      border-radius: 4px; padding: 1px 7px;
+    }
+
+    /* ── LIFECYCLE BAR ── */
+    .lc-wrap { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .lc {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 16px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    }
+    .lc-label { font-size: .68rem; font-weight: 700; color: var(--muted); white-space: nowrap; margin-right: 4px; }
+    .lcs {
+      display: inline-flex; align-items: center;
+      background: var(--teal-dark); color: #fff;
+      padding: 3px 11px; border-radius: 999px;
+      font-size: .7rem; font-weight: 700;
+    }
+    .lcs.ok { background: #15803d; }
+    .lcs.bad { background: #b91c1c; }
+    .lcs.warn { background: #b45309; }
+    .lc-sep { color: #99f6e4; font-size: .85rem; }
+
+    /* ── SETTINGS EXAMPLE ── */
+    .settings-ex { border-top: 1px solid var(--border); }
+    .settings-ex thead tr { background: var(--teal-pale); }
+    .settings-ex th { color: var(--teal-dark) !important; }
+    .sk { font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--teal-dark); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 26px;
+      font-size: .73rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .cards { grid-template-columns: 1fr; }
+      .container { padding: 20px 16px 48px; }
+      .top-header { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">Car<span>GO</span></div>
+    <div class="brand-sub">Database Schema · 29 Tables</div>
+  </div>
+
+  <div class="sb-group">
+    <div class="sb-group-label">👤 Users & Auth</div>
+    <a class="sb-link" href="#s-users"><span class="dot"></span>users<span class="cnt">10</span></a>
+    <a class="sb-link" href="#s-users"><span class="dot"></span>user_verifications<span class="cnt">8</span></a>
+    <a class="sb-link" href="#s-users"><span class="dot"></span>admin<span class="cnt">4</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">🚗 Vehicles</div>
+    <a class="sb-link" href="#s-vehicles"><span class="dot"></span>cars<span class="cnt">19</span></a>
+    <a class="sb-link" href="#s-vehicles"><span class="dot"></span>motorcycles<span class="cnt">17</span></a>
+    <a class="sb-link" href="#s-vehicles"><span class="dot"></span>vehicle_availability<span class="cnt">9</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">📅 Bookings</div>
+    <a class="sb-link" href="#s-bookings"><span class="dot"></span>bookings<span class="cnt">50+</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">💳 Payments</div>
+    <a class="sb-link" href="#s-payments"><span class="dot"></span>payments<span class="cnt">12</span></a>
+    <a class="sb-link" href="#s-payments"><span class="dot"></span>late_fee_payments<span class="cnt">15</span></a>
+    <a class="sb-link" href="#s-payments"><span class="dot"></span>receipts<span class="cnt">8</span></a>
+    <a class="sb-link" href="#s-payments"><span class="dot"></span>escrow_logs<span class="cnt">8</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">🛡️ Insurance</div>
+    <a class="sb-link" href="#s-insurance"><span class="dot"></span>insurance_providers<span class="cnt">12</span></a>
+    <a class="sb-link" href="#s-insurance"><span class="dot"></span>insurance_policies<span class="cnt">22</span></a>
+    <a class="sb-link" href="#s-insurance"><span class="dot"></span>insurance_claims<span class="cnt">20</span></a>
+    <a class="sb-link" href="#s-insurance"><span class="dot"></span>insurance_coverage_types<span class="cnt">9</span></a>
+    <a class="sb-link" href="#s-insurance"><span class="dot"></span>insurance_audit_log<span class="cnt">7</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">📍 GPS & Mileage</div>
+    <a class="sb-link" href="#s-gps"><span class="dot"></span>gps_locations<span class="cnt">7</span></a>
+    <a class="sb-link" href="#s-gps"><span class="dot"></span>gps_distance_tracking<span class="cnt">8</span></a>
+    <a class="sb-link" href="#s-gps"><span class="dot"></span>mileage_logs<span class="cnt">11</span></a>
+    <a class="sb-link" href="#s-gps"><span class="dot"></span>mileage_disputes<span class="cnt">15</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">🔔 Notifications</div>
+    <a class="sb-link" href="#s-notifs"><span class="dot"></span>notifications<span class="cnt">7</span></a>
+    <a class="sb-link" href="#s-notifs"><span class="dot"></span>archived_notifications<span class="cnt">9</span></a>
+    <a class="sb-link" href="#s-notifs"><span class="dot"></span>admin_notifications<span class="cnt">9</span></a>
+    <a class="sb-link" href="#s-notifs"><span class="dot"></span>messages<span class="cnt">7</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">⭐ Reviews</div>
+    <a class="sb-link" href="#s-reviews"><span class="dot"></span>reviews<span class="cnt">8</span></a>
+    <a class="sb-link" href="#s-reviews"><span class="dot"></span>damage_reports<span class="cnt">11</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">⚙️ System</div>
+    <a class="sb-link" href="#s-system"><span class="dot"></span>platform_settings<span class="cnt">5</span></a>
+    <a class="sb-link" href="#s-system"><span class="dot"></span>admin_action_logs<span class="cnt">7</span></a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════
+     MAIN
+═══════════════════════════════════ -->
+<div class="main">
+
+  <div class="top-header">
+    <div class="header-inner">
+      <div class="header-title">Car<span>GO</span> Database Schema</div>
+      <div class="header-sub">Peer-to-Peer Vehicle Rental Platform · Complete Table Reference</div>
+      <div class="header-pills">
+        <div class="hpill"><span class="dot"></span>29 Tables</div>
+        <div class="hpill"><span class="dot"></span>9 Modules</div>
+        <div class="hpill"><span class="dot"></span>bookings as Central Hub</div>
+        <div class="hpill"><span class="dot"></span>MySQL · PHP · Flutter</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- ─────────────────────────
+         ERD — CLEAN DIAGRAM
+    ───────────────────────── -->
+    <div class="erd-wrap">
+      <div class="erd-heading">Entity Relationship Overview</div>
+
+      <style>
+        /* ── ERD NEW CLEAN ── */
+        .erd2 { display:flex; flex-direction:column; align-items:center; gap:0; width:100%; }
+
+        /* node box */
+        .enode {
+          display:inline-flex; align-items:center; gap:7px;
+          font-family:'JetBrains Mono',monospace; font-weight:700;
+          border-radius:10px; border:1.5px solid; white-space:nowrap;
+          padding:9px 18px; font-size:.8rem;
+        }
+        .enode-users    { background:#0a2525; color:#2dd4bf; border-color:#0d9488; font-size:.9rem; padding:11px 24px; box-shadow:0 0 0 3px rgba(13,148,136,.15); }
+        .enode-bookings { background:#0f766e; color:#fff;    border-color:#0d9488; font-size:.95rem; padding:12px 26px; box-shadow:0 0 0 4px rgba(13,148,136,.2); }
+        .enode-child    { background:#f0fdfa; color:#0f766e; border-color:#99f6e4; font-size:.72rem; padding:6px 13px; }
+        .enode-gray     { background:#f8fafc; color:#475569; border-color:#e2e8f0; font-size:.7rem;  padding:5px 12px; }
+        .enode-vehicle  { background:#fff;    color:#0f766e; border-color:#99f6e4; font-size:.75rem; padding:7px 14px; }
+
+        /* connector */
+        .ev { width:2px; background:#5eead4; border-radius:1px; }
+        .eh { height:2px; background:#99f6e4; border-radius:1px; flex-shrink:0; }
+
+        /* arrow label */
+        .elabel {
+          font-size:.62rem; font-family:'JetBrains Mono',monospace;
+          color:#2dd4bf; background:#f0fdfa; border:1px solid #99f6e4;
+          border-radius:4px; padding:1px 7px; white-space:nowrap;
+        }
+
+        /* group box */
+        .egrp {
+          border:1.5px solid; border-radius:12px; padding:14px 16px 10px;
+          display:flex; flex-direction:column; gap:7px;
+        }
+        .egrp-pay  { border-color:#bae6fd; background:#f0f9ff; }
+        .egrp-gps  { border-color:#bbf7d0; background:#f0fdf4; }
+        .egrp-ins  { border-color:#ddd6fe; background:#faf5ff; }
+        .egrp-rev  { border-color:#fde68a; background:#fffbeb; }
+
+        .egrp-title {
+          font-size:.62rem; font-weight:800; text-transform:uppercase;
+          letter-spacing:.8px; margin-bottom:2px;
+        }
+        .egrp-title.pay { color:#0369a1; }
+        .egrp-title.gps { color:#15803d; }
+        .egrp-title.ins { color:#7c3aed; }
+        .egrp-title.rev { color:#b45309; }
+
+        /* row inside group */
+        .egrp-row {
+          display:flex; align-items:center; gap:8px;
+        }
+        .egrp-desc { font-size:.65rem; color:#94a3b8; min-width:90px; text-align:right; }
+        .egrp-desc.left { text-align:left; }
+
+        /* the 4-group row */
+        .erd2-groups {
+          display:grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap:12px;
+          width:100%;
+          margin-top:0;
+        }
+
+        /* standalone strip */
+        .erd2-standalone {
+          width:100%; padding-top:14px;
+          border-top:1px dashed #99f6e4;
+          margin-top:4px;
+        }
+        .erd2-standalone-title {
+          font-size:.62rem; font-weight:700; text-transform:uppercase;
+          letter-spacing:.8px; color:#94a3b8; margin-bottom:8px;
+        }
+        .erd2-standalone-nodes { display:flex; flex-wrap:wrap; gap:8px; }
+
+        /* top section */
+        .erd2-top {
+          display:grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items:center;
+          width:100%;
+          gap:0;
+        }
+        .erd2-top-left  { display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding-right:16px; padding-top:40px; }
+        .erd2-top-mid   { display:flex; flex-direction:column; align-items:center; gap:0; }
+        .erd2-top-right { display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding-left:16px; padding-top:40px; }
+
+        /* connector row for label */
+        .erd2-conn-row { display:flex; align-items:center; gap:6px; }
+
+        @media(max-width:900px){
+          .erd2-groups { grid-template-columns:1fr 1fr; }
+          .erd2-top { grid-template-columns:1fr; }
+          .erd2-top-left, .erd2-top-right { display:none; }
+        }
+      </style>
+
+      <div class="erd2">
+
+        <!-- ── ROW 1: users + side branches ── -->
+        <div class="erd2-top">
+
+          <!-- LEFT: vehicles branch -->
+          <div class="erd2-top-left">
+            <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#0d9488;margin-bottom:2px;">Vehicle Listings</div>
+
+            <div class="erd2-conn-row">
+              <div class="enode enode-vehicle">🚗 cars</div>
+              <div class="eh" style="width:16px;"></div>
+              <div class="elabel">owner_id</div>
+              <div class="eh" style="width:16px;"></div>
+            </div>
+
+            <div class="erd2-conn-row">
+              <div class="enode enode-vehicle">🏍️ motorcycles</div>
+              <div class="eh" style="width:16px;"></div>
+              <div class="elabel">owner_id</div>
+              <div class="eh" style="width:16px;"></div>
+            </div>
+
+            <div class="erd2-conn-row" style="opacity:.6;">
+              <div class="enode enode-gray" style="font-size:.68rem;">📆 vehicle_availability</div>
+              <div class="eh" style="width:16px;background:#e2e8f0;"></div>
+              <div style="font-size:.62rem;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:1px 7px;">vehicle_id</div>
+              <div class="eh" style="width:16px;background:#e2e8f0;"></div>
+            </div>
+          </div>
+
+          <!-- CENTER: users → bookings -->
+          <div class="erd2-top-mid">
+            <div class="enode enode-users">👤 users</div>
+            <div class="ev" style="height:20px;"></div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="elabel">user_id (renter)</div>
+            </div>
+            <div class="ev" style="height:12px;"></div>
+            <div class="enode enode-bookings">📅 bookings</div>
+            <div class="ev" style="height:20px;"></div>
+          </div>
+
+          <!-- RIGHT: owner_id + note -->
+          <div class="erd2-top-right">
+            <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#0d9488;margin-bottom:2px;">Also connected</div>
+            <div class="erd2-conn-row">
+              <div class="eh" style="width:16px;"></div>
+              <div class="elabel">owner_id</div>
+              <div style="font-size:.7rem;color:#64748b;margin-left:6px;">← owner also from users</div>
+            </div>
+            <div style="font-size:.68rem;color:#94a3b8;margin-top:8px;max-width:200px;line-height:1.5;">
+              Both <strong style="color:#0d9488;">user_id</strong> (renter) and <strong style="color:#0d9488;">owner_id</strong> point to the <code style="background:#f0fdfa;padding:1px 5px;border-radius:3px;">users</code> table.
+            </div>
+          </div>
+
+        </div><!-- /erd2-top -->
+
+        <!-- ── ROW 2: 4 child groups ── -->
+        <div class="erd2-groups">
+
+          <!-- 💳 PAYMENTS -->
+          <div class="egrp egrp-pay">
+            <div class="egrp-title pay">💳 Payments</div>
+            <div class="egrp-row"><div class="enode enode-child">payments</div><span class="egrp-desc left">GCash records</span></div>
+            <div class="egrp-row"><div class="enode enode-child">late_fee_payments</div><span class="egrp-desc left">Overdue fees</span></div>
+            <div class="egrp-row"><div class="enode enode-child">receipts</div><span class="egrp-desc left">PDF receipts</span></div>
+            <div class="egrp-row"><div class="enode enode-child">escrow_logs</div><span class="egrp-desc left">Money held/released history</span></div>
+            <div style="font-size:.62rem;color:#0369a1;margin-top:4px;padding-top:6px;border-top:1px solid #bae6fd;">All have <code style="background:#e0f2fe;padding:1px 4px;border-radius:3px;">booking_id</code> FK</div>
+          </div>
+
+          <!-- 📍 GPS & MILEAGE -->
+          <div class="egrp egrp-gps">
+            <div class="egrp-title gps">📍 GPS &amp; Mileage</div>
+            <div class="egrp-row"><div class="enode enode-child">gps_locations</div><span class="egrp-desc left">Raw GPS pings</span></div>
+            <div class="egrp-row"><div class="enode enode-child">gps_distance_tracking</div><span class="egrp-desc left">Total km traveled</span></div>
+            <div class="egrp-row"><div class="enode enode-child">mileage_logs</div><span class="egrp-desc left">Odometer events</span></div>
+            <div class="egrp-row"><div class="enode enode-child">mileage_disputes</div><span class="egrp-desc left">Owner vs renter km</span></div>
+            <div style="font-size:.62rem;color:#15803d;margin-top:4px;padding-top:6px;border-top:1px solid #bbf7d0;">All have <code style="background:#dcfce7;padding:1px 4px;border-radius:3px;">booking_id</code> FK</div>
+          </div>
+
+          <!-- 🛡️ INSURANCE -->
+          <div class="egrp egrp-ins">
+            <div class="egrp-title ins">🛡️ Insurance</div>
+            <div class="egrp-row"><div class="enode enode-child">insurance_policies</div></div>
+            <div style="display:flex;align-items:center;gap:4px;padding-left:8px;">
+              <div class="ev" style="height:14px;background:#ddd6fe;"></div>
+              <div style="font-size:.62rem;color:#7c3aed;">↳ FK: provider_id</div>
+            </div>
+            <div class="egrp-row" style="padding-left:16px;"><div class="enode enode-child">insurance_providers</div></div>
+            <div style="display:flex;align-items:center;gap:4px;padding-left:8px;">
+              <div class="ev" style="height:14px;background:#ddd6fe;"></div>
+              <div style="font-size:.62rem;color:#7c3aed;">↳ FK: policy_id</div>
+            </div>
+            <div class="egrp-row" style="padding-left:16px;"><div class="enode enode-child">insurance_claims</div></div>
+            <div style="font-size:.62rem;color:#7c3aed;margin-top:4px;padding-top:6px;border-top:1px solid #ddd6fe;">Policy linked via <code style="background:#f5f3ff;padding:1px 4px;border-radius:3px;">booking_id</code></div>
+          </div>
+
+          <!-- ⭐ REVIEWS -->
+          <div class="egrp egrp-rev">
+            <div class="egrp-title rev">⭐ Reviews &amp; Reports</div>
+            <div class="egrp-row"><div class="enode enode-child">reviews</div><span class="egrp-desc left">Post-trip star rating</span></div>
+            <div class="egrp-row"><div class="enode enode-child">damage_reports</div><span class="egrp-desc left">Damage photos &amp; cost</span></div>
+            <div style="font-size:.62rem;color:#b45309;margin-top:4px;padding-top:6px;border-top:1px solid #fde68a;">Both have <code style="background:#fef9c3;padding:1px 4px;border-radius:3px;">booking_id</code> FK</div>
+          </div>
+
+        </div><!-- /erd2-groups -->
+
+        <!-- ── STANDALONE ── -->
+        <div class="erd2-standalone">
+          <div class="erd2-standalone-title">🔗 Standalone Tables — connected to users, not directly to bookings</div>
+          <div class="erd2-standalone-nodes">
+            <div class="enode enode-gray">🔔 notifications</div>
+            <div class="enode enode-gray">🖥️ admin_notifications</div>
+            <div class="enode enode-gray">📦 archived_notifications</div>
+            <div class="enode enode-gray">💬 messages</div>
+            <div class="enode enode-gray">🔧 platform_settings</div>
+            <div class="enode enode-gray">📋 admin_action_logs</div>
+            <div class="enode enode-gray">🪪 user_verifications</div>
+          </div>
+        </div>
+
+      </div><!-- /erd2 -->
+    </div><!-- /erd-wrap -->
+
+
+    <!-- ══════════════════════════════
+         SECTION 1 — USERS
+    ══════════════════════════════ -->
+    <div class="section" id="s-users">
+      <div class="sec-header"><span class="icon">👤</span><h2>Users &amp; Authentication</h2><span class="badge">3 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">👤</div><div class="tcard-info"><div class="tcard-name">users</div><div class="tcard-desc">Core user accounts — owners and renters</div></div><div class="tcard-cols">10 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span> Auto increment</td></tr>
+            <tr><td class="cn">fullname</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">email</td><td class="ct">VARCHAR(255)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">phone</td><td class="ct">VARCHAR(20)</td><td></td></tr>
+            <tr><td class="cn">password</td><td class="ct">VARCHAR(255)</td><td class="note">Hashed (bcrypt)</td></tr>
+            <tr><td class="cn">profile_image</td><td class="ct">VARCHAR(255)</td><td class="note">ImgBB URL</td></tr>
+            <tr><td class="cn">user_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">owner</span><span class="chip">renter</span></div></td></tr>
+            <tr><td class="cn">is_verified</td><td class="ct">TINYINT(1)</td><td class="note">0 = no, 1 = yes</td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">active</span><span class="chip">suspended</span></div></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🪪</div><div class="tcard-info"><div class="tcard-name">user_verifications</div><div class="tcard-desc">Document upload &amp; admin approval</div></div><div class="tcard-cols">8 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">document_type</td><td class="ct">VARCHAR(100)</td><td class="note">license, registration…</td></tr>
+            <tr><td class="cn">document_url</td><td class="ct">VARCHAR(500)</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">approved</span><span class="chip">rejected</span></div></td></tr>
+            <tr><td class="cn">verified_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">verified_at</td><td class="ct">DATETIME</td><td></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🔐</div><div class="tcard-info"><div class="tcard-name">admin</div><div class="tcard-desc">Admin panel accounts</div></div><div class="tcard-cols">4 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">name</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">email</td><td class="ct">VARCHAR(255)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">role</td><td class="ct">VARCHAR(50)</td><td class="note">super_admin, moderator…</td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 2 — VEHICLES
+    ══════════════════════════════ -->
+    <div class="section" id="s-vehicles">
+      <div class="sec-header"><span class="icon">🚗</span><h2>Vehicles</h2><span class="badge">3 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🚗</div><div class="tcard-info"><div class="tcard-name">cars</div><div class="tcard-desc">Car listings posted by owners</div></div><div class="tcard-cols">19 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">brand / model / color</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">body_style</td><td class="ct">VARCHAR(100)</td><td class="note">sedan, SUV, pickup, van…</td></tr>
+            <tr><td class="cn">car_year</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">plate_number</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">fuel_type</td><td class="ct">VARCHAR(50)</td><td class="note">gasoline, diesel</td></tr>
+            <tr><td class="cn">transmission</td><td class="ct">VARCHAR(50)</td><td class="note">automatic, manual</td></tr>
+            <tr><td class="cn">seat</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">price_per_day</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">image / location</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">latitude / longitude</td><td class="ct">DECIMAL</td><td></td></tr>
+            <tr><td class="cn">has_unlimited_mileage</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">daily_mileage_limit</td><td class="ct">INT</td><td class="note">km per day</td></tr>
+            <tr><td class="cn">excess_mileage_rate</td><td class="ct">DECIMAL(10,2)</td><td class="note">₱ per km over limit</td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">active</span><span class="chip">inactive</span><span class="chip">pending</span></div></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🏍️</div><div class="tcard-info"><div class="tcard-name">motorcycles</div><div class="tcard-desc">Motorcycle listings posted by owners</div></div><div class="tcard-cols">17 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">brand / model / color</td><td class="ct">VARCHAR</td><td></td></tr>
+            <tr><td class="cn">body_style</td><td class="ct">VARCHAR(100)</td><td class="note">underbone, scooter, sport…</td></tr>
+            <tr><td class="cn">motorcycle_year</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">plate_number</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">engine_displacement</td><td class="ct">VARCHAR(100)</td><td class="note">150cc, 250cc…</td></tr>
+            <tr><td class="cn">transmission_type</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">price_per_day</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">image / location</td><td class="ct">VARCHAR</td><td></td></tr>
+            <tr><td class="cn">has_unlimited_mileage</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">daily_mileage_limit</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">excess_mileage_rate</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">active</span><span class="chip">inactive</span><span class="chip">pending</span></div></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📆</div><div class="tcard-info"><div class="tcard-name">vehicle_availability</div><div class="tcard-desc">Owner-blocked / unavailable dates</div></div><div class="tcard-cols">9 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">vehicle_id</td><td class="ct">INT</td><td class="note">FK to cars or motorcycles</td></tr>
+            <tr><td class="cn">vehicle_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">car</span><span class="chip">motorcycle</span></div></td></tr>
+            <tr><td class="cn">blocked_date</td><td class="ct">DATE</td><td></td></tr>
+            <tr><td class="cn">reason</td><td class="ct">VARCHAR(255)</td><td class="note">maintenance, personal use…</td></tr>
+            <tr><td class="cn">is_recurring</td><td class="ct">TINYINT(1)</td><td class="note">weekly repeat</td></tr>
+            <tr><td class="cn">recurring_day</td><td class="ct">TINYINT(1)</td><td class="note">0=Sun … 6=Sat</td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 3 — BOOKINGS
+    ══════════════════════════════ -->
+    <div class="section" id="s-bookings">
+      <div class="sec-header"><span class="icon">📅</span><h2>Bookings</h2><span class="badge">Central Hub · 50+ columns</span></div>
+
+      <div class="lc-wrap">
+        <div class="lc"><span class="lc-label">Booking Status :</span><span class="lcs">pending</span><span class="lc-sep">→</span><span class="lcs">approved</span><span class="lc-sep">→</span><span class="lcs warn">ongoing</span><span class="lc-sep">→</span><span class="lcs ok">completed</span>&nbsp;<span class="lcs bad">cancelled</span><span class="lcs bad">rejected</span></div>
+        <div class="lc"><span class="lc-label">Payment Status :</span><span class="lcs">pending</span><span class="lc-sep">→</span><span class="lcs">verified</span><span class="lc-sep">→</span><span class="lcs warn">escrowed</span><span class="lc-sep">→</span><span class="lcs ok">released</span></div>
+        <div class="lc"><span class="lc-label">Escrow Status &nbsp;:</span><span class="lcs">pending</span><span class="lc-sep">→</span><span class="lcs warn">held</span><span class="lc-sep">→</span><span class="lcs ok">released_to_owner</span><span class="lc-sep">/</span><span class="lcs bad">released_to_renter</span></div>
+      </div>
+
+      <div class="cards single">
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📅</div><div class="tcard-info"><div class="tcard-name">bookings</div><div class="tcard-desc">Central table — links to almost every other table in the system</div></div><div class="tcard-cols">50+ cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span> &nbsp;<span class="note">renter</span></td></tr>
+            <tr><td class="cn">owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span> &nbsp;<span class="note">owner</span></td></tr>
+            <tr><td class="cn">car_id</td><td class="ct">INT</td><td class="note">FK to cars or motorcycles</td></tr>
+            <tr><td class="cn">vehicle_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">car</span><span class="chip">motorcycle</span></div></td></tr>
+            <tr><td class="cn">pickup_date / return_date</td><td class="ct">DATE</td><td></td></tr>
+            <tr><td class="cn">pickup_time / return_time</td><td class="ct">TIME</td><td></td></tr>
+            <tr><td class="cn">total_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">price_per_day</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">rental_period</td><td class="ct">INT</td><td class="note">number of days</td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">approved</span><span class="chip">ongoing</span><span class="chip">completed</span><span class="chip">cancelled</span><span class="chip">rejected</span></div></td></tr>
+            <tr><td class="cn">payment_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">verified</span><span class="chip">paid</span><span class="chip">escrowed</span><span class="chip">released</span></div></td></tr>
+            <tr><td class="cn">trip_started</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">trip_started_at</td><td class="ct">DATETIME</td><td></td></tr>
+            <tr><td class="cn">is_reviewed</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr class="drow"><td colspan="3">Security Deposit</td></tr>
+            <tr><td class="cn">security_deposit_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">security_deposit_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">held</span><span class="chip">refunded</span><span class="chip">forfeited</span><span class="chip">partial_refund</span></div></td></tr>
+            <tr><td class="cn">security_deposit_refund_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">security_deposit_deductions</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">security_deposit_deduction_reason</td><td class="ct">TEXT</td><td></td></tr>
+            <tr class="drow"><td colspan="3">Mileage / Odometer</td></tr>
+            <tr><td class="cn">odometer_start / odometer_end</td><td class="ct">INT</td><td class="note">km reading at start and end</td></tr>
+            <tr><td class="cn">odometer_start_photo / end_photo</td><td class="ct">VARCHAR(255)</td><td class="note">photo proof</td></tr>
+            <tr><td class="cn">actual_mileage</td><td class="ct">INT</td><td class="note">odometer_end − odometer_start</td></tr>
+            <tr><td class="cn">allowed_mileage / excess_mileage</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">excess_mileage_fee</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">gps_distance</td><td class="ct">DECIMAL(10,2)</td><td class="note">km from GPS tracking</td></tr>
+            <tr class="drow"><td colspan="3">Escrow</td></tr>
+            <tr><td class="cn">escrow_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">held</span><span class="chip">released_to_owner</span><span class="chip">released_to_renter</span></div></td></tr>
+            <tr><td class="cn">escrow_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">owner_payout</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">payout_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">completed</span></div></td></tr>
+            <tr class="drow"><td colspan="3">Late Fees</td></tr>
+            <tr><td class="cn">late_fee_charged</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">late_fee_payment_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">none</span><span class="chip">pending</span><span class="chip">paid</span><span class="chip">verified</span></div></td></tr>
+            <tr><td class="cn">late_fee_waived</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">late_fee_waived_reason</td><td class="ct">TEXT</td><td></td></tr>
+            <tr class="drow"><td colspan="3">Insurance</td></tr>
+            <tr><td class="cn">insurance_policy_id</td><td class="ct">INT</td><td><span class="tag fk">FK → insurance_policies</span></td></tr>
+            <tr><td class="cn">insurance_premium</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">insurance_coverage_type</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">insurance_verified</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">completed_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 4 — PAYMENTS
+    ══════════════════════════════ -->
+    <div class="section" id="s-payments">
+      <div class="sec-header"><span class="icon">💳</span><h2>Payments</h2><span class="badge">4 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">💸</div><div class="tcard-info"><div class="tcard-name">payments</div><div class="tcard-desc">GCash payment records per booking</div></div><div class="tcard-cols">12 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">total_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">payment_method</td><td class="ct">VARCHAR(50)</td><td class="note">gcash</td></tr>
+            <tr><td class="cn">payment_reference</td><td class="ct">VARCHAR(100)</td><td><span class="tag idx">IDX</span> GCash ref no.</td></tr>
+            <tr><td class="cn">gcash_number</td><td class="ct">VARCHAR(20)</td><td></td></tr>
+            <tr><td class="cn">payment_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">verified</span><span class="chip">paid</span><span class="chip">rejected</span><span class="chip">failed</span></div></td></tr>
+            <tr><td class="cn">verification_notes</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">verified_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">verified_at / created_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">⏰</div><div class="tcard-info"><div class="tcard-name">late_fee_payments</div><div class="tcard-desc">Overdue / late return fee payments</div></div><div class="tcard-cols">15 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">late_fee_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">rental_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">total_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">payment_reference</td><td class="ct">VARCHAR(100)</td><td></td></tr>
+            <tr><td class="cn">payment_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">verified</span><span class="chip">paid</span><span class="chip">rejected</span></div></td></tr>
+            <tr><td class="cn">hours_overdue / days_overdue</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">verified_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">verified_at / created_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🧾</div><div class="tcard-info"><div class="tcard-name">receipts</div><div class="tcard-desc">PDF receipt records per booking</div></div><div class="tcard-cols">8 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">receipt_no</td><td class="ct">VARCHAR(50)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">receipt_url</td><td class="ct">VARCHAR(500)</td><td class="note">PDF link</td></tr>
+            <tr><td class="cn">status</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">generated_at / emailed_at</td><td class="ct">DATETIME</td><td></td></tr>
+            <tr><td class="cn">email_count</td><td class="ct">INT</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🔒</div><div class="tcard-info"><div class="tcard-name">escrow_logs</div><div class="tcard-desc">Escrow state-change history</div></div><div class="tcard-cols">8 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">action</td><td class="ct">VARCHAR(50)</td><td class="note">hold, release, refund…</td></tr>
+            <tr><td class="cn">previous_status</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">new_status</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">admin_id</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">notes</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 5 — INSURANCE
+    ══════════════════════════════ -->
+    <div class="section" id="s-insurance">
+      <div class="sec-header"><span class="icon">🛡️</span><h2>Insurance</h2><span class="badge">5 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🏢</div><div class="tcard-info"><div class="tcard-name">insurance_providers</div><div class="tcard-desc">Insurance company catalog</div></div><div class="tcard-cols">12 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">provider_name</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">provider_code</td><td class="ct">VARCHAR(50)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">contact_email / phone</td><td class="ct">VARCHAR</td><td></td></tr>
+            <tr><td class="cn">api_endpoint / api_key</td><td class="ct">VARCHAR</td><td></td></tr>
+            <tr><td class="cn">coverage_types</td><td class="ct">TEXT JSON</td><td></td></tr>
+            <tr><td class="cn">base_rate</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">active</span><span class="chip">inactive</span><span class="chip">suspended</span></div></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📋</div><div class="tcard-info"><div class="tcard-name">insurance_policies</div><div class="tcard-desc">Per-booking insurance policy issued</div></div><div class="tcard-cols">22 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">policy_number</td><td class="ct">VARCHAR(100)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">provider_id</td><td class="ct">INT</td><td><span class="tag fk">FK → insurance_providers</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span> &nbsp;<span class="note">renter</span></td></tr>
+            <tr><td class="cn">coverage_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">basic</span><span class="chip">standard</span><span class="chip">premium</span><span class="chip">comprehensive</span></div></td></tr>
+            <tr><td class="cn">policy_start / policy_end</td><td class="ct">DATETIME</td><td></td></tr>
+            <tr><td class="cn">premium_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">coverage_limit</td><td class="ct">DECIMAL(12,2)</td><td></td></tr>
+            <tr><td class="cn">collision_coverage</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">liability_coverage</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">theft_coverage</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">roadside_assistance</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">active</span><span class="chip">expired</span><span class="chip">cancelled</span><span class="chip">claimed</span></div></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">⚠️</div><div class="tcard-info"><div class="tcard-name">insurance_claims</div><div class="tcard-desc">Filed claims against a policy</div></div><div class="tcard-cols">20 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">claim_number</td><td class="ct">VARCHAR(100)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">policy_id</td><td class="ct">INT</td><td><span class="tag fk">FK → insurance_policies</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">claim_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">collision</span><span class="chip">theft</span><span class="chip">liability</span><span class="chip">personal_injury</span><span class="chip">other</span></div></td></tr>
+            <tr><td class="cn">incident_date</td><td class="ct">DATETIME</td><td></td></tr>
+            <tr><td class="cn">incident_description</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">police_report_number</td><td class="ct">VARCHAR(100)</td><td></td></tr>
+            <tr><td class="cn">claimed_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">approved_amount</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">evidence_photos</td><td class="ct">TEXT JSON</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">submitted</span><span class="chip">under_review</span><span class="chip">approved</span><span class="chip">rejected</span><span class="chip">paid</span></div></td></tr>
+            <tr><td class="cn">priority</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">low</span><span class="chip">normal</span><span class="chip">high</span><span class="chip">urgent</span></div></td></tr>
+            <tr><td class="cn">reviewed_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📑</div><div class="tcard-info"><div class="tcard-name">insurance_coverage_types</div><div class="tcard-desc">Coverage type catalog / config</div></div><div class="tcard-cols">9 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">coverage_name</td><td class="ct">VARCHAR(100)</td><td></td></tr>
+            <tr><td class="cn">coverage_code</td><td class="ct">VARCHAR(50)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">description</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">base_premium_rate</td><td class="ct">DECIMAL(5,4)</td><td></td></tr>
+            <tr><td class="cn">min / max_coverage_amount</td><td class="ct">DECIMAL</td><td></td></tr>
+            <tr><td class="cn">is_mandatory / is_active</td><td class="ct">TINYINT(1)</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📝</div><div class="tcard-info"><div class="tcard-name">insurance_audit_log</div><div class="tcard-desc">Admin actions on policies &amp; claims</div></div><div class="tcard-cols">7 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">policy_id</td><td class="ct">INT</td><td><span class="tag fk">FK → insurance_policies</span></td></tr>
+            <tr><td class="cn">claim_id</td><td class="ct">INT</td><td><span class="tag fk">FK → insurance_claims</span></td></tr>
+            <tr><td class="cn">action_type</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">action_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">action_details</td><td class="ct">TEXT JSON</td><td></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 6 — GPS & MILEAGE
+    ══════════════════════════════ -->
+    <div class="section" id="s-gps">
+      <div class="sec-header"><span class="icon">📍</span><h2>GPS &amp; Mileage Tracking</h2><span class="badge">4 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📡</div><div class="tcard-info"><div class="tcard-name">gps_locations</div><div class="tcard-desc">Raw GPS pings sent during active trip</div></div><div class="tcard-cols">7 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">latitude</td><td class="ct">DECIMAL(10,8)</td><td></td></tr>
+            <tr><td class="cn">longitude</td><td class="ct">DECIMAL(11,8)</td><td></td></tr>
+            <tr><td class="cn">speed</td><td class="ct">DECIMAL(5,2)</td><td class="note">km/h</td></tr>
+            <tr><td class="cn">accuracy</td><td class="ct">DECIMAL(6,2)</td><td class="note">meters</td></tr>
+            <tr><td class="cn">timestamp</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📏</div><div class="tcard-info"><div class="tcard-name">gps_distance_tracking</div><div class="tcard-desc">Aggregated total distance per booking</div></div><div class="tcard-cols">8 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span> <span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">total_distance_km</td><td class="ct">DECIMAL(10,2)</td><td></td></tr>
+            <tr><td class="cn">last_latitude / longitude</td><td class="ct">DOUBLE</td><td></td></tr>
+            <tr><td class="cn">waypoints_count</td><td class="ct">INT</td><td></td></tr>
+            <tr><td class="cn">calculation_method</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">last_updated</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🔢</div><div class="tcard-info"><div class="tcard-name">mileage_logs</div><div class="tcard-desc">Odometer events — start, end, verified</div></div><div class="tcard-cols">11 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">log_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">start_recorded</span><span class="chip">end_recorded</span><span class="chip">excess_calculated</span><span class="chip">admin_verified</span><span class="chip">admin_adjusted</span></div></td></tr>
+            <tr><td class="cn">recorded_by</td><td class="ct">INT</td><td><span class="tag fk">FK → users / admin</span></td></tr>
+            <tr><td class="cn">recorded_by_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">renter</span><span class="chip">owner</span><span class="chip">admin</span></div></td></tr>
+            <tr><td class="cn">odometer_value</td><td class="ct">INT</td><td class="note">km reading at event</td></tr>
+            <tr><td class="cn">photo_path</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">gps_latitude / longitude</td><td class="ct">DOUBLE</td><td></td></tr>
+            <tr><td class="cn">notes / created_at</td><td class="ct">TEXT / TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">⚖️</div><div class="tcard-info"><div class="tcard-name">mileage_disputes</div><div class="tcard-desc">Owner vs renter reading conflict</div></div><div class="tcard-cols">15 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">user_id / owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">dispute_type</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">incorrect_reading</span><span class="chip">tampered</span><span class="chip">calculation_error</span><span class="chip">photo_unclear</span><span class="chip">other</span></div></td></tr>
+            <tr><td class="cn">reported_odometer_start/end</td><td class="ct">INT</td><td class="note">owner's claimed reading</td></tr>
+            <tr><td class="cn">claimed_odometer_start/end</td><td class="ct">INT</td><td class="note">renter's claimed reading</td></tr>
+            <tr><td class="cn">gps_distance</td><td class="ct">DECIMAL(10,2)</td><td class="note">GPS reference km</td></tr>
+            <tr><td class="cn">evidence_photos</td><td class="ct">TEXT JSON</td><td></td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">under_review</span><span class="chip">resolved_favor_renter</span><span class="chip">resolved_favor_owner</span><span class="chip">rejected</span></div></td></tr>
+            <tr><td class="cn">resolved_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">resolved_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 7 — NOTIFICATIONS
+    ══════════════════════════════ -->
+    <div class="section" id="s-notifs">
+      <div class="sec-header"><span class="icon">🔔</span><h2>Notifications &amp; Messaging</h2><span class="badge">4 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🔔</div><div class="tcard-info"><div class="tcard-name">notifications</div><div class="tcard-desc">In-app push notifications for users</div></div><div class="tcard-cols">7 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">title</td><td class="ct">VARCHAR(255)</td><td></td></tr>
+            <tr><td class="cn">message</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">type</td><td class="ct">VARCHAR(50)</td><td class="note">booking, payment, system…</td></tr>
+            <tr><td class="cn">read_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">read</span><span class="chip">unread</span></div></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📦</div><div class="tcard-info"><div class="tcard-name">archived_notifications</div><div class="tcard-desc">Old notifications moved to archive</div></div><div class="tcard-cols">9 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">original_id</td><td class="ct">INT</td><td class="note">original notifications.id</td></tr>
+            <tr><td class="cn">user_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">title / message / type</td><td class="ct">VARCHAR / TEXT</td><td></td></tr>
+            <tr><td class="cn">read_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">read</span><span class="chip">unread</span></div></td></tr>
+            <tr><td class="cn">created_at / archived_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🖥️</div><div class="tcard-info"><div class="tcard-name">admin_notifications</div><div class="tcard-desc">Alerts shown in admin panel</div></div><div class="tcard-cols">9 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">type / title / message</td><td class="ct">VARCHAR / TEXT</td><td></td></tr>
+            <tr><td class="cn">link</td><td class="ct">VARCHAR(255)</td><td class="note">admin panel URL target</td></tr>
+            <tr><td class="cn">icon</td><td class="ct">VARCHAR(50)</td><td></td></tr>
+            <tr><td class="cn">priority</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">low</span><span class="chip">medium</span><span class="chip">high</span><span class="chip">urgent</span></div></td></tr>
+            <tr><td class="cn">read_status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">read</span><span class="chip">unread</span></div></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">💬</div><div class="tcard-info"><div class="tcard-name">messages</div><div class="tcard-desc">In-app chat between owner and renter</div></div><div class="tcard-cols">7 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">sender_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">recipient_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">message</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">is_read</td><td class="ct">TINYINT(1)</td><td></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 8 — REVIEWS
+    ══════════════════════════════ -->
+    <div class="section" id="s-reviews">
+      <div class="sec-header"><span class="icon">⭐</span><h2>Reviews &amp; Damage Reports</h2><span class="badge">2 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">⭐</div><div class="tcard-info"><div class="tcard-name">reviews</div><div class="tcard-desc">Renter rates owner and vehicle post-trip</div></div><div class="tcard-cols">9 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">car_id</td><td class="ct">INT</td><td class="note">Vehicle being reviewed</td></tr>
+            <tr><td class="cn">renter_id / owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">rating</td><td class="ct">DECIMAL(3,1)</td><td class="note">1.0 – 5.0 stars</td></tr>
+            <tr><td class="cn">review</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">categories</td><td class="ct">TEXT JSON</td><td class="note">cleanliness, accuracy, communication…</td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">TIMESTAMP</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🛠️</div><div class="tcard-info"><div class="tcard-name">damage_reports</div><div class="tcard-desc">Post-trip damage evidence and claims</div></div><div class="tcard-cols">11 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">renter_id / owner_id</td><td class="ct">INT</td><td><span class="tag fk">FK → users</span></td></tr>
+            <tr><td class="cn">description</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">photos</td><td class="ct">TEXT JSON</td><td class="note">array of photo paths</td></tr>
+            <tr><td class="cn">approved_amount</td><td class="ct">DECIMAL(10,2)</td><td class="note">damage cost approved</td></tr>
+            <tr><td class="cn">status</td><td class="ct">ENUM</td><td><div class="chips"><span class="chip">pending</span><span class="chip">approved</span><span class="chip">rejected</span></div></td></tr>
+            <tr><td class="cn">approved_by</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">approved_at / created_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         SECTION 9 — SYSTEM
+    ══════════════════════════════ -->
+    <div class="section" id="s-system">
+      <div class="sec-header"><span class="icon">⚙️</span><h2>System Tables</h2><span class="badge">2 tables</span></div>
+      <div class="cards">
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">🔧</div><div class="tcard-info"><div class="tcard-name">platform_settings</div><div class="tcard-desc">Key-value configuration store</div></div><div class="tcard-cols">5 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">setting_key</td><td class="ct">VARCHAR(100)</td><td><span class="tag uq">UNIQUE</span></td></tr>
+            <tr><td class="cn">setting_value</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">setting_type</td><td class="ct">VARCHAR(50)</td><td class="note">boolean, integer, decimal</td></tr>
+            <tr><td class="cn">description</td><td class="ct">TEXT</td><td></td></tr>
+          </tbody></table>
+          <table class="stbl settings-ex"><thead><tr><th>Example Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody>
+            <tr><td class="sk">mileage_tracking_enabled</td><td class="note">1</td><td class="note">Feature on/off</td></tr>
+            <tr><td class="sk">default_daily_mileage_limit</td><td class="note">200</td><td class="note">km per day</td></tr>
+            <tr><td class="sk">default_excess_rate</td><td class="note">10.00</td><td class="note">₱ per km over</td></tr>
+            <tr><td class="sk">odometer_photo_required</td><td class="note">1</td><td class="note">Enforce photo proof</td></tr>
+            <tr><td class="sk">mileage_discrepancy_threshold</td><td class="note">20</td><td class="note">km tolerance</td></tr>
+          </tbody></table>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-head"><div class="tcard-icon">📋</div><div class="tcard-info"><div class="tcard-name">admin_action_logs</div><div class="tcard-desc">Complete audit trail for every admin action</div></div><div class="tcard-cols">7 cols</div></div>
+          <table class="stbl"><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+            <tr><td class="cn">id</td><td class="ct">INT</td><td><span class="tag pk">PK</span></td></tr>
+            <tr><td class="cn">admin_id</td><td class="ct">INT</td><td><span class="tag fk">FK → admin</span></td></tr>
+            <tr><td class="cn">action_type</td><td class="ct">VARCHAR(50)</td><td class="note">force_complete, confirm_late_fee, waive…</td></tr>
+            <tr><td class="cn">booking_id</td><td class="ct">INT</td><td><span class="tag fk">FK → bookings</span></td></tr>
+            <tr><td class="cn">notes</td><td class="ct">TEXT</td><td></td></tr>
+            <tr><td class="cn">ip_address</td><td class="ct">VARCHAR(45)</td><td></td></tr>
+            <tr><td class="cn">created_at</td><td class="ct">DATETIME</td><td></td></tr>
+          </tbody></table>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <footer>CarGO Database Schema Reference &nbsp;·&nbsp; 29 Tables &nbsp;·&nbsp; 9 Modules &nbsp;·&nbsp; 2026-03-17</footer>
+
+</div><!-- /main -->
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const links = document.querySelectorAll('.sb-link[href]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        document.querySelectorAll(`.sb-link[href="#${e.target.id}"]`).forEach(l => l.classList.add('active'));
+      }
+    });
+  }, { threshold: 0.15 });
+  sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>

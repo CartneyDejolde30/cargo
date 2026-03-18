@@ -313,17 +313,17 @@ class _ExpandableRevenueBreakdownState
     return Column(
       children: [
         // Period Selector
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Row(
             children: [
-              _buildPeriodChip('total', 'All Time', Icons.calendar_month),
+              _buildPeriodChip('total', 'All Time'),
               const SizedBox(width: 8),
-              _buildPeriodChip('monthly', 'Month', Icons.calendar_today),
+              _buildPeriodChip('monthly', 'Month'),
               const SizedBox(width: 8),
-              _buildPeriodChip('weekly', 'Week', Icons.date_range),
+              _buildPeriodChip('weekly', 'Week'),
               const SizedBox(width: 8),
-              _buildPeriodChip('today', 'Today', Icons.today),
+              _buildPeriodChip('today', 'Today'),
             ],
           ),
         ),
@@ -337,16 +337,12 @@ class _ExpandableRevenueBreakdownState
     );
   }
 
-  Widget _buildPeriodChip(String period, String label, IconData icon) {
+  Widget _buildPeriodChip(String period, String label) {
     final isSelected = _selectedPeriod == period;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedPeriod = period;
-          });
-        },
+        onTap: () => setState(() => _selectedPeriod = period),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
@@ -365,23 +361,15 @@ class _ExpandableRevenueBreakdownState
                   ]
                 : null,
           ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? Colors.white : Colors.grey.shade600,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : Colors.grey.shade700,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade700,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

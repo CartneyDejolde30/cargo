@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../Owner/mycar/api_constants.dart';
+import '../../../config/api_config.dart';
 import './dashboard_stats.dart';
 
 class DashboardService {
@@ -58,7 +59,7 @@ class DashboardService {
   }) async {
     try {
       final url = Uri.parse(
-        "${ApiConstants.baseUrl}api/revenue_trend.php"
+        "${GlobalApiConfig.revenueTrendEndpoint}"
         "?owner_id=$ownerId&period=$period",
       );
 

@@ -13,7 +13,7 @@ import 'package:cargo/USERS-UI/Owner/dashboard/booking_model.dart';
 // Widgets
 import 'package:cargo/USERS-UI/Owner/dashboard/dashboard_header.dart';
 import 'package:cargo/USERS-UI/Owner/dashboard/stat_card_widget.dart';
-import 'package:cargo/USERS-UI/Owner/dashboard/revenue_overview_widget.dart';
+import 'package:cargo/USERS-UI/Owner/dashboard/revenue_breakdown_widget.dart';
 import 'package:cargo/USERS-UI/Owner/dashboard/quick_action_card.dart';
 import 'package:cargo/USERS-UI/Owner/dashboard/recent_activity_widget.dart';
 import 'package:cargo/USERS-UI/Owner/dashboard/upcoming_bookings_widget.dart';
@@ -174,12 +174,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                     
                     const SizedBox(height: 24),
                     
-                    // Revenue Overview
-                    RevenueOverview(
-                      totalIncome: stats.totalIncome,
-                      monthlyIncome: stats.monthlyIncome,
-                      weeklyIncome: stats.weeklyIncome,
-                      todayIncome: stats.todayIncome,
+                    // Revenue Breakdown
+                    ExpandableRevenueBreakdown(
+                      revenueBreakdown: stats.revenueBreakdown,
                     ),
                     
                     const SizedBox(height: 24),
@@ -242,7 +239,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         childAspectRatio: 1.52,
         children: [
           StatCard(
-            title: "Total Cars",
+            title: "Total Vehicles",
             value: "${stats.totalCars}",
             icon: Icons.directions_car_outlined,
             subtitle: "${stats.approvedCars} active",

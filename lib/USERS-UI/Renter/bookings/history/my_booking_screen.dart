@@ -141,11 +141,15 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       
       // Find active bookings
       final activeBookings = bookings.where((b) {
-        if (b.status.toLowerCase() != 'approved') return false;
+        final status = b.status.toLowerCase();
+        if (status == 'ongoing') return true;
+        if (status != 'approved') return false;
         final pickup = _parseDate(b.pickupDate);
         final returnDate = _parseDate(b.returnDate);
-        return pickup != null && returnDate != null && 
-               !pickup.isAfter(now) && !returnDate.isBefore(now);
+        if (pickup == null || returnDate == null) return false;
+        final returnDateOnly = DateTime(returnDate.year, returnDate.month, returnDate.day);
+        final nowDateOnly = DateTime(now.year, now.month, now.day);
+        return !pickup.isAfter(now) && !returnDateOnly.isBefore(nowDateOnly);
       }).toList();
 
       if (activeBookings.isEmpty) {
@@ -271,13 +275,21 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     final now = DateTime.now();
     
     switch (_currentTabIndex) {
-      case 0: // Active - only approved bookings that have started
+      case 0: // Active - ongoing or approved bookings within their rental window
         return all.where((b) {
-          if (b.status.toLowerCase() != 'approved') return false;
+          final status = b.status.toLowerCase();
+          // ongoing = owner started the trip
+          if (status == 'ongoing') return true;
+          if (status != 'approved') return false;
           final pickup = _parseDate(b.pickupDate);
-          if (pickup == null) return false;
-          // Active = pickup date has passed (booking has started)
-          return !pickup.isAfter(now);
+          final returnDate = _parseDate(b.returnDate);
+          if (pickup == null || returnDate == null) return false;
+          // Use date-only comparison for return date so same-day bookings
+          // (where returnDate parses as midnight) are not incorrectly excluded.
+          final returnDateOnly = DateTime(returnDate.year, returnDate.month, returnDate.day);
+          final nowDateOnly = DateTime(now.year, now.month, now.day);
+          // Active = pickup passed AND return date not yet passed (date-only)
+          return !pickup.isAfter(now) && !returnDateOnly.isBefore(nowDateOnly);
         }).toList();
 
       case 1: // Pending - includes unpaid AND upcoming (approved but not started)
@@ -336,6 +348,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   String _mapStatusForUI(String status) {
     switch (status) {
       case 'approved':
+      case 'ongoing':
         return 'active';
       case 'pending':
         return 'pending';
@@ -563,11 +576,15 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         // ✅ Calculate badge counts
         final now = DateTime.now();
         final activeCount = allBookings.where((b) {
-          if (b.status.toLowerCase() != 'approved') return false;
+          final status = b.status.toLowerCase();
+          if (status == 'ongoing') return true;
+          if (status != 'approved') return false;
           final pickup = _parseDate(b.pickupDate);
           final returnDate = _parseDate(b.returnDate);
-          return pickup != null && returnDate != null && 
-                 !pickup.isAfter(now) && !returnDate.isBefore(now);
+          if (pickup == null || returnDate == null) return false;
+          final returnDateOnly = DateTime(returnDate.year, returnDate.month, returnDate.day);
+          final nowDateOnly = DateTime(now.year, now.month, now.day);
+          return !pickup.isAfter(now) && !returnDateOnly.isBefore(nowDateOnly);
         }).length;
         
         final pendingCount = allBookings.where((b) {

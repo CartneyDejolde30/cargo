@@ -14,14 +14,14 @@ class DebugFavoritesService {
     Map<String, dynamic> debugInfo = {
       'user_id_from_prefs': userId,
       'base_url': GlobalApiConfig.baseUrl,
-      'api_endpoint': '${GlobalApiConfig.baseUrl}api/favorites/get_favorites.php',
+      'api_endpoint': '${GlobalApiConfig.baseUrl}/api/favorites/get_favorites.php',
       'timestamp': DateTime.now().toIso8601String(),
     };
     
     if (userId != null) {
       try {
         // Test get favorites API
-        final url = '${GlobalApiConfig.baseUrl}api/favorites/get_favorites.php?user_id=$userId';
+        final url = '${GlobalApiConfig.baseUrl}/api/favorites/get_favorites.php?user_id=$userId';
         debugInfo['full_url'] = url;
         
         final response = await http.get(Uri.parse(url)).timeout(
@@ -46,7 +46,7 @@ class DebugFavoritesService {
       
       // Test debug endpoint
       try {
-        final debugUrl = '${GlobalApiConfig.baseUrl}api/favorites/debug_get_favorites.php?user_id=$userId';
+        final debugUrl = '${GlobalApiConfig.baseUrl}/api/favorites/debug_get_favorites.php?user_id=$userId';
         final debugResponse = await http.get(Uri.parse(debugUrl)).timeout(
           const Duration(seconds: 10),
         );

@@ -12,7 +12,24 @@
       "Bash(git pull origin main --no-rebase --allow-unrelated-histories)",
       "Bash(git stash)",
       "Bash(git restore --staged lib/USERS-UI/Owner/cancelled_bookings_page.dart lib/USERS-UI/Owner/dashboard.dart lib/USERS-UI/Owner/message_page.dart lib/USERS-UI/Owner/notification_page.dart)",
-      "Bash(git checkout HEAD -- lib/USERS-UI/Owner/cancelled_bookings_page.dart lib/USERS-UI/Owner/dashboard.dart lib/USERS-UI/Owner/message_page.dart lib/USERS-UI/Owner/notification_page.dart)"
+      "Bash(git checkout HEAD -- lib/USERS-UI/Owner/cancelled_bookings_page.dart lib/USERS-UI/Owner/dashboard.dart lib/USERS-UI/Owner/message_page.dart lib/USERS-UI/Owner/notification_page.dart)",
+      "Read(//c/xampp/htdocs/cargo/**)",
+      "Read(//tmp/**)",
+      "Bash(grep -n \"TABLE \\\\`payments\\\\`\\\\|TABLE \\\\`refunds\\\\`\" \"c:/xampp/htdocs/cargo/u672913452_dbcargo_schema_only.sql\")",
+      "Bash(grep \"payment_reference\\\\|id\\\\`\")",
+      "Bash(grep -v \"SQL\\\\|query\\\\|WHERE\\\\|ORDER\\\\|GROUP\\\\|JOIN\\\\|SELECT\\\\|#\\\\|//\")",
+      "Bash(find c:xampphtdocscargolibUSERS-UIRenter -name *car_detail* -o -name *car_screen*)",
+      "Bash(grep -rn \"security_deposit\\\\|500\\\\b\\\\|1000\\\\b\\\\|2000\\\\b\\\\|5000\\\\b\" c:/xampp/htdocs/cargo/public_html/cargoAdmin/ --include=*.php -l)",
+      "Bash(grep -l \"damage_reports\" /c/xampp/htdocs/cargo/*.sql)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"INSERT INTO\\\\|UPDATE\\\\|SELECT\" /c/xampp/htdocs/cargo/public_html/cargoAdmin/api/damage_reports/*.php)",
+      "Bash(grep -rn \"In Progress\\\\|Trip Started\\\\|trip_started\" \"c:\\\\xampp\\\\htdocs\\\\cargo\\\\lib\\\\USERS-UI\\\\Renter\"\" --include=\"*.dart \")",
+      "Bash(grep -rn \"trip_started\\\\|odometer_start\\\\|tripStarted\" \"c:\\\\xampp\\\\htdocs\\\\cargo\\\\lib\\\\USERS-UI\\\\Renter\"\" --include=\"*.dart\" -l 2>/dev/null; grep -rn \"Booking.fromJson)",
+      "Bash(fromJson\" \"c:xampphtdocscargolibUSERS-UIRenterbookingsbooking_screen.dart \")",
+      "Bash(ls /c/xampp/mysql/bin/mysql*)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root -e \"SELECT id, status, payment_status, rejection_reason, rejected_at FROM dbcargo.bookings WHERE id IN \\(88, 89, 91, 92, 105\\);\")",
+      "Bash(cmd.exe /c \"c:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe -u root -e \"\"SELECT id, status, payment_status, rejection_reason, rejected_at FROM dbcargo.bookings WHERE id IN \\(88, 89, 91, 92, 105\\);\"\"\")",
+      "Bash(cmd.exe /c \"c:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe -u root dbcargo -e \"\"SELECT id, status, payment_status, rejected_at FROM bookings WHERE id IN \\(88,89,91,92,105\\);\"\" 2>&1\")"
     ]
   }
 }

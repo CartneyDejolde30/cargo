@@ -177,37 +177,41 @@ class BookingCardWidget extends StatelessWidget {
        
 
           // =========================
-          // PRICE + ACTION
+          // TOTAL AMOUNT CHIP
           // =========================
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Price',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Theme.of(context).hintColor,                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₱${booking.totalPrice}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.titleLarge?.color,
-
-
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Grand Total',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Theme.of(context).hintColor,
+                  ),
                 ),
-                _buildActionButton(context),
+                Text(
+                  '₱${booking.grandTotal > 0 ? booking.grandTotal.toStringAsFixed(2) : booking.totalPrice}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green.shade700,
+                  ),
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // =========================
+          // ACTION BUTTON
+          // =========================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _buildActionButton(context),
             ),
           ),
         ],
@@ -588,7 +592,7 @@ Widget _buildActionButton(BuildContext context) {
           builder: (_) => RefundRequestScreen(
             bookingId: booking.bookingId,
             bookingReference: '#BK-${booking.bookingId.toString().padLeft(4, '0')}',
-            totalAmount: double.tryParse(booking.totalPrice.replaceAll(',', '')) ?? 0,
+            totalAmount: double.tryParse(booking.totalPrice.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0,
             cancellationDate: DateTime.now().toString(),
             paymentMethod: 'gcash', // Get from booking data if available
             paymentReference: booking.bookingId.toString(),

@@ -76,8 +76,9 @@ class OptimizedNetworkImage extends StatelessWidget {
       
       // ✅ Error widget
       errorWidget: (context, url, error) {
-        // Only log network errors, not 404s (missing images are common)
-        if (!error.toString().contains('404')) {
+        // Suppress common non-actionable errors (missing images, decode failures)
+        final errStr = error.toString();
+        if (!errStr.contains('404') && !errStr.contains('EncodingError') && !errStr.contains('cannot be decoded')) {
           print('❌ Network error: $error');
         }
         return errorWidget ?? Container(

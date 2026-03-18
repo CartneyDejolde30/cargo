@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:cargo/config/api_config.dart';
 import './api_constants.dart';
 
 class CarService {
@@ -107,6 +108,32 @@ Future<List<Map<String, dynamic>>> fetchCars(int ownerId) async {
     }
   }
   
+  /* ---------------- UPDATE VEHICLE PRICE ---------------- */
+  Future<Map<String, dynamic>> updatePrice(int vehicleId, String vehicleType, int ownerId, double newPrice) async {
+    try {
+      final response = await http.post(
+        Uri.parse(GlobalApiConfig.updateVehiclePriceEndpoint),
+        body: {
+          "vehicle_id": vehicleId.toString(),
+          "vehicle_type": vehicleType,
+          "owner_id": ownerId.toString(),
+          "price_per_day": newPrice.toStringAsFixed(2),
+        },
+      ).timeout(ApiConstants.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': data['success'] == true,
+          'message': data['message'] ?? 'Unknown error',
+        };
+      }
+      return {'success': false, 'message': 'Server error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to update price: $e'};
+    }
+  }
+
   /* ---------------- DELETE CAR (Legacy - for backward compatibility) ---------------- */
   Future<bool> deleteCar(int carId) async {
     final result = await deleteVehicle(carId, 'car', 0);

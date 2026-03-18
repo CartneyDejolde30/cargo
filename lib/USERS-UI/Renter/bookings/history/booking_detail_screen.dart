@@ -22,6 +22,7 @@ import 'package:cargo/USERS-UI/Renter/chats/chat_detail_screen.dart';
 import 'package:cargo/USERS-UI/Renter/insurance/insurance_policy_screen.dart';
 import 'package:cargo/widgets/loading_widgets.dart';
 import 'package:cargo/widgets/optimized_network_image.dart';
+import 'package:cargo/USERS-UI/Renter/bookings/renter_damage_report_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Booking booking;
@@ -366,6 +367,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
     print('👤 User ID: $loadedUserId');
 
+    if (!mounted) return;
     setState(() {
       userId = loadedUserId;
       _isLoading = false;
@@ -381,6 +383,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Future<void> _fetchLateFeeStatus() async {
     if (userId == null || userId!.isEmpty) return;
     if (_isLoadingLateFeeStatus) return;
+    if (!mounted) return;
 
     setState(() => _isLoadingLateFeeStatus = true);
 
@@ -408,6 +411,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   Future<void> _fetchPaymentInfo() async {
     print('💳💳💳 _fetchPaymentInfo STARTED for booking ${widget.booking.bookingId}');
+    if (!mounted) return;
     setState(() => _isLoadingPayment = true);
 
     try {
@@ -427,8 +431,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           print('💳 Payment Data Found: ${data['payment']}');
           print('💳 Refund Status from API: ${data['payment']['refund_status']}');
           print('💳 Refund Requested: ${data['payment']['refund_requested']}');
-          
-          setState(() {
+
+          if (mounted) setState(() {
             _paymentData = data['payment'];
             print('✅ _paymentData SET in state');
           });
@@ -588,11 +592,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             ),
           ),
 
-          // Late fee payment status (Pending / Verified / etc.)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildLateFeePaymentStatusCard(),
-          ),
+          // Late fee payment status — only show when a fee actually applies
+          if (_overdueInfo!.lateFeeAmount > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildLateFeePaymentStatusCard(),
+            ),
 
           const SizedBox(height: 20),
         ],
@@ -1134,21 +1139,48 @@ final colors = Theme.of(context).colorScheme;
 
       case 'past':
       case 'completed':
-        return _singleButton(
-          'Book This Car Again',
-          Colors.black,
-          () {
-            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-                content: Text('Rebooking feature coming soon!'),
-                 backgroundColor: Theme.of(context).iconTheme.color,
-
-
-
-
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RenterDamageReportScreen(
+                      bookingId: widget.booking.bookingId,
+                      renterId: userId ?? '',
+                      vehicleName: widget.booking.carName,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.car_crash, size: 18),
+              label: Text(
+                'View Damage Report',
+                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
               ),
-            );
-          },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade700,
+                side: BorderSide(color: Colors.red.shade300),
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _singleButton(
+              'Book This Car Again',
+              Colors.black,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Rebooking feature coming soon!'),
+                    backgroundColor: Theme.of(context).iconTheme.color,
+                  ),
+                );
+              },
+            ),
+          ],
         );
 
       default:
@@ -1219,13 +1251,31 @@ final colors = Theme.of(context).colorScheme;
             ),
             child: Column(
               children: [
-                _paymentRow('Rental Fee', '₱${widget.booking.totalPrice}'),
-                const Divider(height: 24),
-                _paymentRow('Service Fee', '₱250', isSubtotal: true),
-                const Divider(height: 24),
+                if (widget.booking.baseRental > 0) ...[
+                  _paymentRow('Base Rental', '₱${widget.booking.baseRental.toStringAsFixed(2)}'),
+                  const Divider(height: 20),
+                ],
+                if (widget.booking.discount > 0) ...[
+                  _paymentRow('Discount', '-₱${widget.booking.discount.toStringAsFixed(2)}', isDiscount: true),
+                  const Divider(height: 20),
+                ],
+                if (widget.booking.insurancePremium > 0) ...[
+                  _paymentRow('Insurance Premium', '₱${widget.booking.insurancePremium.toStringAsFixed(2)}'),
+                  const Divider(height: 20),
+                ],
+                if (widget.booking.serviceFee > 0) ...[
+                  _paymentRow('Service Fee (5%)', '₱${widget.booking.serviceFee.toStringAsFixed(2)}', isSubtotal: true),
+                  const Divider(height: 20),
+                ],
+                _paymentRow('Total Amount', '₱${widget.booking.totalPrice}'),
+                const Divider(height: 20),
+                if (widget.booking.securityDeposit > 0) ...[
+                  _paymentRow('Security Deposit (20%)', '₱${widget.booking.securityDeposit.toStringAsFixed(2)}', isDeposit: true),
+                  const Divider(height: 20),
+                ],
                 _paymentRow(
-                  'Total Amount',
-                  '₱${_calculateTotal(widget.booking.totalPrice)}',
+                  'Grand Total',
+                  '₱${widget.booking.grandTotal > 0 ? widget.booking.grandTotal.toStringAsFixed(2) : widget.booking.totalPrice}',
                   isTotal: true,
                 ),
               ],
@@ -1392,14 +1442,6 @@ final colors = Theme.of(context).colorScheme;
           ),
         ),
       ],
-    );
-  }
-
-  String _calculateTotal(String fee) {
-    final value = int.tryParse(fee.replaceAll(',', '')) ?? 0;
-    return (value + 250).toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
     );
   }
 
@@ -1671,7 +1713,14 @@ final colors = Theme.of(context).colorScheme;
     String value, {
     bool isSubtotal = false,
     bool isTotal = false,
+    bool isDiscount = false,
+    bool isDeposit = false,
   }) {
+    Color? valueColor;
+    if (isTotal) valueColor = Colors.green.shade700;
+    if (isDiscount) valueColor = Colors.green;
+    if (isDeposit) valueColor = Colors.orange.shade700;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1685,6 +1734,7 @@ final colors = Theme.of(context).colorScheme;
           value,
           style: GoogleFonts.poppins(
             fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+            color: valueColor,
           ),
         ),
       ],

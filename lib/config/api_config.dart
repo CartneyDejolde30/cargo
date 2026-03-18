@@ -131,15 +131,75 @@ class GlobalApiConfig {
   static String get getBlockedDatesEndpoint => '$apiUrl/availability/get_blocked_dates.php';
   static String get blockDatesEndpoint => '$apiUrl/availability/block_dates.php';
   static String get unblockDatesEndpoint => '$apiUrl/availability/unblock_dates.php';
-  
+
   // Overdue Management
   static String get overdueBaseUrl => '$apiUrl/overdue';
-  
+  static String get getOverdueBookingsEndpoint => '$apiUrl/overdue/get_overdue_bookings.php';
+  static String get adjustLateFeeEndpoint => '$apiUrl/overdue/adjust_late_fee.php';
+  static String get waiveLateFeeEndpoint => '$apiUrl/overdue/waive_late_fee.php';
+  static String get forceCompleteBookingEndpoint => '$apiUrl/overdue/force_complete.php';
+  static String get sendOverdueReminderEndpoint => '$apiUrl/overdue/send_reminder.php';
+
+  // Security Deposit
+  static String get securityDepositBaseUrl => '$apiUrl/security_deposit';
+  static String get getDepositStatusEndpoint => '$securityDepositBaseUrl/get_deposit_status.php';
+  static String get addDepositDeductionEndpoint => '$securityDepositBaseUrl/add_deduction.php';
+  static String get processDepositRefundEndpoint => '$securityDepositBaseUrl/process_refund.php';
+
+  // Damage Reports
+  static String get submitDamageReportEndpoint => '$apiUrl/damage_reports/submit_damage_report.php';
+  static String get getDamageReportEndpoint => '$apiUrl/damage_reports/get_damage_report.php';
+  static String get getRenterDamageReportEndpoint => '$apiUrl/damage_reports/get_renter_damage_report.php';
+
+  // Booking Extensions
+  static String get requestExtensionEndpoint => '$apiUrl/extensions/request_extension.php';
+  static String get manageExtensionEndpoint => '$apiUrl/extensions/manage_extension.php';
+
+  // Mileage extended
+  static String get getMileageDetailsEndpoint => '$apiUrl/mileage/get_mileage_details.php';
+
+  // Calendar Events
+  static String get getCalendarEventsEndpoint => '$apiUrl/calendar/get_calendar_events.php';
+  static String get getWeekEventsEndpoint => '$apiUrl/calendar/get_week_events.php';
+
+  // Receipts extended
+  static String get getReceiptEndpoint => '$apiUrl/receipts/get_receipt.php';
+
+  // Payments (submit GCash payment)
+  static String get submitPaymentEndpoint => '$apiUrl/submit_payment.php';
+  static String get getPaymentStatusEndpoint => '$apiUrl/payment/get_payment_status.php';
+
+  // Analytics
+  static String get revenueTrendEndpoint => '$apiUrl/revenue_trend.php';
+  static String get analyticsDataEndpoint => '$apiUrl/analytics/get_analytics_data.php';
+
+  // Notifications (mark read / delete)
+  static String get markNotificationReadEndpoint => '$apiUrl/notifications/mark_as_read.php';
+  static String get deleteNotificationEndpoint => '$apiUrl/notifications/delete_notification.php';
+  static String get deleteUserNotificationEndpoint => '$apiUrl/notifications/delete_user_notification.php';
+
+  // Escrow
+  static String get escrowBaseUrl => '$apiUrl/escrow';
+  static String get holdEscrowEndpoint => '$escrowBaseUrl/hold_payment.php';
+  static String get releaseEscrowEndpoint => '$escrowBaseUrl/release_payment.php';
+  static String get refundEscrowEndpoint => '$escrowBaseUrl/refund_payment.php';
+  static String get getEscrowStatusEndpoint => '$escrowBaseUrl/get_escrow_status.php';
+
+  // Insurance extended
+  static String get ownerInsurancePoliciesEndpoint => '$insuranceBaseUrl/admin/get_owner_policies.php';
+  static String get insuranceClaimsEndpoint => '$insuranceBaseUrl/get_claims.php';
+  static String get insuranceCoverageTypesEndpoint => '$insuranceBaseUrl/get_coverage_types.php';
+  static String get updateClaimPhotosEndpoint => '$insuranceBaseUrl/update_claim_photos.php';
+  static String get uploadClaimPhotosEndpoint => '$insuranceBaseUrl/upload_claim_photos.php';
+
+  // Vehicle Price Update
+  static String get updateVehiclePriceEndpoint => '$apiUrl/update_vehicle_price.php';
+
   // Host Information
   static String get getOwnerProfileEndpoint => '$apiUrl/get_owner_profile.php';
   static String get getOwnerCarsEndpoint => '$apiUrl/get_owner_cars.php';
   static String get getOwnerReviewsEndpoint => '$apiUrl/get_owner_reviews.php';
-  
+
   // Google Sign-In
   static String get googleRegisterEndpoint => '$baseUrl/google_register.php';
   

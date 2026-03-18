@@ -113,26 +113,22 @@ class _ReceiptViewerScreenState extends State<ReceiptViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-final colors = Theme.of(context).colorScheme;
+
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: isDark ? colors.surface : Colors.grey.shade50,
-
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colors.onSurface),
-
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Payment Receipt',
           style: GoogleFonts.poppins(
             color: Theme.of(context).iconTheme.color,
-
-
-
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -142,7 +138,6 @@ final colors = Theme.of(context).colorScheme;
           if (!_isLoading && _receiptData != null && _hasReceiptUrl())
             IconButton(
               icon: Icon(Icons.download, color: colors.onSurface),
-
               onPressed: _downloadReceipt,
             ),
         ],
@@ -224,7 +219,11 @@ final colors = Theme.of(context).colorScheme;
     final returnTime = _receiptData!['return_time'] ?? '';
 
     // Payment details
-    final baseAmount = double.tryParse(_receiptData!['amount'].toString()) ?? 0;
+    final baseRentalAmt = double.tryParse(_receiptData!['base_rental']?.toString() ?? '') ?? 0;
+    final discountAmt = double.tryParse(_receiptData!['discount']?.toString() ?? '') ?? 0;
+    final insurancePremium = double.tryParse(_receiptData!['insurance_premium']?.toString() ?? '') ?? 0;
+    final baseAmount = double.tryParse(_receiptData!['amount']?.toString() ?? '') ?? 0;
+    final serviceFeeAmt = double.tryParse(_receiptData!['service_fee']?.toString() ?? '') ?? 0;
     final securityDeposit = double.tryParse(_receiptData!['security_deposit']?.toString() ?? '') ?? 0;
     final grandTotal = double.tryParse(_receiptData!['grand_total']?.toString() ?? '') ?? (baseAmount + securityDeposit);
     final dailyRate = double.tryParse(_receiptData!['daily_rate']?.toString() ?? '') ?? 0;
@@ -237,10 +236,14 @@ final colors = Theme.of(context).colorScheme;
       children: [
         // Header Card
       Container(
+  width: double.infinity,
   padding: const EdgeInsets.all(24),
-  decoration: BoxDecoration(
-    color: Colors.black, // ✅ always dark
-    borderRadius: BorderRadius.circular(16),
+  decoration: const BoxDecoration(
+    gradient: LinearGradient(
+      colors: [Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F3460)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
   ),
   child: Column(
     children: [
@@ -336,9 +339,17 @@ final colors = Theme.of(context).colorScheme;
         _buildSection(
           title: 'Payment Summary',
           children: [
-            _buildInfoRow('Base Rental Fee', '₱${baseAmount.toStringAsFixed(2)}'),
+            if (baseRentalAmt > 0)
+              _buildInfoRow('Base Rental', '₱${baseRentalAmt.toStringAsFixed(2)}'),
+            if (discountAmt > 0)
+              _buildInfoRow('Discount', '-₱${discountAmt.toStringAsFixed(2)}'),
+            if (insurancePremium > 0)
+              _buildInfoRow('Insurance Premium', '₱${insurancePremium.toStringAsFixed(2)}'),
+            if (serviceFeeAmt > 0)
+              _buildInfoRow('Service Fee (5%)', '₱${serviceFeeAmt.toStringAsFixed(2)}'),
+            _buildInfoRow('Total Amount', '₱${baseAmount.toStringAsFixed(2)}'),
             if (securityDeposit > 0)
-              _buildInfoRow('Security Deposit (Held)', '₱${securityDeposit.toStringAsFixed(2)}'),
+              _buildInfoRow('Security Deposit (20%)', '₱${securityDeposit.toStringAsFixed(2)}'),
             _buildInfoRow('Grand Total', '₱${grandTotal.toStringAsFixed(2)}', isHighlighted: true),
             _buildInfoRow('Payment Method', paymentMethod.toUpperCase()),
             _buildInfoRow('Reference', paymentReference),

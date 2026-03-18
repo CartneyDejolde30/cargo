@@ -8,6 +8,7 @@ import 'package:cargo/config/api_config.dart';
 
 class GCashPaymentScreen extends StatefulWidget {
   final int bookingId;
+  final String vehicleType;
   final int carId;
   final String carName;
   final String carImage;
@@ -22,6 +23,9 @@ class GCashPaymentScreen extends StatefulWidget {
   final String returnTime;
   final String rentalPeriod;
   final bool needsDelivery;
+  final double baseRental;
+  final double discount;
+  final double insurancePremium;
   final double totalAmount;
   final double serviceFee;
   final double securityDeposit;
@@ -29,6 +33,7 @@ class GCashPaymentScreen extends StatefulWidget {
   const GCashPaymentScreen({
     super.key,
     required this.bookingId,
+    required this.vehicleType,
     required this.carId,
     required this.carName,
     required this.carImage,
@@ -43,6 +48,9 @@ class GCashPaymentScreen extends StatefulWidget {
     required this.returnTime,
     required this.rentalPeriod,
     required this.needsDelivery,
+    required this.baseRental,
+    this.discount = 0.0,
+    this.insurancePremium = 0.0,
     required this.totalAmount,
     required this.serviceFee,
     this.securityDeposit = 0.0,
@@ -123,7 +131,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Amount: ${_formatCurrency(widget.totalAmount)}',
+                'Amount: ${_formatCurrency(widget.totalAmount + widget.securityDeposit)}',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   color: Colors.green,
@@ -169,31 +177,67 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
 
     setState(() => _isLoading = true);
 
-    // ✅ FIX: Clean the numbers before sending to API
     final cleanGcash = gcashNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
     final cleanRef = referenceNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
 
     try {
-      final response = await http.post(
-        Uri.parse("${baseUrl}api/submit_payment.php"),
+      // Step 1: Create the booking
+      final bookingResponse = await http.post(
+        Uri.parse(GlobalApiConfig.createBookingEndpoint),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
-          "booking_id": widget.bookingId.toString(),
+          "user_id": widget.userId,
+          "vehicle_type": widget.vehicleType,
+          "vehicle_id": widget.carId.toString(),
+          "full_name": widget.fullName,
+          "email": widget.email,
+          "contact": widget.contact,
+          "pickup_date": widget.pickupDate,
+          "return_date": widget.returnDate,
+          "pickup_time": widget.pickupTime,
+          "return_time": widget.returnTime,
+          "rental_period": widget.rentalPeriod,
+          "needs_delivery": widget.needsDelivery ? "1" : "0",
+          "insurance_premium": widget.insurancePremium.toStringAsFixed(2),
+          "total_amount": widget.totalAmount.toStringAsFixed(2),
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (bookingResponse.statusCode != 200) {
+        throw Exception('Booking creation failed: ${bookingResponse.statusCode}');
+      }
+
+      final bookingData = jsonDecode(bookingResponse.body);
+      if (bookingData['success'] != true) {
+        throw Exception(bookingData['message'] ?? 'Booking creation failed');
+      }
+
+      final bookingId = int.tryParse('${bookingData['data']?['booking_id'] ?? ''}');
+      if (bookingId == null) {
+        throw Exception('Invalid response: missing booking_id');
+      }
+
+      // Step 2: Submit payment
+      final paymentResponse = await http.post(
+        Uri.parse(GlobalApiConfig.submitPaymentEndpoint),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          "booking_id": bookingId.toString(),
           "car_id": widget.carId.toString(),
           "owner_id": widget.ownerId,
           "user_id": widget.userId,
           "total_amount": (widget.totalAmount + widget.securityDeposit).toStringAsFixed(2),
           "payment_method": "gcash",
-          "gcash_number": cleanGcash, // Send cleaned number
-          "payment_reference": cleanRef, // Send cleaned reference
+          "gcash_number": cleanGcash,
+          "payment_reference": cleanRef,
         },
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Server error: ${response.statusCode}');
+      if (paymentResponse.statusCode != 200) {
+        throw Exception('Server error: ${paymentResponse.statusCode}');
       }
 
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(paymentResponse.body);
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -208,7 +252,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Network error: ${e.toString()}');
+        _showError('Error: ${e.toString()}');
       }
     }
   }
@@ -561,7 +605,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Rental: ${_formatCurrency(widget.totalAmount)} + Service Fee: ${_formatCurrency(widget.serviceFee)} + Deposit: ${_formatCurrency(widget.securityDeposit)}',
+            'Rental & Insurance: ${_formatCurrency(widget.totalAmount)} + Deposit: ${_formatCurrency(widget.securityDeposit)}',
             style: GoogleFonts.poppins(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 11,
@@ -674,7 +718,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
           const SizedBox(height: 12),
           _buildCopyableField('GCash Number', gcashNumber),
           const SizedBox(height: 12),
-          _buildCopyableField('Amount', _formatCurrency(widget.totalAmount)),
+          _buildCopyableField('Amount', _formatCurrency(widget.totalAmount + widget.securityDeposit)),
         ],
       ),
     );
@@ -820,6 +864,8 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
   }
 
   Widget _buildBookingSummary() {
+    final grandTotal = widget.totalAmount + widget.securityDeposit;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -830,53 +876,127 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- Booking Details ---
           Text(
             'Booking Summary',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          _buildSummaryRow('Booking ID', '#BK-${widget.bookingId}'),
           _buildSummaryRow('Car', widget.carName),
           _buildSummaryRow('Rental Period', widget.rentalPeriod),
           _buildSummaryRow('Pickup Date', widget.pickupDate),
           _buildSummaryRow('Return Date', widget.returnDate),
-          _buildSummaryRow('Delivery', widget.needsDelivery ? 'Yes' : 'No'),
+          if (widget.needsDelivery) _buildSummaryRow('Delivery', 'Yes'),
+
           const Divider(height: 24),
-          _buildSummaryRow('Rental Amount', _formatCurrency(widget.totalAmount), isBold: true),
-          _buildSummaryRow('Security Deposit', _formatCurrency(widget.securityDeposit), isBold: true),
+
+          // --- Price Breakdown ---
+          Text(
+            'Price Breakdown',
+            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+
+          _buildSummaryRow('Base Rental', _formatCurrency(widget.baseRental)),
+
+          if (widget.discount > 0)
+            _buildSummaryRow(
+              '${widget.rentalPeriod} Discount',
+              '-${_formatCurrency(widget.discount)}',
+              valueColor: Colors.green.shade700,
+            ),
+
+          if (widget.insurancePremium > 0)
+            _buildSummaryRow('Insurance Premium', _formatCurrency(widget.insurancePremium)),
+
+          _buildSummaryRow(
+            'Service Fee (5%)',
+            _formatCurrency(widget.serviceFee),
+            valueColor: Colors.grey.shade700,
+          ),
+
+          const Divider(height: 16),
+
+          _buildSummaryRow(
+            'Total Amount',
+            _formatCurrency(widget.totalAmount),
+            isBold: true,
+          ),
+
           const SizedBox(height: 8),
+
+          // Security Deposit row with orange highlight
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.orange.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.orange.shade200),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.orange.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Deposit is refundable after successful return',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      color: Colors.orange.shade900,
+                Row(
+                  children: [
+                    Icon(Icons.shield_outlined, size: 14, color: Colors.orange.shade700),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Security Deposit (20%)',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade900,
+                      ),
                     ),
+                  ],
+                ),
+                Text(
+                  _formatCurrency(widget.securityDeposit),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade900,
                   ),
                 ),
               ],
             ),
+          ),
+
+          const SizedBox(height: 4),
+          Text(
+            'Refundable after successful vehicle return',
+            style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600),
+          ),
+
+          const Divider(height: 20, thickness: 1.5),
+
+          // Grand Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Grand Total',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                _formatCurrency(grandTotal),
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false, Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -897,7 +1017,7 @@ class _GCashPaymentScreenState extends State<GCashPaymentScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: isBold ? Colors.black : null,
+                color: valueColor ?? (isBold ? Colors.black : null),
               ),
             ),
           ),

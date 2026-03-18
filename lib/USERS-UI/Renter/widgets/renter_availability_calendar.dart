@@ -102,8 +102,10 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
   }
 
   bool _isDateAvailable(DateTime day) {
-    // Past dates are not available
-    if (day.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
+    // Past dates are not available (compare date-only, not time)
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final dayNormalized = DateTime(day.year, day.month, day.day);
+    if (dayNormalized.isBefore(today)) {
       return false;
     }
     // Blocked or booked dates are not available
@@ -391,6 +393,28 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
           outsideDaysVisible: false,
         ),
         calendarBuilders: CalendarBuilders(
+          todayBuilder: (context, day, focusedDay) {
+            // Today must go through the same availability check as any other day
+            final normalizedDay = DateTime(day.year, day.month, day.day);
+            final isBlocked = _blockedDates.any((d) =>
+              d.year == normalizedDay.year &&
+              d.month == normalizedDay.month &&
+              d.day == normalizedDay.day
+            );
+            final isBooked = _bookedDates.any((d) =>
+              d.year == normalizedDay.year &&
+              d.month == normalizedDay.month &&
+              d.day == normalizedDay.day
+            );
+            if (isBooked) {
+              return _buildDayCell(day, const Color(0xFFBBDEFB), const Color(0xFF1976D2), false);
+            } else if (isBlocked) {
+              return _buildDayCell(day, const Color(0xFFFFCDD2), const Color(0xFFD32F2F), false);
+            } else {
+              // Available today — highlight with a green ring so it's distinct
+              return _buildDayCell(day, Colors.green[50]!, Colors.green[700]!, true);
+            }
+          },
           defaultBuilder: (context, day, focusedDay) {
             // Normalize day to midnight for comparison
             final normalizedDay = DateTime(day.year, day.month, day.day);
@@ -408,8 +432,9 @@ class _RenterAvailabilityCalendarState extends State<RenterAvailabilityCalendar>
               d.day == normalizedDay.day
             );
             
-            final isPast = day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
-            
+            final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+            final isPast = normalizedDay.isBefore(today);
+
             if (isBooked) {
               return _buildDayCell(day, const Color(0xFFBBDEFB), const Color(0xFF1976D2), false); // Blue for booked
             } else if (isBlocked) {

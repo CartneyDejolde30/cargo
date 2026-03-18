@@ -23,7 +23,6 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
   
   List<NotificationModel> _notifications = [];
   List<NotificationModel> _filteredNotifications = [];
-  Map<String, int> _unreadCounts = {};
   
   bool _isLoading = true;
   bool _isSelectionMode = false;
@@ -66,35 +65,39 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
     try {
       final result = await _service.fetchNotifications(
         userId: widget.userId,
-        status: _selectedFilter == 'unread' ? 'unread' : null,
-        type: (_selectedFilter != 'all' && _selectedFilter != 'unread') 
-            ? _selectedFilter 
-            : null,
       );
 
       if (result['success']) {
-        final counts = await _service.getUnreadCountsByCategory(widget.userId);
-        
-        setState(() {
-          _notifications = result['notifications'];
-          _unreadCounts = counts;
-          _applyFilters();
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _notifications = result['notifications'];
+            _applyFilters();
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (!silent && mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('Error loading notifications: $e');
-      if (!silent) setState(() => _isLoading = false);
+      if (!silent && mounted) setState(() => _isLoading = false);
     }
   }
 
   void _applyFilters() {
     var filtered = _notifications;
 
+    // Apply tab filter (client-side since backend returns all)
+    if (_selectedFilter == 'unread') {
+      filtered = filtered.where((n) => n.isUnread).toList();
+    } else if (_selectedFilter != 'all') {
+      filtered = filtered.where((n) => n.type == _selectedFilter).toList();
+    }
+
     // Apply search
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((n) => 
+      filtered = filtered.where((n) =>
         n.title.toLowerCase().contains(query) ||
         n.message.toLowerCase().contains(query)
       ).toList();
@@ -123,17 +126,11 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 
   await _service.markAsRead(notification.id.toString(), widget.userId);
 
-  final counts = await _service.getUnreadCountsByCategory(widget.userId);
-
   setState(() {
     final index = _notifications.indexWhere((n) => n.id == notification.id);
-
     if (index != -1) {
-      _notifications[index] =
-          notification.copyWith(readStatus: 'read');
+      _notifications[index] = notification.copyWith(readStatus: 'read');
     }
-
-    _unreadCounts = counts;
     _applyFilters();
   });
 }
@@ -143,10 +140,8 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 
   /// Navigate to notification detail
   void _openNotificationDetail(NotificationModel notification) async {
-    // Mark as read
     await _markAsRead(notification);
 
-    // Navigate to detail page
     if (mounted) {
       Navigator.push(
         context,
@@ -154,7 +149,6 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
           builder: (_) => NotificationDetailScreen(
             notification: notification,
             onDelete: () => _deleteNotification(notification.id),
-            onArchive: () => _archiveNotification(notification.id),
           ),
         ),
       );
@@ -167,19 +161,6 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 
     if (result['success']) {
       _showSnackBar('Notification deleted', Colors.green);
-      setState(() {
-        _notifications.removeWhere((n) => n.id == id);
-        _applyFilters();
-      });
-    }
-  }
-
-  /// Archive single notification
-  Future<void> _archiveNotification(int id) async {
-    final result = await _service.archiveMultiple([id]);
-
-    if (result['success']) {
-      _showSnackBar('Notification archived', Colors.orange);
       setState(() {
         _notifications.removeWhere((n) => n.id == id);
         _applyFilters();
@@ -213,25 +194,6 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
           _applyFilters();
         });
       }
-    }
-  }
-
-  Future<void> _archiveSelected() async {
-    if (_selectedIds.isEmpty) return;
-
-    final result = await _service.archiveMultiple(_selectedIds.toList());
-
-    if (result['success']) {
-      _showSnackBar(
-        '${result['archived_count']} notification(s) archived',
-        Colors.orange,
-      );
-      setState(() {
-        _notifications.removeWhere((n) => _selectedIds.contains(n.id));
-        _selectedIds.clear();
-        _isSelectionMode = false;
-        _applyFilters();
-      });
     }
   }
 
@@ -344,39 +306,6 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
             icon: Icon(Icons.search, color: isDark ? colors.onSurface : Colors.black),
             onPressed: _showSearchBar,
           ),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: isDark ? colors.onSurface : Colors.black),
-            onSelected: (value) {
-              if (value == 'mark_all_read') {
-                _service.markAllAsRead(widget.userId);
-                _loadNotifications();
-              } else if (value == 'select_mode') {
-                setState(() => _isSelectionMode = true);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'mark_all_read',
-                child: Row(
-                  children: [
-                    const Icon(Icons.done_all, size: 20),
-                    const SizedBox(width: 12),
-                    Text('Mark all as read', style: GoogleFonts.poppins(fontSize: 14)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'select_mode',
-                child: Row(
-                  children: [
-                    const Icon(Icons.checklist, size: 20),
-                    const SizedBox(width: 12),
-                    Text('Select mode', style: GoogleFonts.poppins(fontSize: 14)),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
         if (_isSelectionMode) ...[
           IconButton(
@@ -421,7 +350,7 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
               ? _notifications.length
               : filter == 'unread'
                   ? _notifications.where((n) => n.isUnread).length
-                  : _unreadCounts[filter] ?? 0;
+                  : _notifications.where((n) => n.type == filter).length;
 
           return Tab(
             child: Row(
@@ -637,34 +566,16 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _archiveSelected,
-              icon: const Icon(Icons.archive),
-              label: const Text('Archive'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _deleteSelected,
-              icon: const Icon(Icons.delete),
-              label: const Text('Delete'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-        ],
+      child: ElevatedButton.icon(
+        onPressed: _deleteSelected,
+        icon: const Icon(Icons.delete),
+        label: const Text('Delete Selected'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size(double.infinity, 0),
+        ),
       ),
     );
   }
@@ -745,13 +656,11 @@ class _EnhancedNotificationPageState extends State<EnhancedNotificationPage>
 class NotificationDetailScreen extends StatefulWidget {
   final NotificationModel notification;
   final VoidCallback onDelete;
-  final VoidCallback onArchive;
 
   const NotificationDetailScreen({
     super.key,
     required this.notification,
     required this.onDelete,
-    required this.onArchive,
   });
 
   @override
@@ -790,39 +699,12 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
           ),
         ),
         actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: isDark ? colors.onSurface : Colors.black),
-            onSelected: (value) {
-              if (value == 'archive') {
-                widget.onArchive();
-                Navigator.pop(context);
-              } else if (value == 'delete') {
-                widget.onDelete();
-                Navigator.pop(context);
-              }
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () {
+              widget.onDelete();
+              Navigator.pop(context);
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'archive',
-                child: Row(
-                  children: [
-                    const Icon(Icons.archive, size: 20),
-                    const SizedBox(width: 12),
-                    Text('Archive', style: GoogleFonts.poppins()),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    const Icon(Icons.delete, size: 20, color: Colors.red),
-                    const SizedBox(width: 12),
-                    Text('Delete', style: GoogleFonts.poppins(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -967,26 +849,6 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
             const SizedBox(height: 24),
 
             // Action buttons
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  widget.onArchive();
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.archive),
-                label: const Text('Archive Notification'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

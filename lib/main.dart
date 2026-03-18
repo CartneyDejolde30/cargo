@@ -36,9 +36,41 @@ import 'package:cargo/USERS-UI/Owner/owner_home_screen.dart';
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
+/// 🧭 Global navigator key for notification deep linking
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// 📩 Firebase Background Handler
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+}
+
+/// 🧭 Handle notification tap → navigate to the correct screen
+void _handleNotificationNavigation(Map<String, dynamic> data) {
+  final screen = data['screen'] ?? '';
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+
+  switch (screen) {
+    case 'my_bookings':
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/my_bookings', (route) => route.isFirst,
+      );
+      break;
+    case 'active_bookings':
+      // Navigate renter to Active tab (index 0) of My Bookings
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/my_bookings', (route) => route.isFirst,
+      );
+      break;
+    case 'booking_requests':
+      // Owner: go to owner home (booking requests shown there)
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/renters', (route) => false,
+      );
+      break;
+    default:
+      break;
+  }
 }
 
 void main() {
@@ -186,6 +218,20 @@ Future<void> _setupNotificationsInBackground() async {
       unawaited(_syncFcmTokenToBackend());
     });
 
+    // 🔗 App opened from background via notification tap
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotificationNavigation(message.data);
+    });
+
+    // 🔗 App launched from killed state via notification tap
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      // Delay to let the widget tree build first
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleNotificationNavigation(initialMessage.data);
+      });
+    }
+
     // 📬 Foreground Notifications
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
@@ -296,6 +342,7 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'CarGO',
 

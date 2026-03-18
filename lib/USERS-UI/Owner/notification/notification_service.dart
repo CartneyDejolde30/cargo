@@ -1,16 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import '../../Owner/mycar/api_constants.dart';
+import 'package:cargo/config/api_config.dart';
 import './notification_model.dart';
 
 class NotificationService {
   // Root (for get_notification.php in carGOAdmin/)
-  static String get _rootBase => ApiConstants.baseUrl;
+  static String get _rootBase => GlobalApiConfig.baseUrl + '/';
 
   // API folder (for actions inside /api/notifications/)
-  static String get _apiBase =>
-      "${ApiConstants.baseUrl}api/notifications";
+  static String get _apiBase => '${GlobalApiConfig.apiUrl}/notifications';
 
   /* ---------------- FETCH ALL NOTIFICATIONS ---------------- */
   Future<List<NotificationModel>> fetchNotifications(int userId) async {
@@ -21,7 +20,7 @@ class NotificationService {
       debugPrint("📡 Fetching notifications: $url");
 
       final response =
-          await http.get(url).timeout(ApiConstants.apiTimeout);
+          await http.get(url).timeout(GlobalApiConfig.apiTimeout);
 
       debugPrint("📥 Response status: ${response.statusCode}");
 
@@ -55,7 +54,7 @@ class NotificationService {
             'notification_id': notificationId.toString(),
             'user_id': userId.toString(),
           })
-          .timeout(ApiConstants.apiTimeout);
+          .timeout(GlobalApiConfig.apiTimeout);
 
       debugPrint("📥 Response: ${response.body}");
 
@@ -81,7 +80,7 @@ class NotificationService {
           .post(url, body: {
             'id': notificationId.toString(),
           })
-          .timeout(ApiConstants.apiTimeout);
+          .timeout(GlobalApiConfig.apiTimeout);
 
       debugPrint("📥 Archive Response Status: ${response.statusCode}");
       debugPrint("📥 Archive Response Body: ${response.body}");
@@ -120,7 +119,7 @@ class NotificationService {
             'notification_id': notificationId,
             'user_id': userId.toString(),
           })
-          .timeout(ApiConstants.apiTimeout);
+          .timeout(GlobalApiConfig.apiTimeout);
 
       debugPrint("📥 Response: ${response.body}");
 
@@ -139,13 +138,13 @@ class NotificationService {
   Future<Map<String, int>> fetchUnreadCounts(String userId) async {
     try {
       final url = Uri.parse(
-          "${ApiConstants.baseUrl}api/dashboard/unread_counts.php?user_id=$userId");
+          "${GlobalApiConfig.apiUrl}/dashboard/unread_counts.php?user_id=$userId");
 
       // Removed verbose debug print to reduce log clutter
       // debugPrint("📡 Fetch unread counts: $url");
 
       final response =
-          await http.get(url).timeout(ApiConstants.apiTimeout);
+          await http.get(url).timeout(GlobalApiConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -178,7 +177,7 @@ class NotificationService {
           .post(url, body: {
             'user_id': userId.toString(),
           })
-          .timeout(ApiConstants.apiTimeout);
+          .timeout(GlobalApiConfig.apiTimeout);
 
       debugPrint("📥 Response body: ${response.body}");
 

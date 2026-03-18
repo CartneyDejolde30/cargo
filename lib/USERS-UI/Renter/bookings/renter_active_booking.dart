@@ -36,7 +36,9 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    renterGpsService.stopTracking();
+    try {
+      renterGpsService.stopTracking();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -412,8 +414,24 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
             _buildSection('Rental Details', [
               _buildDetailRow('Pickup Date', widget.booking['pickup_date'] ?? 'N/A'),
               _buildDetailRow('Return Date', widget.booking['return_date'] ?? 'N/A'),
-              _buildDetailRow('Total Amount', '₱${widget.booking['total_amount'] ?? '0'}'),
               _buildDetailRow('Status', widget.booking['status'] ?? 'N/A'),
+              const Divider(height: 20),
+              if ((widget.booking['base_rental'] as num? ?? 0) > 0)
+                _buildDetailRow('Base Rental', '₱${(widget.booking['base_rental'] as num).toStringAsFixed(2)}'),
+              if ((widget.booking['discount'] as num? ?? 0) > 0)
+                _buildDetailRow('Discount', '-₱${(widget.booking['discount'] as num).toStringAsFixed(2)}'),
+              if ((widget.booking['insurance_premium'] as num? ?? 0) > 0)
+                _buildDetailRow('Insurance Premium', '₱${(widget.booking['insurance_premium'] as num).toStringAsFixed(2)}'),
+              if ((widget.booking['service_fee'] as num? ?? 0) > 0)
+                _buildDetailRow('Service Fee (5%)', '₱${(widget.booking['service_fee'] as num).toStringAsFixed(2)}'),
+              _buildDetailRow('Total Amount', '₱${widget.booking['total_amount'] ?? '0'}'),
+              if ((widget.booking['security_deposit'] as num? ?? 0) > 0)
+                _buildDetailRow('Security Deposit (20%)', '₱${(widget.booking['security_deposit'] as num).toStringAsFixed(2)}'),
+              const Divider(height: 20),
+              _buildDetailRow(
+                'Grand Total',
+                '₱${(widget.booking['grand_total'] as num? ?? 0) > 0 ? (widget.booking['grand_total'] as num).toStringAsFixed(2) : widget.booking['total_amount'] ?? '0'}',
+              ),
             ]),
 
             const SizedBox(height: 20),
@@ -730,7 +748,7 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: OptimizedNetworkImage(
-                      imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/$startPhoto',
+                      imageUrl: '${ApiConfig.uploadsUrl}/odometer/$startPhoto',
                       height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -825,7 +843,7 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: OptimizedNetworkImage(
-                      imageUrl: 'https://cargoph.online/cargoAdmin/uploads/odometer/$endPhoto',
+                      imageUrl: '${ApiConfig.uploadsUrl}/odometer/$endPhoto',
                       height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -857,7 +875,7 @@ class _RenterActiveBookingScreenState extends State<RenterActiveBookingScreen>
                     ),
                   ),
                   Text(
-                    '${int.parse(odometerEnd.toString()) - int.parse(odometerStart.toString())} km',
+                    '${((odometerEnd as num?)?.toInt() ?? 0) - ((odometerStart as num?)?.toInt() ?? 0)} km',
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

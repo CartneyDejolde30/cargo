@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import './status_helper.dart';
 import './api_constants.dart';
 import './delete_car_dialog.dart';
+import './car_services.dart';
 import '../calendar/enhanced_vehicle_calendar.dart';
 
-class CarDetailPage extends StatelessWidget {
+class CarDetailPage extends StatefulWidget {
   final Map<String, dynamic> car;
   final VoidCallback? onDelete;
-  final int? ownerId; // Optional: fallback if car data doesn't have owner_id
+  final int? ownerId;
 
   const CarDetailPage({
     super.key,
@@ -16,6 +18,19 @@ class CarDetailPage extends StatelessWidget {
     this.onDelete,
     this.ownerId,
   });
+
+  @override
+  State<CarDetailPage> createState() => _CarDetailPageState();
+}
+
+class _CarDetailPageState extends State<CarDetailPage> {
+  late Map<String, dynamic> car;
+
+  @override
+  void initState() {
+    super.initState();
+    car = Map<String, dynamic>.from(widget.car);
+  }
 
   String get status => (car['status'] ?? 'Unknown').toString().toLowerCase();
   bool get isApproved => status == 'approved';
@@ -330,14 +345,209 @@ class CarDetailPage extends StatelessWidget {
               ),
             ],
           ),
-          Icon(
-            Icons.payments_rounded,
-            size: 48,
-            color: Colors.white.withValues(alpha: 0.2),
-          ),
+          if (!isRented)
+            IconButton(
+              onPressed: () => _showEditPriceDialog(context),
+              icon: const Icon(Icons.edit, color: Colors.white70),
+              tooltip: 'Edit Price',
+            )
+          else
+            Icon(
+              Icons.payments_rounded,
+              size: 48,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteVehicle(BuildContext context) async {
+    final ownerIdFromCar = int.tryParse(car['owner_id']?.toString() ?? '0') ?? 0;
+    final finalOwnerId = ownerIdFromCar > 0 ? ownerIdFromCar : (widget.ownerId ?? 0);
+    final vehicleId = int.tryParse(car['id']?.toString() ?? '0') ?? 0;
+    final vehicleType = car['vehicle_type']?.toString() ?? 'car';
+
+    final confirm = await DeleteCarDialog.show(context);
+    if (confirm != true || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text('Deleting vehicle...', style: GoogleFonts.poppins(fontSize: 14)),
+          ],
+        ),
+        duration: const Duration(seconds: 30),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    final result = await CarService().deleteVehicle(vehicleId, vehicleType, finalOwnerId);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result['success'] == true) {
+      widget.onDelete?.call();
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Vehicle deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Failed to delete vehicle'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showEditPriceDialog(BuildContext context) async {
+    final ownerIdFromCar = int.tryParse(car['owner_id']?.toString() ?? '0') ?? 0;
+    final finalOwnerId = ownerIdFromCar > 0 ? ownerIdFromCar : (widget.ownerId ?? 0);
+    final vehicleId = int.tryParse(car['id']?.toString() ?? '0') ?? 0;
+    final vehicleType = car['vehicle_type']?.toString() ?? 'car';
+
+    final currentPrice = double.tryParse(car['price_per_day']?.toString() ?? '0') ?? 0;
+    final controller = TextEditingController(text: currentPrice.toStringAsFixed(0));
+
+    final suggestions = [500, 800, 1000, 1200, 1500, 2000, 2500, 3000];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Edit Rental Price',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Set new price per day',
+                style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                autofocus: true,
+                onChanged: (_) => setStateDialog(() {}),
+                decoration: InputDecoration(
+                  prefixText: '₱ ',
+                  suffixText: '/day',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.black, width: 2),
+                  ),
+                ),
+                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Suggested prices',
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: suggestions.map((price) {
+                  final isSelected = controller.text == price.toString();
+                  return GestureDetector(
+                    onTap: () {
+                      controller.text = price.toString();
+                      setStateDialog(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.black : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? Colors.black : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        '₱$price',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text('Save', style: GoogleFonts.poppins(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final newPrice = double.tryParse(controller.text);
+    if (newPrice == null || newPrice <= 0) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid price'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final result = await CarService().updatePrice(vehicleId, vehicleType, finalOwnerId, newPrice);
+
+    if (!context.mounted) return;
+
+    if (result['success'] == true) {
+      setState(() => car['price_per_day'] = newPrice);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Price updated to ₱${newPrice.toStringAsFixed(2)}/day'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Update failed'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Widget _buildRentalInfo(BuildContext context) {
@@ -423,14 +633,14 @@ class CarDetailPage extends StatelessWidget {
     // Get owner_id from car data - ensure it's an integer
     // Use fallback ownerId parameter if car data doesn't have owner_id
     final ownerIdFromCar = int.tryParse(car['owner_id']?.toString() ?? '0') ?? 0;
-    final finalOwnerId = ownerIdFromCar > 0 ? ownerIdFromCar : (ownerId ?? 0);
+    final finalOwnerId = ownerIdFromCar > 0 ? ownerIdFromCar : (widget.ownerId ?? 0);
     final vehicleId = int.tryParse(car['id']?.toString() ?? '0') ?? 0;
     final vehicleType = car['vehicle_type']?.toString() ?? 'car';
     final vehicleName = "${car['brand']} ${car['model']}";
     
     // Debug logging
     debugPrint('🔍 CarDetailPage - Full car data: $car');
-    debugPrint('🔍 CarDetailPage - ownerIdFromCar: $ownerIdFromCar, fallback: $ownerId, final: $finalOwnerId');
+    debugPrint('🔍 CarDetailPage - ownerIdFromCar: $ownerIdFromCar, fallback: ${widget.ownerId}, final: $finalOwnerId');
     debugPrint('🔍 CarDetailPage - vehicleId: $vehicleId, vehicleType: $vehicleType');
     debugPrint('🔍 CarDetailPage - car[owner_id]: ${car['owner_id']}, car[id]: ${car['id']}');
     
@@ -550,13 +760,7 @@ class CarDetailPage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final confirm = await DeleteCarDialog.show(context);
-                    if (confirm == true && onDelete != null) {
-                      onDelete!();
-                      if (context.mounted) Navigator.pop(context);
-                    }
-                  },
+                  onPressed: () => _deleteVehicle(context),
                   icon: const Icon(Icons.delete_outline),
                   label: Text(
                     "Delete Vehicle",
@@ -598,13 +802,7 @@ class CarDetailPage extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () async {
-              final confirm = await DeleteCarDialog.show(context);
-              if (confirm == true && onDelete != null) {
-                onDelete!();
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
+            onPressed: () => _deleteVehicle(context),
             icon: const Icon(Icons.delete_outline),
             label: Text(
               "Delete Vehicle",

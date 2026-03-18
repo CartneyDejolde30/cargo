@@ -59,7 +59,6 @@ class _BookingScreenState extends State<BookingScreen> {
   String debugInfo = "Initializing...";
 
   int currentStep = 0;
-  bool needsDelivery = false;
 
   // Controllers
   final TextEditingController fullNameController = TextEditingController();
@@ -78,15 +77,37 @@ class _BookingScreenState extends State<BookingScreen> {
 
   int get numberOfDays {
     if (pickupDate == null || returnDate == null) return 1;
-    return returnDate!.difference(pickupDate!).inDays + 1;
+    final pickup = DateTime(
+      pickupDate!.year, pickupDate!.month, pickupDate!.day,
+      pickupTime.hour, pickupTime.minute,
+    );
+    final returnDt = DateTime(
+      returnDate!.year, returnDate!.month, returnDate!.day,
+      returnTime.hour, returnTime.minute,
+    );
+    final totalMinutes = returnDt.difference(pickup).inMinutes;
+    // Ceil to full 24-hour periods (min 1 day)
+    return ((totalMinutes / (24 * 60)).ceil()).clamp(1, 9999);
   }
 
   /// Auto-detected rental period based on selected date range.
   String get rentalPeriod =>
       numberOfDays >= 30 ? 'Monthly' : numberOfDays >= 7 ? 'Weekly' : 'Day';
 
-  double get totalWithInsurance =>
-      (priceBreakdown?.totalAmount ?? 0) + insurancePremium;
+  /// True when pickup and return are on the same day and return time ≤ pickup time.
+  bool get _isSameDayTimeInvalid {
+    if (pickupDate == null || returnDate == null) return false;
+    final sameDay = pickupDate!.year == returnDate!.year &&
+        pickupDate!.month == returnDate!.month &&
+        pickupDate!.day == returnDate!.day;
+    if (!sameDay) return false;
+    final pickupMinutes = pickupTime.hour * 60 + pickupTime.minute;
+    final returnMinutes = returnTime.hour * 60 + returnTime.minute;
+    return returnMinutes <= pickupMinutes;
+  }
+
+  // priceBreakdown.totalAmount already includes insurance (passed via insuranceFee param)
+  double get totalWithInsurance => priceBreakdown?.totalAmount ?? 0;
 
   double get bookingGrandTotal =>
       totalWithInsurance + (priceBreakdown?.securityDeposit ?? 0);
@@ -128,8 +149,8 @@ class _BookingScreenState extends State<BookingScreen> {
         pricePerDay: basePrice,
         numberOfDays: numberOfDays,
         rentalPeriod: rentalPeriod,
-        needsDelivery: needsDelivery,
-        deliveryDistance: 5.0,
+        needsDelivery: false,
+        deliveryDistance: 0.0,
         insuranceFee: insurancePremium,
       );
     });
@@ -168,6 +189,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
     if (widget.userId == null || widget.userId!.isEmpty) {
       print("[ERROR] No user ID provided");
+      if (!mounted) return;
       setState(() {
         isCheckingVerification = false;
         isVerifiedUser = false;
@@ -214,6 +236,7 @@ class _BookingScreenState extends State<BookingScreen> {
         final canAddCar = result['can_add_car'];
         final message = result['message'] ?? 'Unknown status';
 
+        if (!mounted) return;
         setState(() {
           // Handle both boolean and string values
           isVerifiedUser =
@@ -236,6 +259,7 @@ class _BookingScreenState extends State<BookingScreen> {
         });
       } else {
         print("[ERROR] HTTP Error: ${response.statusCode}");
+        if (!mounted) return;
         setState(() {
           isCheckingVerification = false;
           isVerifiedUser = false;
@@ -246,6 +270,7 @@ class _BookingScreenState extends State<BookingScreen> {
       print("[ERROR] Exception caught: $e");
       print("[ERROR] Exception type: ${e.runtimeType}");
 
+      if (!mounted) return;
       setState(() {
         isCheckingVerification = false;
         isVerifiedUser = false;
@@ -563,8 +588,6 @@ class _BookingScreenState extends State<BookingScreen> {
               children: [
                 _buildCarInfoCard(),
                 SizedBox(height: 24),
-                _buildDeliveryToggle(),
-                SizedBox(height: 24),
                 Text(
                   'Renter Information',
                   style: GoogleFonts.poppins(
@@ -617,6 +640,32 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                   ],
                 ),
+                if (_isSameDayTimeInvalid) ...[
+                  SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Return time must be after pickup time for same-day bookings.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 SizedBox(height: 24),
                 Text(
                   'Car Location',
@@ -705,54 +754,6 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeliveryToggle() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Car Delivery',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Base ₱${PricingCalculator.deliveryFeeBase.toStringAsFixed(0)} + ₱${PricingCalculator.deliveryFeePerKm}/km',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: needsDelivery,
-            onChanged: (value) {
-              setState(() {
-                needsDelivery = value;
-                _calculatePrice();
-              });
-            },
-            activeThumbColor: Theme.of(context).iconTheme.color,
           ),
         ],
       ),
@@ -1184,20 +1185,18 @@ class _BookingScreenState extends State<BookingScreen> {
                 '₱${priceBreakdown!.pricePerDay.toStringAsFixed(0)} × ${priceBreakdown!.numberOfDays} days',
           ),
 
-          if (priceBreakdown!.discount > 0)
-            _buildBreakdownRow(
-              '${rentalPeriod} Discount',
-              '-${PricingCalculator.formatCurrency(priceBreakdown!.discount)}',
-              isDiscount: true,
-              subtitle:
-                  '${priceBreakdown!.discountPercentage.toStringAsFixed(1)}% off',
-            ),
-
-          if (needsDelivery)
-            _buildBreakdownRow(
-              'Delivery Fee',
-              PricingCalculator.formatCurrency(priceBreakdown!.deliveryFee),
-            ),
+          _buildBreakdownRow(
+            priceBreakdown!.discount > 0
+                ? '$rentalPeriod Discount'
+                : 'Discount',
+            priceBreakdown!.discount > 0
+                ? '-${PricingCalculator.formatCurrency(priceBreakdown!.discount)}'
+                : 'None',
+            isDiscount: priceBreakdown!.discount > 0,
+            subtitle: priceBreakdown!.discount > 0
+                ? '${priceBreakdown!.discountPercentage.toStringAsFixed(0)}% off'
+                : 'Book 7+ days for 12% off, 30+ days for 25% off',
+          ),
 
           if (insurancePremium > 0)
             _buildBreakdownRow(
@@ -1212,7 +1211,7 @@ class _BookingScreenState extends State<BookingScreen> {
           Divider(height: 16, thickness: 1),
           _buildBreakdownRow(
             'Subtotal',
-            PricingCalculator.formatCurrency(priceBreakdown!.subtotal + insurancePremium),
+            PricingCalculator.formatCurrency(priceBreakdown!.subtotal),
           ),
           _buildBreakdownRow(
             'Service Fee',
@@ -1370,10 +1369,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color:
-                      isDiscount
-                          ? Theme.of(context).colorScheme.onSecondaryContainer
-                          : Colors.black,
+                  color: isDiscount ? Colors.green.shade700 : null,
                 ),
               ),
             ],
@@ -1510,6 +1506,10 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _proceedToPayment() {
+    if (_isSameDayTimeInvalid) {
+      _showError('Return time must be after pickup time for same-day bookings.');
+      return;
+    }
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1567,7 +1567,6 @@ class _BookingScreenState extends State<BookingScreen> {
                           ? '${DateFormat('MMM dd, yyyy').format(returnDate!)} at ${returnTime.format(context)}'
                           : 'Not set',
                     ),
-                    _buildSummaryRow('Delivery', needsDelivery ? 'Yes' : 'No'),
                     _buildSummaryRow('Location', widget.location),
                     Divider(height: 24),
                     Row(
@@ -1585,10 +1584,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onSecondaryContainer,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -1698,191 +1694,35 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _processPayment() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => Center(
-            child: Container(
-              padding: EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    color: Colors.black,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Processing booking...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GCashPaymentScreen(
+          bookingId: 0,
+          vehicleType: widget.vehicleType,
+          carId: widget.carId,
+          carName: widget.carName,
+          carImage: widget.carImage,
+          ownerId: widget.ownerId,
+          userId: widget.userId!,
+          fullName: fullNameController.text.trim(),
+          email: emailController.text.trim(),
+          contact: contactController.text.trim(),
+          pickupDate: DateFormat('yyyy-MM-dd').format(pickupDate!),
+          returnDate: DateFormat('yyyy-MM-dd').format(returnDate!),
+          pickupTime: '${pickupTime.hour.toString().padLeft(2, '0')}:${pickupTime.minute.toString().padLeft(2, '0')}',
+          returnTime: '${returnTime.hour.toString().padLeft(2, '0')}:${returnTime.minute.toString().padLeft(2, '0')}',
+          rentalPeriod: rentalPeriod,
+          needsDelivery: false,
+          baseRental: priceBreakdown!.baseRental,
+          discount: priceBreakdown!.discount,
+          insurancePremium: insurancePremium,
+          totalAmount: totalWithInsurance,
+          securityDeposit: priceBreakdown!.securityDeposit,
+          serviceFee: priceBreakdown!.serviceFee,
+        ),
+      ),
     );
-
-    _submitBookingToServer();
   }
 
-  // Replace your _submitBookingToServer() method with this:
-
-  // Replace your _submitBookingToServer() method with this:
-
-  Future<void> _submitBookingToServer() async {
-    final url = Uri.parse(GlobalApiConfig.createBookingEndpoint);
-
-    // Validate user_id
-    if (widget.userId == null || widget.userId!.isEmpty) {
-      Navigator.pop(context);
-      _showError("User session expired. Please login again.");
-      return;
-    }
-
-    try {
-      print("[BOOKING] Submitting booking...");
-      print("[BOOKING] User ID: ${widget.userId}");
-      print("[BOOKING] Car ID: ${widget.carId}");
-      print("[BOOKING] Owner ID: ${widget.ownerId}");
-
-      final requestBody = {
-        "user_id": widget.userId!,
-        "vehicle_type": widget.vehicleType, // car OR motorcycle
-        "vehicle_id": widget.carId.toString(),
-        "full_name": fullNameController.text,
-        "email": emailController.text,
-        "contact": contactController.text,
-        "pickup_date": DateFormat('yyyy-MM-dd').format(pickupDate!),
-        "return_date": DateFormat('yyyy-MM-dd').format(returnDate!),
-        "pickup_time": pickupTime.format(context),
-        "return_time": returnTime.format(context),
-        "rental_period": rentalPeriod,
-        "needs_delivery": needsDelivery ? "1" : "0",
-        "total_amount": priceBreakdown!.totalAmount.toStringAsFixed(2),
-      };
-
-      print("[BOOKING] Request body: $requestBody");
-
-      final response = await http
-          .post(
-            url,
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
-            body: requestBody,
-          )
-          .timeout(
-            Duration(seconds: 15),
-            onTimeout: () {
-              throw Exception('Request timeout');
-            },
-          );
-
-      print("[HTTP] Response status: ${response.statusCode}");
-      print("[HTTP] Response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data["success"] == true) {
-          // Manual GCash payment flow (PayMongo removed)
-          final dataMap =
-              (data["data"] is Map)
-                  ? Map<String, dynamic>.from(data["data"] as Map)
-                  : <String, dynamic>{};
-
-          final bookingId = int.tryParse('${dataMap["booking_id"] ?? ''}');
-          final paymentId = int.tryParse('${dataMap["payment_id"] ?? ''}');
-          final totalAmount = double.tryParse(
-            '${dataMap["total_amount"] ?? ''}',
-          );
-
-          if (bookingId == null) {
-            throw Exception('Invalid response: missing booking_id');
-          }
-          if (totalAmount == null) {
-            throw Exception('Invalid response: missing total_amount');
-          }
-
-          print("[OK] Booking created! ID: $bookingId");
-          if (paymentId != null) {
-            print("[PAYMENT] Payment ID: $paymentId");
-          }
-          print("[AMOUNT] Total Amount: $totalAmount");
-
-          Navigator.pop(context); // Close loading dialog
-
-          // Navigate directly to GCash payment screen (manual verification)
-          final securityDeposit = data['data']['security_deposit'] ?? 0.0;
-          
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => GCashPaymentScreen(
-                    bookingId: bookingId,
-                    carId: widget.carId,
-                    carName: widget.carName,
-                    carImage: widget.carImage,
-                    ownerId: widget.ownerId,
-                    userId: widget.userId!,
-                    fullName: fullNameController.text.trim(),
-                    email: emailController.text.trim(),
-                    contact: contactController.text.trim(),
-                    pickupDate: DateFormat('yyyy-MM-dd').format(pickupDate!),
-                    returnDate: DateFormat('yyyy-MM-dd').format(returnDate!),
-                    pickupTime: pickupTime.format(context),
-                    returnTime: returnTime.format(context),
-                    rentalPeriod: rentalPeriod,
-                    needsDelivery: needsDelivery,
-                    totalAmount: totalAmount,
-                    securityDeposit: securityDeposit is double ? securityDeposit : double.tryParse(securityDeposit.toString()) ?? 0.0,
-                    serviceFee: priceBreakdown!.serviceFee,
-                  ),
-            ),
-          );
-        } else {
-          Navigator.pop(context);
-          String errorMsg = data["message"] ?? "Booking failed";
-          print("[ERROR] Booking failed: $errorMsg");
-
-          // Better error handling
-          if (errorMsg.toLowerCase().contains("unauthorized")) {
-            _showError(
-              "Your account is not authorized. Please verify your account.",
-            );
-          } else if (errorMsg.toLowerCase().contains("not verified")) {
-            _showError(
-              "Your account is not verified. Please complete verification first.",
-            );
-          } else if (errorMsg.toLowerCase().contains("not available")) {
-            _showError("This car is no longer available.");
-          } else {
-            _showError(errorMsg);
-          }
-        }
-      } else if (response.statusCode == 401) {
-        Navigator.pop(context);
-        _showError("Unauthorized: Please log in again.");
-      } else {
-        Navigator.pop(context);
-        _showError("Server error (${response.statusCode})");
-      }
-    } catch (e) {
-      Navigator.pop(context);
-      print("[ERROR] Exception: $e");
-
-      if (e.toString().contains('timeout')) {
-        _showError("Connection timeout. Please check your internet.");
-      } else {
-        _showError("Connection error: ${e.toString()}");
-      }
-    }
-  }
 }

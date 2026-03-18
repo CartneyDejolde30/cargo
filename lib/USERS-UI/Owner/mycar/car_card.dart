@@ -93,7 +93,6 @@ class CarCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const Spacer(),
                   ],
                 ),
               ),
